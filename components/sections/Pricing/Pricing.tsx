@@ -1,8 +1,8 @@
-import FadeIn from "@/components/ui/FadeIn";
+
 
 export default function Pricing() {
   return (
-    <FadeIn>
+    
       <section id="pricing" className="pricing">
         <div className="container">
           <span className="section-tag">PRICING</span>
@@ -281,6 +281,6 @@ export default function Pricing() {
           </div>
         </div>
       </section>
-    </FadeIn>
+    
   );
 }
