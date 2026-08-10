@@ -1,10 +1,11 @@
+"use client";
 
-
+import { useRouter } from "next/navigation";
 export default function Pricing() {
+  const router = useRouter();
   return (
-    
-      <section id="pricing" className="pricing">
-        <div className="container">
+    <section id="pricing" className="pricing">
+      <div className="container">
           <span className="section-tag">PRICING</span>
 
           <h2>Start small. Grow when you&apos;re ready.</h2>
@@ -60,9 +61,12 @@ export default function Pricing() {
                 additional pages and extensive branding are not included.
               </p>
 
-              <button className="primary-button pricing-card-button">
-                Get Started
-              </button>
+              <button
+  className="primary-button pricing-card-button"
+  onClick={() => router.push("/contact")}
+>
+  Get Started
+</button>
             </article>
 
             {/* Website Redesign */}
@@ -106,9 +110,12 @@ export default function Pricing() {
                 </li>
               </ul>
 
-              <button className="primary-button pricing-card-button">
-                Redesign My Website
-              </button>
+              <button
+  className="primary-button pricing-card-button"
+  onClick={() => router.push("/contact")}
+>
+  Redesign My Website
+</button>
             </article>
 
             {/* Starter Business Website */}
@@ -156,9 +163,12 @@ export default function Pricing() {
                 Third-party domain, hosting and email costs are not included.
               </p>
 
-              <button className="primary-button pricing-card-button">
-                Build My Website
-              </button>
+              <button
+  className="primary-button pricing-card-button"
+  onClick={() => router.push("/contact")}
+>
+  Build My Website
+</button>
             </article>
 
             {/* Professional Business Website */}
@@ -206,9 +216,12 @@ export default function Pricing() {
                 Third-party domain, hosting and email costs are not included.
               </p>
 
-              <button className="primary-button pricing-card-button">
-                Build My Website
-              </button>
+             <button
+  className="primary-button pricing-card-button"
+  onClick={() => router.push("/contact")}
+>
+  Build My Website
+</button>
             </article>
 
             {/* Custom Technology Solutions */}
@@ -250,9 +263,12 @@ export default function Pricing() {
                 </li>
               </ul>
 
-              <button className="primary-button pricing-card-button">
-                Let&apos;s Talk
-              </button>
+              <button
+  className="primary-button pricing-card-button"
+  onClick={() => router.push("/contact")}
+>
+  Let&apos;s Talk
+</button>
             </article>
 
             {/* Build as You Grow */}
@@ -282,5 +298,5 @@ export default function Pricing() {
         </div>
       </section>
     
-  );
+   ) ;
 }
