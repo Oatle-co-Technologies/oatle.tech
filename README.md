@@ -1,107 +1,41 @@
+<<<<<<< HEAD
 # oatle-website
 # Oatle Technologies
+=======
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+>>>>>>> b4e9976 (Complete Oatle Technologies website)
 
-Helping small businesses become easier to find, easier to trust, and easier to choose online.
+## Getting Started
 
-## About
+First, run the development server:
 
-Oatle.co Technologies is a South African digital solutions company focused on helping small and growing businesses establish a professional online presence.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-Many businesses rely solely on social media, making it difficult for new customers to discover them through search engines. Oatle bridges that gap by building modern websites, improving online visibility, and creating digital solutions that help businesses grow.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Our mission is simple:
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-> Every great business deserves to be found.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
----
+## Learn More
 
-## Our Services
+To learn more about Next.js, take a look at the following resources:
 
-- Business Websites
-- UX/UI Design
-- Responsive Web Design
-- Search Engine Optimization (SEO)
-- Google Business Profile Setup & Optimization
-- Booking Systems
-- Customer Portals
-- Business Automation
-- E-commerce Solutions
-- Website Maintenance & Support
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
----
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Technologies & Platforms
+## Deploy on Vercel
 
-### Frontend
-- HTML5
-- CSS3
-- JavaScript (ES6+)
-- React
-- Next.js
-- Tailwind CSS
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-### Backend
-- Node.js
-- Express.js
-- REST APIs
-
-### Databases
-- PostgreSQL
-- MongoDB
-- SQL
-
-### CMS & Business Platforms
-- WordPress
-- WooCommerce
-- Gravity Forms
-- Gravity Flow
-
-### UI / UX Design
-- Figma
-- UX Research
-- User Interface Design
-- Wireframing
-- Interactive Prototyping
-
-### Deployment & Hosting
-- Vercel
-- Render
-
-### Version Control
-- Git
-- GitHub
-
-### Programming Languages
-- JavaScript
-- TypeScript
-- PHP
-- Python
-- C#
-
----
-
-## Current Projects
-
-- 🌐 Oatle.co Website
-- 🥖 Felicia Bakes
-- 🚧 Additional client projects coming soon
-
----
-
-## Vision
-
-To empower entrepreneurs and small businesses with technology that helps them compete, grow, and succeed in the digital world.
-
----
-
-## Contact
-
-Business enquiries are welcome.
-
-📧 Email: aotle.technologies@gmail.com
-
----
-
-**Oatle.co Technologies**
-
-*Building digital experiences that help businesses grow.*
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
