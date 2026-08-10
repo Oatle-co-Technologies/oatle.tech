@@ -1,5 +1,5 @@
 # oatle-website
-# Oatle.co Technologies
+# Oatle Technologies
 
 Helping small businesses become easier to find, easier to trust, and easier to choose online.
 
