@@ -15,8 +15,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Oatle Technologies",
-  description: "Helping small businesses grow online.",
+  title: "Oatle Technologies | Web Development & Digital Solutions",
+  description:
+    "Oatle Technologies builds professional websites, custom web applications, and digital solutions for businesses in South Africa and beyond.",
 };
 
 export default function RootLayout({
