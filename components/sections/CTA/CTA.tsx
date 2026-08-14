@@ -17,10 +17,10 @@ export default function CTA() {
                     </h2>
 
                     <p className="section-description">
-                        Whether you're starting from scratch or looking to
-                        improve your current website, we'd love to learn
-                        about your business and explore the best solution
-                        together.
+                        Whether you're starting from scratch, redesigning an
+                        existing website, or looking for a custom digital solution,
+                        we'd love to learn about your business and find the right
+                        way to help you grow online.
                     </p>
 
                     <Link

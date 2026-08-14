@@ -12,7 +12,7 @@ import {
 export default function FeaturedClient() {
   return (
     <FadeIn>
-      <section id="work" className="featured-client">
+      <section id="work" className="featured-client" >
 
         <div className="container">
 
@@ -30,11 +30,11 @@ export default function FeaturedClient() {
             experience.
           </p>
 
-          <div className="featured-image-wrapper">
+          <div className="featured-image-wrapper" >
 
             <Image
               src="/felicia-bakes-portfolio-cover.png"
-              alt="Felicia Bakes Website"
+              alt="Felicia Bakes bakery website designed by Oatle Technologies"
               width={1200}
               height={700}
               className="featured-image"

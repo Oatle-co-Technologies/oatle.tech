@@ -18,7 +18,7 @@ export default function Navbar() {
     <header className="site-header">
       <div className="navbar-container">
 
-        <Link href="/" className="logo">
+        <Link href="/" className="logo" aria-label="Oatle Technologies home">
           <span className="logo-primary">
             Oatle Technologies
           </span>
@@ -49,23 +49,33 @@ export default function Navbar() {
 
           <ul className="nav-links">
             <li>
-              <Link href="/#work">Work</Link>
+              <Link href="/#work">
+                Work
+              </Link>
             </li>
 
             <li>
-              <Link href="/#process">Process</Link>
+              <Link href="/#process">
+                Process
+              </Link>
             </li>
 
             <li>
-              <Link href="/#pricing">Pricing</Link>
+              <Link href="/#pricing">
+                Pricing
+              </Link>
             </li>
 
             <li>
-              <Link href="/#faq">FAQ</Link>
+              <Link href="/#faq">
+                FAQ
+              </Link>
             </li>
 
             <li>
-              <Link href="/contact">Contact</Link>
+              <Link href="/contact">
+                Contact
+              </Link>
             </li>
           </ul>
         </nav>
@@ -88,6 +98,7 @@ export default function Navbar() {
         }
         role="dialog"
         aria-modal="true"
+        aria-label="Mobile navigation"
       >
         <div className="mobile-nav-panel">
 

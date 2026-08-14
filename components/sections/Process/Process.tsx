@@ -7,12 +7,12 @@ const steps = [
   {
     title: "Discovery",
     description:
-      "We learn about your business, customers and goals before recommending anything.",
+      "We learn about your business, customers, and goals before recommending the right website or digital solution."
   },
   {
     title: "Strategy",
     description:
-      "Together we define the best solution and create a clear roadmap for your project.",
+      "Together we define the right solution and create a clear roadmap for your website or digital project."
   },
   {
     title: "Build",

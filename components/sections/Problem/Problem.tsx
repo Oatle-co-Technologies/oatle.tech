@@ -14,9 +14,8 @@ export default function Problem() {
         </span>
 
         <h2>
-          A Facebook Page Isn&apos;t Enough Anymore
-        </h2>
-
+  A Facebook Page Isn&apos;t Enough for Your Business
+</h2>
         <p className="section-description">
           Social media is great for building relationships, but when customers
           are actively searching for a business like yours, they expect to find
@@ -29,10 +28,12 @@ export default function Problem() {
             <SearchX className="problem-icon" />
             <h3>Hard to Find</h3>
 
-            <p>
-              Potential customers search on Google but never discover your
-              business.
-            </p>
+            <h3>Harder to Find</h3>
+
+<p>
+  Potential customers search on Google but may never discover your
+  business without a professional website.
+</p>
           </div>
 
           <div className="problem-card">

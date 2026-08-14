@@ -21,9 +21,9 @@ export default function WhyOatle() {
           </h2>
 
           <p className="section-description">
-            We don't just build beautiful websites. We create digital experiences
-            that help your business get discovered, build trust with customers,
-            and grow with confidence.
+            We design and develop professional websites and digital experiences
+            that help businesses get discovered online, build trust with
+            customers, and create opportunities for growth.
           </p>
 
           <div className="why-grid">
@@ -37,8 +37,9 @@ export default function WhyOatle() {
               </h3>
 
               <p>
-                We build SEO-friendly websites that help customers find your
-                business on Google when they need your services.
+                We design and develop SEO-friendly websites that help customers
+                discover your business on Google when they are searching for
+                your products or services.
               </p>
 
             </div>
@@ -52,8 +53,8 @@ export default function WhyOatle() {
               </h3>
 
               <p>
-                Modern design, fast performance, and a professional online
-                presence that gives customers confidence to choose you.
+                We combine modern web design, fast performance, and a professional
+                online presence to give customers confidence in your business.
               </p>
 
             </div>
@@ -78,7 +79,6 @@ export default function WhyOatle() {
         </div>
 
       </section>
-
     </FadeIn>
   );
 }

@@ -5,10 +5,11 @@ import emailjs from "@emailjs/browser";
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
+
   const [status, setStatus] = useState<{
-  type: "success" | "error";
-  message: string;
-} | null>(null);
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -24,148 +25,144 @@ export default function ContactPage() {
 
     setStatus(null);
 
-    // Trim whitespace
     const name = formData.name.trim();
     const business = formData.business.trim();
     const email = formData.email.trim().toLowerCase();
     const phone = formData.phone.trim();
-    const message = formData.message.trim();
     const service = formData.service;
+    const message = formData.message.trim();
 
     // Required fields
     if (!name || !business || !email || !phone || !message) {
-        setStatus({
-            type: "error",
-            message: "Please complete all required fields.",
-        });
-        return;
+      setStatus({
+        type: "error",
+        message: "Please complete all required fields.",
+      });
+      return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
-        setStatus({
-            type: "error",
-            message: "Please enter a valid email address.",
-        });
-        return;
+      setStatus({
+        type: "error",
+        message: "Please enter a valid email address.",
+      });
+      return;
     }
 
-    // Block fake domains
+    // Block obvious test/fake domains
     const blockedDomains = [
-        "example.com",
-        "test.com",
-        "localhost",
-        "fake.com",
+      "example.com",
+      "test.com",
+      "localhost",
+      "fake.com",
     ];
 
     const domain = email.split("@")[1];
 
     if (blockedDomains.includes(domain)) {
-        setStatus({
-            type: "error",
-            message: "Please use a real email address.",
-        });
-        return;
+      setStatus({
+        type: "error",
+        message: "Please use a real email address.",
+      });
+      return;
     }
 
     // Block disposable email providers
     const disposableDomains = [
-        "mailinator.com",
-        "10minutemail.com",
-        "guerrillamail.com",
-        "tempmail.com",
-        "temp-mail.org",
-        "sharklasers.com",
+      "mailinator.com",
+      "10minutemail.com",
+      "guerrillamail.com",
+      "tempmail.com",
+      "temp-mail.org",
+      "sharklasers.com",
     ];
 
     if (disposableDomains.includes(domain)) {
-        setStatus({
-            type: "error",
-            message: "Temporary email addresses are not supported.",
-        });
-        return;
+      setStatus({
+        type: "error",
+        message: "Temporary email addresses are not supported.",
+      });
+      return;
     }
 
     // Phone validation
     const phoneRegex = /^[0-9+\-\s()]{10,20}$/;
 
     if (!phoneRegex.test(phone)) {
-        setStatus({
-            type: "error",
-            message: "Please enter a valid phone number.",
-        });
-        return;
+      setStatus({
+        type: "error",
+        message: "Please enter a valid phone number.",
+      });
+      return;
     }
 
     // Message validation
     if (message.length < 20) {
-        setStatus({
-            type: "error",
-            message:
-                "Please provide a little more detail about your project.",
-        });
-        return;
+      setStatus({
+        type: "error",
+        message: "Please provide a little more detail about your project.",
+      });
+      return;
     }
 
     setLoading(true);
 
     try {
-        await emailjs.send(
-            "service_4mg8nys",
-            "template_rs3cuww",
-            {
-                title: business,
-                name,
-                business,
-                email,
-                phone,
-                service,
-                message,
-            },
-            "G21rP3jrxQohCHe1l"
-        );
+      await emailjs.send(
+        "service_4mg8nys",
+        "template_rs3cuww",
+        {
+          title: business,
+          name,
+          business,
+          email,
+          phone,
+          service,
+          message,
+        },
+        "G21rP3jrxQohCHe1l"
+      );
 
-        setStatus({
-            type: "success",
-            message:
-                "Thank you! Your enquiry has been sent successfully. We'll get back to you within one business day.",
-        });
+      setStatus({
+        type: "success",
+        message:
+          "Thank you! Your enquiry has been sent successfully. We'll get back to you within one business day.",
+      });
 
-        setFormData({
-            name: "",
-            business: "",
-            email: "",
-            phone: "",
-            service: "New Website",
-            message: "",
-        });
-
+      setFormData({
+        name: "",
+        business: "",
+        email: "",
+        phone: "",
+        service: "New Website",
+        message: "",
+      });
     } catch (error) {
-        console.error(error);
+      console.error(error);
 
-        setStatus({
-            type: "error",
-            message:
-                "Something went wrong while sending your enquiry. Please try again.",
-        });
-
+      setStatus({
+        type: "error",
+        message:
+          "Something went wrong while sending your enquiry. Please try again.",
+      });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-}
+  }
 
   return (
     <section className="contact-page">
       <div className="container">
         <span className="section-tag">BOOK A DISCOVERY CALL</span>
 
-        <h1> Let's Talk About Your Business</h1>
+        <h1>Let&apos;s Talk About Your Business</h1>
 
         <p className="section-description">
-          Tell us a little about your business and we'll recommend the best
-          solution for your goals.
+          Tell us a little about your business and we&apos;ll recommend the
+          best solution for your goals.
         </p>
 
         <div className="contact-content">
@@ -198,14 +195,15 @@ export default function ContactPage() {
           {/* Right Side */}
 
           <form className="contact-form" onSubmit={handleSubmit}>
-            
-  
             <div>
-              <label>Full Name</label>
+              <label htmlFor="name">Full Name</label>
 
               <input
+                id="name"
+                name="name"
                 type="text"
                 required
+                autoComplete="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({
@@ -217,11 +215,14 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label>Business Name</label>
+              <label htmlFor="business">Business Name</label>
 
               <input
+                id="business"
+                name="business"
                 type="text"
                 required
+                autoComplete="organization"
                 value={formData.business}
                 onChange={(e) =>
                   setFormData({
@@ -233,11 +234,14 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label>Email Address</label>
+              <label htmlFor="email">Email Address</label>
 
               <input
+                id="email"
+                name="email"
                 type="email"
                 required
+                autoComplete="email"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({
@@ -249,10 +253,14 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label>Phone Number</label>
+              <label htmlFor="phone">Phone Number</label>
 
               <input
+                id="phone"
+                name="phone"
                 type="tel"
+                required
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({
@@ -264,9 +272,11 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label>Service Required</label>
+              <label htmlFor="service">Service Required</label>
 
               <select
+                id="service"
+                name="service"
                 value={formData.service}
                 onChange={(e) =>
                   setFormData({
@@ -277,16 +287,20 @@ export default function ContactPage() {
               >
                 <option>New Website</option>
                 <option>Website Redesign</option>
-                <option>E-commerce Website</option>
-                <option>SEO</option>
+                <option>Custom Technology Solution</option>
+                <option>Online Store / E-commerce</option>
                 <option>Not Sure Yet</option>
               </select>
             </div>
 
             <div>
-              <label>Tell us about your business</label>
+              <label htmlFor="message">
+                Tell us about your business or project
+              </label>
 
               <textarea
+                id="message"
+                name="message"
                 rows={6}
                 required
                 value={formData.message}
@@ -306,11 +320,16 @@ export default function ContactPage() {
             >
               {loading ? "Sending..." : "Send Enquiry"}
             </button>
+
             {status && (
-  <div className={`form-message ${status.type}`}>
-    {status.message}
-  </div>
-)}
+              <div
+                className={`form-message ${status.type}`}
+                role="alert"
+                aria-live="polite"
+              >
+                {status.message}
+              </div>
+            )}
           </form>
         </div>
       </div>
