@@ -24,15 +24,14 @@ export default function Hero() {
           </span>
 
           <h1>
-            Websites that help your business get discovered,
-            trusted, and chosen.
-          </h1>
+  Websites that help small businesses get discovered,
+  trusted, and chosen.
+</h1>
 
           <p>
-            We help service-based businesses build beautiful,
-            modern websites that turn visitors into customers.
-          </p>
-
+  We design and develop beautiful, modern websites for
+  service-based businesses that turn visitors into customers.
+</p>
           <div className="hero-buttons">
             <button onClick={() => router.push("/contact")}>
               Start Your Project
