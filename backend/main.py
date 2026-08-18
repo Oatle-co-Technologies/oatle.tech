@@ -1,12 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.database.base import Base
 from backend.database.connection import engine
+
 from backend.models.client import Client
-from backend.api.clients import router as clients_router
 from backend.models.lead import Lead
+from backend.models.project import Project
+from backend.models.task import Task
+
+from backend.api.clients import router as clients_router
 from backend.api.leads import router as leads_router
+from backend.api.projects import router as project_router
+from backend.api.tasks import router as tasks_router
+
+
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,10 +26,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 Base.metadata.create_all(bind=engine)
+
 
 app.include_router(clients_router)
 app.include_router(leads_router)
+app.include_router(project_router)
+app.include_router(tasks_router)
 
 
 @app.get("/")
