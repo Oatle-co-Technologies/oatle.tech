@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from backend.database.base import Base
 from backend.database.connection import engine
 from backend.models.client import Client
 from backend.api.clients import router as clients_router
-
-
+from backend.models.lead import Lead
+from backend.api.leads import router as leads_router
 app = FastAPI()
 
 app.add_middleware(
@@ -20,6 +19,7 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(clients_router)
+app.include_router(leads_router)
 
 
 @app.get("/")
