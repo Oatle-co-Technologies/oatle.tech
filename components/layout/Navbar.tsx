@@ -17,11 +17,8 @@ export default function Navbar() {
   return (
     <header className="site-header">
       <div className="navbar-container">
-        <Link
-          href="/"
-          className="logo"
-          aria-label="Oatle Technologies home"
-        >
+
+        <Link href="/" className="logo" aria-label="Oatle Technologies home">
           <span className="logo-primary">
             Oatle Technologies
           </span>
@@ -42,9 +39,7 @@ export default function Navbar() {
                 ? "Close navigation"
                 : "Open navigation"
             }
-            onClick={() =>
-              setMenuOpen((open) => !open)
-            }
+            onClick={() => setMenuOpen((open) => !open)}
           >
             <span
               className="mobile-nav-hamburger"
@@ -85,31 +80,15 @@ export default function Navbar() {
           </ul>
         </nav>
 
-        {/* Desktop actions */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
+        <Link
+          href="/contact"
+          className="primary-button desktop-cta"
         >
-          <Link
-            href="/sign-in"
-            className="dashboard-link"
-          >
-            Login
-          </Link>
+          Book Discovery Call
+        </Link>
 
-          <Link
-            href="/contact"
-            className="primary-button desktop-cta"
-          >
-            Book Discovery Call
-          </Link>
-        </div>
       </div>
 
-      {/* Mobile navigation */}
       <div
         id="mobile-navigation"
         className={
@@ -122,24 +101,22 @@ export default function Navbar() {
         aria-label="Mobile navigation"
       >
         <div className="mobile-nav-panel">
+
           <button
             type="button"
             className="mobile-nav-close"
             aria-label="Close navigation"
-            onClick={() =>
-              setMenuOpen(false)
-            }
+            onClick={() => setMenuOpen(false)}
           >
             Close
           </button>
 
           <ul className="mobile-nav-links">
+
             <li>
               <Link
                 href="/#work"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
               >
                 Work
               </Link>
@@ -148,9 +125,7 @@ export default function Navbar() {
             <li>
               <Link
                 href="/#process"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
               >
                 Process
               </Link>
@@ -159,9 +134,7 @@ export default function Navbar() {
             <li>
               <Link
                 href="/#pricing"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
               >
                 Pricing
               </Link>
@@ -170,9 +143,7 @@ export default function Navbar() {
             <li>
               <Link
                 href="/#faq"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
               >
                 FAQ
               </Link>
@@ -181,26 +152,14 @@ export default function Navbar() {
             <li>
               <Link
                 href="/contact"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
               >
                 Contact
               </Link>
             </li>
 
-            {/* Mobile Login */}
-            <li>
-              <Link
-                href="/sign-in"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
-              >
-                Login
-              </Link>
-            </li>
           </ul>
+
         </div>
       </div>
     </header>
