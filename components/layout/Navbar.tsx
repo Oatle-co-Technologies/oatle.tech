@@ -18,7 +18,11 @@ export default function Navbar() {
     <header className="site-header">
       <div className="navbar-container">
 
-        <Link href="/" className="logo" aria-label="Oatle Technologies home">
+        <Link
+          href="/"
+          className="logo"
+          aria-label="Oatle Technologies home"
+        >
           <span className="logo-primary">
             Oatle Technologies
           </span>
@@ -77,6 +81,12 @@ export default function Navbar() {
                 Contact
               </Link>
             </li>
+
+            <li>
+              <Link href="/auth/sign-in">
+                Login
+              </Link>
+            </li>
           </ul>
         </nav>
 
@@ -86,7 +96,6 @@ export default function Navbar() {
         >
           Book Discovery Call
         </Link>
-
       </div>
 
       <div
@@ -158,8 +167,16 @@ export default function Navbar() {
               </Link>
             </li>
 
-          </ul>
+            <li>
+              <Link
+                href="/auth/sign-in"
+                onClick={() => setMenuOpen(false)}
+              >
+                Login
+              </Link>
+            </li>
 
+          </ul>
         </div>
       </div>
     </header>
