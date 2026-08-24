@@ -4,15 +4,18 @@ from sqlalchemy.orm import Session
 from backend.database.connection import SessionLocal
 from backend.models.project import Project
 from backend.models.client import Client
+from backend.models.pricing import Product
 from backend.schemas.project import ProjectCreate
 
 
-router = APIRouter(prefix="/projects", tags=["Projects"])
+router = APIRouter(
+    prefix="/projects",
+    tags=["Projects"],
+)
 
 
 def get_db():
     db = SessionLocal()
-
     try:
         yield db
     finally:
@@ -24,6 +27,7 @@ def create_project(
     project: ProjectCreate,
     db: Session = Depends(get_db),
 ):
+    # Check that the client exists
     client = (
         db.query(Client)
         .filter(Client.id == project.client_id)
@@ -36,8 +40,25 @@ def create_project(
             detail="Client not found",
         )
 
+    # Check that the selected product exists
+    product = (
+        db.query(Product)
+        .filter(
+            Product.id == project.product_id,
+            Product.active == True,
+        )
+        .first()
+    )
+
+    if not product:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+
     new_project = Project(
         client_id=project.client_id,
+        product_id=project.product_id,
         name=project.name,
         website=project.website,
         plan=project.plan,
@@ -58,7 +79,11 @@ def create_project(
 def get_projects(
     db: Session = Depends(get_db),
 ):
-    projects = db.query(Project).all()
+    projects = (
+        db.query(Project)
+        .order_by(Project.created_at.desc())
+        .all()
+    )
 
     return projects
 
@@ -101,6 +126,7 @@ def update_project(
             detail="Project not found",
         )
 
+    # Check that the client exists
     client = (
         db.query(Client)
         .filter(Client.id == project.client_id)
@@ -113,7 +139,24 @@ def update_project(
             detail="Client not found",
         )
 
+    # Check that the selected product exists
+    product = (
+        db.query(Product)
+        .filter(
+            Product.id == project.product_id,
+            Product.active == True,
+        )
+        .first()
+    )
+
+    if not product:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+
     existing_project.client_id = project.client_id
+    existing_project.product_id = project.product_id
     existing_project.name = project.name
     existing_project.website = project.website
     existing_project.plan = project.plan
@@ -148,4 +191,6 @@ def delete_project(
     db.delete(project)
     db.commit()
 
-    return {"message": "Project deleted successfully"}
+    return {
+        "message": "Project deleted successfully"
+    }
