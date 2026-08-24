@@ -1,5 +1,7 @@
 import Script from "next/script";
 
+import Navbar from "@/components/layout/Navbar";
+
 import Hero from "@/components/sections/Hero/Hero";
 import Problem from "@/components/sections/Problem/Problem";
 import WhyOatle from "@/components/sections/WhyOatle/WhyOatle";
@@ -8,6 +10,7 @@ import Pricing from "@/components/sections/Pricing/Pricing";
 import Process from "@/components/sections/Process/Process";
 import FAQ from "@/components/sections/FAQ/FAQ";
 import CTA from "@/components/sections/CTA/CTA";
+import Footer from "@/components/sections/Footer/Footer";
 
 export default function Home() {
   const structuredData = {
@@ -31,7 +34,8 @@ export default function Home() {
         name: "Oatle Technologies",
         url: "https://oatle-technologies.co.za/",
         publisher: {
-          "@id": "https://oatle-technologies.co.za/#organization",
+          "@id":
+            "https://oatle-technologies.co.za/#organization",
         },
       },
     ],
@@ -47,14 +51,20 @@ export default function Home() {
         }}
       />
 
-      <Hero />
-      <Problem />
-      <WhyOatle />
-      <FeaturedClient />
-      <Process />
-      <Pricing />
-      <FAQ />
-      <CTA />
+      <Navbar />
+
+      <main>
+        <Hero />
+        <Problem />
+        <WhyOatle />
+        <FeaturedClient />
+        <Process />
+        <Pricing />
+        <FAQ />
+        <CTA />
+      </main>
+
+      <Footer />
     </>
   );
 }
