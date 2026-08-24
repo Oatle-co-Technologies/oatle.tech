@@ -1,10 +1,7 @@
-from uuid import UUID
-
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StaffCreate(BaseModel):
-    auth_user_id: UUID | None = None
     name: str
     email: str
     job_title: str | None = None
@@ -12,3 +9,9 @@ class StaffCreate(BaseModel):
     employment_type: str = "employee"
     is_temporary: bool = False
     active: bool = True
+
+
+class StaffResponse(StaffCreate):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)

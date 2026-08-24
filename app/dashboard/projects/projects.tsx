@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Client = {
   id: number;
@@ -318,9 +319,7 @@ export default function Projects() {
       const payload = {
         client_id: Number(form.client_id),
         product_id: Number(form.product_id),
-
         plan: selectedProduct.name,
-
         name: form.name,
         website: form.website || null,
         description: form.description || null,
@@ -569,6 +568,8 @@ export default function Projects() {
 
   return (
     <div>
+      <BackToDashboard />
+
       {/* Header controls */}
       <div
         style={{
@@ -619,7 +620,6 @@ export default function Projects() {
                 gap: "16px",
               }}
             >
-              {/* Client */}
               <select
                 name="client_id"
                 value={form.client_id}
@@ -642,7 +642,6 @@ export default function Projects() {
                 ))}
               </select>
 
-              {/* Product */}
               <select
                 name="product_id"
                 value={form.product_id}
@@ -666,7 +665,6 @@ export default function Projects() {
                 ))}
               </select>
 
-              {/* Project Name */}
               <input
                 name="name"
                 placeholder="Project Name"
@@ -675,7 +673,6 @@ export default function Projects() {
                 required
               />
 
-              {/* Website */}
               <input
                 name="website"
                 type="url"
@@ -684,7 +681,6 @@ export default function Projects() {
                 onChange={handleChange}
               />
 
-              {/* Status */}
               <select
                 name="status"
                 value={form.status}
@@ -701,7 +697,6 @@ export default function Projects() {
                 ))}
               </select>
 
-              {/* Target date */}
               <input
                 name="target_date"
                 type="date"
@@ -844,7 +839,6 @@ export default function Projects() {
                         "1px solid #e5e5e5",
                     }}
                   >
-                    {/* Project information */}
                     <div
                       style={{
                         display: "grid",
@@ -952,7 +946,6 @@ export default function Projects() {
                       </div>
                     </div>
 
-                    {/* Project Add-ons */}
                     <div
                       style={{
                         marginTop: "24px",
@@ -1009,7 +1002,6 @@ export default function Projects() {
                         </div>
                       </div>
 
-                      {/* Assigned add-ons */}
                       {assignedAddons.length >
                       0 ? (
                         <div
@@ -1120,7 +1112,6 @@ export default function Projects() {
                         </p>
                       )}
 
-                      {/* Add-on selector */}
                       {availableForProject.length >
                         0 && (
                         <div
@@ -1226,7 +1217,6 @@ export default function Projects() {
                           </p>
                         )}
 
-                      {/* Project total */}
                       <div
                         style={{
                           marginTop: "20px",

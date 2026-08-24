@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import emailjs from "@emailjs/browser";
+import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Client = {
   id: number;
@@ -603,12 +604,6 @@ export default function Invoices() {
 
       setError("");
 
-      /*
-       * ----------------------------------------
-       * Load project
-       * ----------------------------------------
-       */
-
       const projectResponse =
         await fetch(
           `http://127.0.0.1:8000/projects/${invoice.project_id}`
@@ -622,12 +617,6 @@ export default function Invoices() {
 
       const project: Project =
         await projectResponse.json();
-
-      /*
-       * ----------------------------------------
-       * Find product
-       * ----------------------------------------
-       */
 
       const product =
         products.find(
@@ -651,12 +640,6 @@ export default function Invoices() {
         );
       }
 
-      /*
-       * ----------------------------------------
-       * Load project add-ons
-       * ----------------------------------------
-       */
-
       const addonsResponse =
         await fetch(
           `http://127.0.0.1:8000/projects/${invoice.project_id}/addons`
@@ -670,12 +653,6 @@ export default function Invoices() {
 
       const addons: AddOn[] =
         await addonsResponse.json();
-
-      /*
-       * ----------------------------------------
-       * Calculate breakdown
-       * ----------------------------------------
-       */
 
       const productPrice =
         Number(
@@ -709,19 +686,8 @@ export default function Invoices() {
         subtotal *
         (discountPercent / 100);
 
-      /*
-       * invoice.amount is the amount
-       * calculated and stored by the
-       * backend.
-       */
       const amountDue =
         Number(invoice.amount);
-
-      /*
-       * ----------------------------------------
-       * Format add-ons for email
-       * ----------------------------------------
-       */
 
       const addonsText =
         addons.length > 0
@@ -734,12 +700,6 @@ export default function Invoices() {
               )
               .join("\n")
           : "No add-ons";
-
-      /*
-       * ----------------------------------------
-       * EmailJS
-       * ----------------------------------------
-       */
 
       const templateParams = {
         to_email:
@@ -797,12 +757,6 @@ export default function Invoices() {
         templateParams,
         EMAILJS_PUBLIC_KEY
       );
-
-      /*
-       * ----------------------------------------
-       * Mark invoice as sent
-       * ----------------------------------------
-       */
 
       const updatePayload = {
         client_id:
@@ -930,6 +884,8 @@ export default function Invoices() {
 
   return (
     <div>
+      <BackToDashboard />
+
       {/* Add Invoice */}
 
       <div

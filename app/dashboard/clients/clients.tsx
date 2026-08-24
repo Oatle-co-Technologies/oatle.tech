@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import BackToDashboard from "@/components/dashboard/BackToDashboard";
+
 type Client = {
   id: number;
   name: string;
@@ -30,10 +32,9 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [showForm, setShowForm] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-
+  const [editingClient, setEditingClient] =
+    useState<Client | null>(null);
   const [form, setForm] = useState<ClientForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -42,17 +43,23 @@ export default function ClientsPage() {
       setLoading(true);
       setError("");
 
-      const response = await fetch("http://127.0.0.1:8000/clients/");
+      const response = await fetch(
+        "http://127.0.0.1:8000/clients/"
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to load clients (${response.status})`);
+        throw new Error(
+          `Failed to load clients (${response.status})`
+        );
       }
 
       const data: Client[] = await response.json();
       setClients(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load clients"
+        err instanceof Error
+          ? err.message
+          : "Failed to load clients"
       );
     } finally {
       setLoading(false);
@@ -72,14 +79,12 @@ export default function ClientsPage() {
 
   function openEditForm(client: Client) {
     setEditingClient(client);
-
     setForm({
       name: client.name,
       email: client.email,
       company: client.company,
       phone: client.phone,
     });
-
     setShowForm(true);
     setError("");
   }
@@ -126,7 +131,9 @@ export default function ClientsPage() {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to ${editingClient ? "update" : "create"} client (${response.status})`
+          `Failed to ${
+            editingClient ? "update" : "create"
+          } client (${response.status})`
         );
       }
 
@@ -180,6 +187,8 @@ export default function ClientsPage() {
 
   return (
     <div>
+      <BackToDashboard />
+
       {/* Header controls */}
       <div
         style={{
@@ -206,7 +215,9 @@ export default function ClientsPage() {
           <div className="dashboard-panel-header">
             <div>
               <p className="dashboard-panel-label">
-                {editingClient ? "EDIT CLIENT" : "NEW CLIENT"}
+                {editingClient
+                  ? "EDIT CLIENT"
+                  : "NEW CLIENT"}
               </p>
 
               <h3>
@@ -335,13 +346,9 @@ export default function ClientsPage() {
               >
                 <div>
                   <h2>{client.name}</h2>
-
                   <p>{client.company}</p>
-
                   <p>{client.email}</p>
-
                   <p>{client.phone}</p>
-
                   <p>{client.status}</p>
                 </div>
 

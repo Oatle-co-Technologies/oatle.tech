@@ -4,9 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
-from backend.models.project import Project
+from backend.services.email_service import (
+    send_task_assignment_email,
+)
 from backend.models.product_service import ProductService
 from backend.models.pricing import Service
+from backend.models.staff import Staff
 from backend.models.task import Task
 from backend.schemas.task import TaskCreate, TaskResponse
 
@@ -19,10 +22,37 @@ router = APIRouter(
 
 def get_db():
     db = SessionLocal()
+
     try:
         yield db
     finally:
         db.close()
+
+
+def validate_assignee(
+    assigned_to: int | None,
+    db: Session,
+):
+    if assigned_to is None:
+        return
+
+    staff_member = (
+        db.query(Staff)
+        .filter(Staff.id == assigned_to)
+        .first()
+    )
+
+    if not staff_member:
+        raise HTTPException(
+            status_code=404,
+            detail="Assigned staff member not found",
+        )
+
+    if not staff_member.active:
+        raise HTTPException(
+            status_code=400,
+            detail="Assigned staff member is inactive",
+        )
 
 
 @router.post(
@@ -33,13 +63,25 @@ def create_task(
     task: TaskCreate,
     db: Session = Depends(get_db),
 ):
+    # ---------------------------------------
+    # Validate assigned staff member
+    # ---------------------------------------
+
+    validate_assignee(task.assigned_to, db)
+
+    # ---------------------------------------
+    # Validate task type
+    # ---------------------------------------
 
     if task.task_type == "product":
 
         if task.product_service_id is None:
             raise HTTPException(
                 status_code=400,
-                detail="A product service is required for a product task",
+                detail=(
+                    "A product service is required "
+                    "for a product task"
+                ),
             )
 
         product_service = (
@@ -61,7 +103,10 @@ def create_task(
         if task.service_id is None:
             raise HTTPException(
                 status_code=400,
-                detail="A service is required for a service task",
+                detail=(
+                    "A service is required "
+                    "for a service task"
+                ),
             )
 
         service = (
@@ -79,11 +124,16 @@ def create_task(
             )
 
     else:
-
         raise HTTPException(
             status_code=400,
-            detail="Task type must be 'product' or 'service'",
+            detail=(
+                "Task type must be 'product' or 'service'"
+            ),
         )
+
+    # ---------------------------------------
+    # Create task
+    # ---------------------------------------
 
     new_task = Task(
         project_id=task.project_id,
@@ -104,6 +154,29 @@ def create_task(
     db.commit()
     db.refresh(new_task)
 
+    # ---------------------------------------
+    # Send assignment email
+    # ---------------------------------------
+
+    if new_task.assigned_to is not None:
+
+        staff_member = (
+            db.query(Staff)
+            .filter(Staff.id == new_task.assigned_to)
+            .first()
+        )
+
+        if staff_member:
+
+            send_task_assignment_email(
+                recipient_email=staff_member.email,
+                recipient_name=staff_member.name,
+                task_name=new_task.name,
+                task_description=new_task.description,
+                due_date=new_task.due_date,
+                priority=new_task.priority,
+            )
+
     return new_task
 
 
@@ -114,7 +187,6 @@ def create_task(
 def get_tasks(
     db: Session = Depends(get_db),
 ):
-
     return (
         db.query(Task)
         .order_by(Task.created_at.desc())
@@ -130,7 +202,6 @@ def get_task(
     task_id: int,
     db: Session = Depends(get_db),
 ):
-
     task = (
         db.query(Task)
         .filter(Task.id == task_id)
@@ -155,7 +226,6 @@ def update_task(
     task: TaskCreate,
     db: Session = Depends(get_db),
 ):
-
     existing_task = (
         db.query(Task)
         .filter(Task.id == task_id)
@@ -168,12 +238,21 @@ def update_task(
             detail="Task not found",
         )
 
+    validate_assignee(task.assigned_to, db)
+
+    # ---------------------------------------
+    # Validate task type
+    # ---------------------------------------
+
     if task.task_type == "product":
 
         if task.product_service_id is None:
             raise HTTPException(
                 status_code=400,
-                detail="A product service is required for a product task",
+                detail=(
+                    "A product service is required "
+                    "for a product task"
+                ),
             )
 
         product_service = (
@@ -195,7 +274,10 @@ def update_task(
         if task.service_id is None:
             raise HTTPException(
                 status_code=400,
-                detail="A service is required for a service task",
+                detail=(
+                    "A service is required "
+                    "for a service task"
+                ),
             )
 
         service = (
@@ -213,11 +295,16 @@ def update_task(
             )
 
     else:
-
         raise HTTPException(
             status_code=400,
-            detail="Task type must be 'product' or 'service'",
+            detail=(
+                "Task type must be 'product' or 'service'"
+            ),
         )
+
+    # ---------------------------------------
+    # Update task
+    # ---------------------------------------
 
     existing_task.project_id = task.project_id
     existing_task.product_service_id = task.product_service_id
@@ -233,8 +320,10 @@ def update_task(
     existing_task.notes = task.notes
 
     if task.status == "completed":
+
         if existing_task.completed_at is None:
             existing_task.completed_at = datetime.utcnow()
+
     else:
         existing_task.completed_at = None
 
@@ -249,7 +338,6 @@ def delete_task(
     task_id: int,
     db: Session = Depends(get_db),
 ):
-
     task = (
         db.query(Task)
         .filter(Task.id == task_id)

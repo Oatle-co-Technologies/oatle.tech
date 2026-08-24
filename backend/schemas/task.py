@@ -2,6 +2,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from backend.schemas.staff import StaffResponse
+
 
 class TaskCreate(BaseModel):
     project_id: int | None = None
@@ -31,6 +33,8 @@ class TaskCreate(BaseModel):
 
 class TaskResponse(TaskCreate):
     id: int
+
+    assigned_staff: StaffResponse | None = None
 
     created_at: datetime | None = None
 

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/sections/Footer/Footer";
+
+import { Providers } from "./providers";
+
+import "@neondatabase/auth-ui/css";
 import "./globals.css";
 
 const inter = Inter({
@@ -58,14 +60,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  <html lang="en" data-scroll-behavior="smooth">
-    <body className={`${inter.variable} ${playfair.variable}`}>
-      <Navbar />
-
-      <main>{children}</main>
-
-      <Footer />
-    </body>
-  </html>
-);
+    <html lang="en" data-scroll-behavior="smooth">
+      <body className={`${inter.variable} ${playfair.variable}`}>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
 }

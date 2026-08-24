@@ -1,17 +1,53 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Project = {
   id: number;
   client_id: number;
+  product_id: number | null;
   name: string;
   plan: string;
 };
 
+type Product = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
+type ProductService = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
+type ProductServiceAssociation = {
+  product_id: number;
+  product_service_id: number;
+};
+
+type Service = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
+type StaffMember = {
+  id: number;
+  name: string;
+  job_title: string | null;
+  active: boolean;
+};
+
 type Task = {
   id: number;
-  project_id: number;
+  project_id: number | null;
+  product_service_id: number | null;
+  service_id: number | null;
+  assigned_to: number | null;
+  task_type: string;
   name: string;
   description: string | null;
   category: string | null;
@@ -25,6 +61,11 @@ type Task = {
 
 type TaskForm = {
   project_id: string;
+  product_id: string;
+  product_service_id: string;
+  service_id: string;
+  assigned_to: string;
+  task_type: "product" | "service";
   name: string;
   description: string;
   category: string;
@@ -36,6 +77,11 @@ type TaskForm = {
 
 const emptyForm: TaskForm = {
   project_id: "",
+  product_id: "",
+  product_service_id: "",
+  service_id: "",
+  assigned_to: "",
+  task_type: "product",
   name: "",
   description: "",
   category: "",
@@ -68,15 +114,33 @@ const categories = [
   "other",
 ];
 
+const API_URL = "http://127.0.0.1:8000";
+
+const DEVELOPER_PRODUCT_SERVICE_MIN_ID = 2;
+const DEVELOPER_PRODUCT_SERVICE_MAX_ID = 18;
+
+const COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID = 19;
+const COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID = 28;
+
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productServices, setProductServices] = useState<
+    ProductService[]
+  >([]);
+  const [availableProductServices, setAvailableProductServices] =
+    useState<ProductService[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState("");
 
   const [form, setForm] = useState<TaskForm>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -86,9 +150,7 @@ export default function Tasks() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        "http://127.0.0.1:8000/tasks/"
-      );
+      const response = await fetch(`${API_URL}/tasks/`);
 
       if (!response.ok) {
         throw new Error(
@@ -111,9 +173,7 @@ export default function Tasks() {
 
   async function loadProjects() {
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/projects/"
-      );
+      const response = await fetch(`${API_URL}/projects/`);
 
       if (!response.ok) {
         throw new Error(
@@ -132,23 +192,196 @@ export default function Tasks() {
     }
   }
 
+  async function loadTaskOptions() {
+    try {
+      const [
+        productsResponse,
+        servicesResponse,
+        staffResponse,
+        productServicesResponse,
+      ] = await Promise.all([
+        fetch(`${API_URL}/pricing/products`),
+        fetch(`${API_URL}/pricing/services`),
+        fetch(`${API_URL}/staff/`),
+        fetch(`${API_URL}/product-services/`),
+      ]);
+
+      if (
+        !productsResponse.ok ||
+        !servicesResponse.ok ||
+        !staffResponse.ok ||
+        !productServicesResponse.ok
+      ) {
+        throw new Error("Failed to load task options");
+      }
+
+      const [
+        productsData,
+        servicesData,
+        staffData,
+        productServicesData,
+      ]: [
+        Product[],
+        Service[],
+        StaffMember[],
+        ProductService[],
+      ] = await Promise.all([
+        productsResponse.json(),
+        servicesResponse.json(),
+        staffResponse.json(),
+        productServicesResponse.json(),
+      ]);
+
+      setProducts(productsData);
+      setServices(servicesData);
+      setStaff(staffData.filter((item) => item.active));
+      setProductServices(
+        productServicesData.filter((item) => item.active)
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load task options"
+      );
+    }
+  }
+
+  async function loadProductServices(
+    productId: string,
+    assigneeId: string = form.assigned_to
+  ) {
+    if (!productId) {
+      setAvailableProductServices([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/product-product-services/product/${productId}`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to load product services (${response.status})`
+        );
+      }
+
+      const associations: ProductServiceAssociation[] =
+        await response.json();
+
+      const associatedProductServiceIds = new Set(
+        associations.map(
+          (association) =>
+            association.product_service_id
+        )
+      );
+
+      let filteredServices = productServices.filter(
+        (productService) =>
+          associatedProductServiceIds.has(
+            productService.id
+          ) && productService.active
+      );
+
+      if (assigneeId) {
+        const selectedStaff = staff.find(
+          (member) =>
+            member.id === Number(assigneeId)
+        );
+
+        const isCommunicationsSpecialist =
+          selectedStaff?.job_title
+            ?.trim()
+            .toLowerCase() ===
+          "communications specialist";
+
+        if (isCommunicationsSpecialist) {
+          filteredServices =
+            filteredServices.filter(
+              (service) =>
+                service.id >=
+                  COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID &&
+                service.id <=
+                  COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID
+            );
+        } else {
+          filteredServices =
+            filteredServices.filter(
+              (service) =>
+                service.id >=
+                  DEVELOPER_PRODUCT_SERVICE_MIN_ID &&
+                service.id <=
+                  DEVELOPER_PRODUCT_SERVICE_MAX_ID
+            );
+        }
+      }
+
+      setAvailableProductServices(
+        filteredServices
+      );
+    } catch (err) {
+      setAvailableProductServices([]);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load product services"
+      );
+    }
+  }
+
   useEffect(() => {
-    loadTasks();
-    loadProjects();
+    void Promise.resolve().then(() => {
+      void loadTasks();
+      void loadProjects();
+      void loadTaskOptions();
+    });
   }, []);
 
   function openAddForm() {
     setEditingTask(null);
     setForm(emptyForm);
+    setAvailableProductServices([]);
     setShowForm(true);
     setError("");
+    setSuccess("");
+    void loadTaskOptions();
   }
 
   function openEditForm(task: Task) {
     setEditingTask(task);
+    setError("");
+    setSuccess("");
+
+    const selectedProductId =
+      task.task_type === "product"
+        ? projects.find(
+            (project) =>
+              project.id === task.project_id
+          )?.product_id
+        : null;
 
     setForm({
-      project_id: String(task.project_id),
+      project_id: task.project_id
+        ? String(task.project_id)
+        : "",
+      product_id: selectedProductId
+        ? String(selectedProductId)
+        : "",
+      product_service_id: task.product_service_id
+        ? String(task.product_service_id)
+        : "",
+      service_id: task.service_id
+        ? String(task.service_id)
+        : "",
+      assigned_to: task.assigned_to
+        ? String(task.assigned_to)
+        : "",
+      task_type:
+        task.task_type === "service"
+          ? "service"
+          : "product",
       name: task.name,
       description: task.description ?? "",
       category: task.category ?? "",
@@ -159,13 +392,25 @@ export default function Tasks() {
     });
 
     setShowForm(true);
-    setError("");
+    void loadTaskOptions();
+
+    if (selectedProductId) {
+      void loadProductServices(
+        String(selectedProductId),
+        task.assigned_to
+          ? String(task.assigned_to)
+          : ""
+      );
+    } else {
+      setAvailableProductServices([]);
+    }
   }
 
   function closeForm() {
     setShowForm(false);
     setEditingTask(null);
     setForm(emptyForm);
+    setAvailableProductServices([]);
   }
 
   function handleChange(
@@ -179,7 +424,42 @@ export default function Tasks() {
     setForm((current) => ({
       ...current,
       [name]: value,
+      ...(name === "task_type"
+        ? {
+            project_id: "",
+            product_id: "",
+            product_service_id: "",
+            service_id: "",
+          }
+        : name === "product_id"
+        ? {
+            project_id: "",
+            product_service_id: "",
+          }
+        : name === "assigned_to"
+        ? {
+            product_service_id: "",
+          }
+        : {}),
     }));
+
+    if (name === "product_id") {
+      void loadProductServices(
+        value,
+        form.assigned_to
+      );
+    }
+
+    if (name === "assigned_to") {
+      if (form.product_id) {
+        void loadProductServices(
+          form.product_id,
+          value
+        );
+      } else {
+        setAvailableProductServices([]);
+      }
+    }
   }
 
   async function handleSubmit(
@@ -190,23 +470,66 @@ export default function Tasks() {
     try {
       setSaving(true);
       setError("");
+      setSuccess("");
+
+      const productServiceName =
+        availableProductServices.find(
+          (item) =>
+            item.id ===
+            Number(form.product_service_id)
+        )?.name;
 
       const payload = {
-        project_id: Number(form.project_id),
-        name: form.name,
-        description: form.description || null,
-        category: form.category || null,
+        project_id:
+          form.task_type === "product"
+            ? Number(form.project_id)
+            : null,
+
+        product_service_id:
+          form.task_type === "product"
+            ? Number(form.product_service_id)
+            : null,
+
+        service_id:
+          form.task_type === "service"
+            ? Number(form.service_id)
+            : null,
+
+        assigned_to: form.assigned_to
+          ? Number(form.assigned_to)
+          : null,
+
+        task_type: form.task_type,
+
+        name:
+          form.task_type === "product"
+            ? productServiceName ?? ""
+            : form.name,
+
+        description:
+          form.description || null,
+
+        category:
+          form.category || null,
+
         status: form.status,
+
         priority: form.priority,
-        due_date: form.due_date || null,
-        notes: form.notes || null,
+
+        due_date:
+          form.due_date || null,
+
+        notes:
+          form.notes || null,
       };
 
       const url = editingTask
-        ? `http://127.0.0.1:8000/tasks/${editingTask.id}`
-        : "http://127.0.0.1:8000/tasks/";
+        ? `${API_URL}/tasks/${editingTask.id}`
+        : `${API_URL}/tasks/`;
 
-      const method = editingTask ? "PUT" : "POST";
+      const method = editingTask
+        ? "PUT"
+        : "POST";
 
       const response = await fetch(url, {
         method,
@@ -219,13 +542,26 @@ export default function Tasks() {
       if (!response.ok) {
         throw new Error(
           `Failed to ${
-            editingTask ? "update" : "create"
+            editingTask
+              ? "update"
+              : "create"
           } task (${response.status})`
         );
       }
 
+      const wasEditing = Boolean(editingTask);
+      const wasAssigned = Boolean(form.assigned_to);
+
       closeForm();
       await loadTasks();
+
+      setSuccess(
+        wasEditing
+          ? "Task updated successfully."
+          : wasAssigned
+          ? "Task created successfully. The assignee has been notified by email."
+          : "Task created successfully."
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -248,9 +584,10 @@ export default function Tasks() {
 
     try {
       setError("");
+      setSuccess("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/tasks/${taskId}`,
+        `${API_URL}/tasks/${taskId}`,
         {
           method: "DELETE",
         }
@@ -263,6 +600,8 @@ export default function Tasks() {
       }
 
       await loadTasks();
+
+      setSuccess("Task deleted successfully.");
     } catch (err) {
       setError(
         err instanceof Error
@@ -272,7 +611,13 @@ export default function Tasks() {
     }
   }
 
-  function getProjectName(projectId: number) {
+  function getProjectName(
+    projectId: number | null
+  ) {
+    if (projectId === null) {
+      return "Not linked";
+    }
+
     const project = projects.find(
       (item) => item.id === projectId
     );
@@ -282,8 +627,87 @@ export default function Tasks() {
       : `Project #${projectId}`;
   }
 
+  function getProductServiceName(
+    productServiceId: number | null
+  ) {
+    if (productServiceId === null) {
+      return "Not set";
+    }
+
+    return (
+      productServices.find(
+        (item) =>
+          item.id === productServiceId
+      )?.name ??
+      `Product service #${productServiceId}`
+    );
+  }
+
+  function getServiceName(
+    serviceId: number | null
+  ) {
+    if (serviceId === null) {
+      return "Not set";
+    }
+
+    return (
+      services.find(
+        (item) => item.id === serviceId
+      )?.name ??
+      `Service #${serviceId}`
+    );
+  }
+
+  function getStaffName(
+    staffId: number | null
+  ) {
+    if (staffId === null) {
+      return "Unassigned";
+    }
+
+    return (
+      staff.find(
+        (item) => item.id === staffId
+      )?.name ??
+      `Staff #${staffId}`
+    );
+  }
+
+  function refreshTasks() {
+    void loadTasks();
+    void loadTaskOptions();
+
+    if (form.product_id) {
+      void loadProductServices(
+        form.product_id,
+        form.assigned_to
+      );
+    }
+  }
+
+  const visibleTasks = tasks.filter(
+    (task) => {
+      if (!assigneeFilter) {
+        return true;
+      }
+
+      if (
+        assigneeFilter === "unassigned"
+      ) {
+        return task.assigned_to === null;
+      }
+
+      return (
+        task.assigned_to ===
+        Number(assigneeFilter)
+      );
+    }
+  );
+
   return (
     <div>
+      <BackToDashboard />
+
       {/* Header controls */}
       <div
         style={{
@@ -301,16 +725,32 @@ export default function Tasks() {
         </button>
       </div>
 
+      {/* Success message */}
+      {success && (
+        <div
+          className="dashboard-panel"
+          style={{
+            marginBottom: "24px",
+          }}
+        >
+          <p>{success}</p>
+        </div>
+      )}
+
       {/* Add / Edit form */}
       {showForm && (
         <div
           className="dashboard-panel"
-          style={{ marginBottom: "24px" }}
+          style={{
+            marginBottom: "24px",
+          }}
         >
           <div className="dashboard-panel-header">
             <div>
               <p className="dashboard-panel-label">
-                {editingTask ? "EDIT TASK" : "NEW TASK"}
+                {editingTask
+                  ? "EDIT TASK"
+                  : "NEW TASK"}
               </p>
 
               <h3>
@@ -331,32 +771,178 @@ export default function Tasks() {
               }}
             >
               <select
-                name="project_id"
-                value={form.project_id}
+                name="task_type"
+                value={form.task_type}
                 onChange={handleChange}
                 required
               >
-                <option value="">
-                  Select Project
+                <option value="product">
+                  Product task
                 </option>
 
-                {projects.map((project) => (
-                  <option
-                    key={project.id}
-                    value={project.id}
-                  >
-                    {project.name}
-                  </option>
-                ))}
+                <option value="service">
+                  Service task
+                </option>
               </select>
 
-              <input
-                name="name"
-                placeholder="Task Name"
-                value={form.name}
-                onChange={handleChange}
-                required
-              />
+              {form.task_type ===
+              "product" ? (
+                <>
+                  <select
+                    name="product_id"
+                    value={form.product_id}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">
+                      Select Product
+                    </option>
+
+                    {products.map(
+                      (product) => (
+                        <option
+                          key={product.id}
+                          value={product.id}
+                        >
+                          {product.name}
+                        </option>
+                      )
+                    )}
+                  </select>
+
+                  <select
+                    name="project_id"
+                    value={form.project_id}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">
+                      Select Project
+                    </option>
+
+                    {projects.map(
+                      (project) => (
+                        <option
+                          key={project.id}
+                          value={project.id}
+                        >
+                          {project.name}
+                        </option>
+                      )
+                    )}
+                  </select>
+
+                  <select
+                    name="product_service_id"
+                    value={
+                      form.product_service_id
+                    }
+                    onChange={handleChange}
+                    required
+                    disabled={
+                      !form.product_id
+                    }
+                  >
+                    <option value="">
+                      {form.product_id
+                        ? "Select Product Service"
+                        : "Select a Product first"}
+                    </option>
+
+                    {availableProductServices.map(
+                      (productService) => (
+                        <option
+                          key={
+                            productService.id
+                          }
+                          value={
+                            productService.id
+                          }
+                        >
+                          {
+                            productService.name
+                          }
+                        </option>
+                      )
+                    )}
+                  </select>
+                </>
+              ) : (
+                <select
+                  name="service_id"
+                  value={form.service_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">
+                    Select Service
+                  </option>
+
+                  {services.map(
+                    (service) => (
+                      <option
+                        key={service.id}
+                        value={service.id}
+                      >
+                        {service.name}
+                      </option>
+                    )
+                  )}
+                </select>
+              )}
+
+              <label>
+                Assignee
+
+                <select
+                  name="assigned_to"
+                  value={form.assigned_to}
+                  onChange={handleChange}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                  }}
+                >
+                  <option value="">
+                    Unassigned
+                  </option>
+
+                  {staff.map(
+                    (member) => (
+                      <option
+                        key={member.id}
+                        value={member.id}
+                      >
+                        {member.name}
+                      </option>
+                    )
+                  )}
+                </select>
+
+                {form.assigned_to && (
+                  <small
+                    style={{
+                      display: "block",
+                      marginTop: "8px",
+                      opacity: 0.7,
+                    }}
+                  >
+                    📧 Email notification will
+                    be sent automatically.
+                  </small>
+                )}
+              </label>
+
+              {form.task_type ===
+                "service" && (
+                <input
+                  name="name"
+                  placeholder="Task Name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                />
+              )}
 
               <select
                 name="category"
@@ -367,14 +953,16 @@ export default function Tasks() {
                   Select Category
                 </option>
 
-                {categories.map((category) => (
-                  <option
-                    key={category}
-                    value={category}
-                  >
-                    {category}
-                  </option>
-                ))}
+                {categories.map(
+                  (category) => (
+                    <option
+                      key={category}
+                      value={category}
+                    >
+                      {category}
+                    </option>
+                  )
+                )}
               </select>
 
               <select
@@ -383,14 +971,16 @@ export default function Tasks() {
                 onChange={handleChange}
                 required
               >
-                {statuses.map((status) => (
-                  <option
-                    key={status}
-                    value={status}
-                  >
-                    {status}
-                  </option>
-                ))}
+                {statuses.map(
+                  (status) => (
+                    <option
+                      key={status}
+                      value={status}
+                    >
+                      {status}
+                    </option>
+                  )
+                )}
               </select>
 
               <select
@@ -399,14 +989,16 @@ export default function Tasks() {
                 onChange={handleChange}
                 required
               >
-                {priorities.map((priority) => (
-                  <option
-                    key={priority}
-                    value={priority}
-                  >
-                    {priority}
-                  </option>
-                ))}
+                {priorities.map(
+                  (priority) => (
+                    <option
+                      key={priority}
+                      value={priority}
+                    >
+                      {priority}
+                    </option>
+                  )
+                )}
               </select>
 
               <input
@@ -489,110 +1081,209 @@ export default function Tasks() {
             <h3>All Tasks</h3>
           </div>
 
-          <button
-            type="button"
-            className="dashboard-link"
-            onClick={loadTasks}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
           >
-            Refresh
-          </button>
+            <select
+              aria-label="Filter tasks by assignee"
+              value={assigneeFilter}
+              onChange={(event) =>
+                setAssigneeFilter(
+                  event.target.value
+                )
+              }
+            >
+              <option value="">
+                All Staff
+              </option>
+
+              {staff.map(
+                (member) => (
+                  <option
+                    key={member.id}
+                    value={member.id}
+                  >
+                    {member.name}
+                  </option>
+                )
+              )}
+
+              <option value="unassigned">
+                Unassigned
+              </option>
+            </select>
+
+            <button
+              type="button"
+              className="dashboard-link"
+              onClick={refreshTasks}
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
-        {loading && <p>Loading tasks...</p>}
-
-        {!loading && tasks.length === 0 && (
-          <p>No tasks yet.</p>
+        {loading && (
+          <p>Loading tasks...</p>
         )}
 
-        {!loading && tasks.length > 0 && (
-          <div>
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: "24px",
-                  alignItems: "start",
-                  padding: "20px 0",
-                  borderBottom:
-                    "1px solid #e5e5e5",
-                }}
-              >
-                <div>
-                  <h2
+        {!loading &&
+          visibleTasks.length ===
+            0 && (
+            <p>No tasks yet.</p>
+          )}
+
+        {!loading &&
+          visibleTasks.length >
+            0 && (
+            <div>
+              {visibleTasks.map(
+                (task) => (
+                  <div
+                    key={task.id}
                     style={{
-                      margin: "0 0 10px",
+                      display: "grid",
+                      gridTemplateColumns:
+                        "1fr auto",
+                      gap: "24px",
+                      alignItems:
+                        "start",
+                      padding:
+                        "20px 0",
+                      borderBottom:
+                        "1px solid #e5e5e5",
                     }}
                   >
-                    {task.name}
-                  </h2>
+                    <div>
+                      <h2
+                        style={{
+                          margin:
+                            "0 0 10px",
+                        }}
+                      >
+                        {task.name}
+                      </h2>
 
-                  <p>
-                    Project:{" "}
-                    {getProjectName(task.project_id)}
-                  </p>
+                      <p>
+                        Project:{" "}
+                        {getProjectName(
+                          task.project_id
+                        )}
+                      </p>
 
-                  <p>
-                    Category:{" "}
-                    {task.category || "Not set"}
-                  </p>
+                      <p>
+                        Type:{" "}
+                        {task.task_type ===
+                        "product"
+                          ? "Product"
+                          : "Service"}
+                      </p>
 
-                  <p>Status: {task.status}</p>
+                      <p>
+                        {task.task_type ===
+                        "product"
+                          ? `Product service: ${getProductServiceName(
+                              task.product_service_id
+                            )}`
+                          : `Service: ${getServiceName(
+                              task.service_id
+                            )}`}
+                      </p>
 
-                  <p>Priority: {task.priority}</p>
+                      <p>
+                        Assigned to:{" "}
+                        {getStaffName(
+                          task.assigned_to
+                        )}
+                      </p>
 
-                  {task.description && (
-                    <p>{task.description}</p>
-                  )}
+                      <p>
+                        Category:{" "}
+                        {task.category ||
+                          "Not set"}
+                      </p>
 
-                  {task.due_date && (
-                    <p>
-                      Due date: {task.due_date}
-                    </p>
-                  )}
+                      <p>
+                        Status:{" "}
+                        {task.status}
+                      </p>
 
-                  {task.completed_at && (
-                    <p>
-                      Completed:{" "}
-                      {task.completed_at}
-                    </p>
-                  )}
+                      <p>
+                        Priority:{" "}
+                        {task.priority}
+                      </p>
 
-                  {task.notes && (
-                    <p>{task.notes}</p>
-                  )}
-                </div>
+                      {task.description && (
+                        <p>
+                          {
+                            task.description
+                          }
+                        </p>
+                      )}
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    paddingTop: "2px",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openEditForm(task)
-                    }
-                  >
-                    Edit
-                  </button>
+                      {task.due_date && (
+                        <p>
+                          Due date:{" "}
+                          {task.due_date}
+                        </p>
+                      )}
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleDelete(task.id)
-                    }
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                      {task.completed_at && (
+                        <p>
+                          Completed:{" "}
+                          {
+                            task.completed_at
+                          }
+                        </p>
+                      )}
+
+                      {task.notes && (
+                        <p>
+                          {task.notes}
+                        </p>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        display:
+                          "flex",
+                        gap: "10px",
+                        paddingTop:
+                          "2px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openEditForm(
+                            task
+                          )
+                        }
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(
+                            task.id
+                          )
+                        }
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
       </div>
     </div>
   );

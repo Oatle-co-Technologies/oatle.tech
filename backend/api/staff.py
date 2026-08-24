@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
 from backend.models.staff import Staff
-from backend.schemas.staff import StaffCreate
+from backend.schemas.staff import StaffCreate, StaffResponse
 
 
 router = APIRouter(
@@ -20,7 +20,7 @@ def get_db():
         db.close()
 
 
-@router.post("/")
+@router.post("/", response_model=StaffResponse)
 def create_staff(
     staff: StaffCreate,
     db: Session = Depends(get_db),
@@ -37,21 +37,7 @@ def create_staff(
             detail="A staff member with this email already exists",
         )
 
-    if staff.auth_user_id is not None:
-        existing_auth_user = (
-            db.query(Staff)
-            .filter(Staff.auth_user_id == staff.auth_user_id)
-            .first()
-        )
-
-        if existing_auth_user:
-            raise HTTPException(
-                status_code=400,
-                detail="This authentication user is already linked to a staff member",
-            )
-
     new_staff = Staff(
-        auth_user_id=staff.auth_user_id,
         name=staff.name,
         email=staff.email,
         job_title=staff.job_title,
@@ -68,7 +54,7 @@ def create_staff(
     return new_staff
 
 
-@router.get("/")
+@router.get("/", response_model=list[StaffResponse])
 def get_staff(
     db: Session = Depends(get_db),
 ):
@@ -79,7 +65,7 @@ def get_staff(
     )
 
 
-@router.get("/{staff_id}")
+@router.get("/{staff_id}", response_model=StaffResponse)
 def get_staff_member(
     staff_id: int,
     db: Session = Depends(get_db),
@@ -99,7 +85,7 @@ def get_staff_member(
     return staff
 
 
-@router.put("/{staff_id}")
+@router.put("/{staff_id}", response_model=StaffResponse)
 def update_staff(
     staff_id: int,
     staff_data: StaffCreate,
@@ -132,23 +118,6 @@ def update_staff(
             detail="A staff member with this email already exists",
         )
 
-    if staff_data.auth_user_id is not None:
-        existing_auth_user = (
-            db.query(Staff)
-            .filter(
-                Staff.auth_user_id == staff_data.auth_user_id,
-                Staff.id != staff_id,
-            )
-            .first()
-        )
-
-        if existing_auth_user:
-            raise HTTPException(
-                status_code=400,
-                detail="This authentication user is already linked to another staff member",
-            )
-
-    staff.auth_user_id = staff_data.auth_user_id
     staff.name = staff_data.name
     staff.email = staff_data.email
     staff.job_title = staff_data.job_title
