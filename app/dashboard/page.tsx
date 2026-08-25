@@ -8,9 +8,6 @@ import { authClient } from "@/lib/auth/client";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
-const ADMIN_EMAIL = "oatle.technologies@gmail.com";
-const COMMUNICATIONS_EMAIL = "Kathlegothangwana@gmail.com";
-
 const greetingMessages = [
   "I hope you're having a great day. Let's get to work.",
   "Good to see you. Let's make some progress today.",
@@ -139,6 +136,9 @@ export default function DashboardPage() {
 
   /*
    * Load dashboard data from FastAPI.
+   *
+   * IMPORTANT:
+   * Keep this API configuration unchanged.
    */
   async function loadDashboard() {
     try {
@@ -178,17 +178,16 @@ export default function DashboardPage() {
   }, []);
 
   /*
-   * Current role checks.
+   * FACTORY RESET FOR UI ACCESS
    *
-   * These are based on the authenticated email
-   * for now. We can move this into the backend
-   * authorization system later.
+   * For now, every authenticated user can see
+   * the complete dashboard.
+   *
+   * We will move authorization into the backend
+   * after the dashboard data is working correctly.
    */
-  const isCommunications =
-    userEmail === COMMUNICATIONS_EMAIL;
-
-  const isAdmin =
-    userEmail === ADMIN_EMAIL;
+  const isCommunications = true;
+  const isAdmin = true;
 
   /*
    * Save the user's chosen display name.
@@ -240,73 +239,57 @@ export default function DashboardPage() {
             Overview
           </Link>
 
-          {/* Admin only */}
-          {isAdmin && (
-            <Link
-              href="/dashboard/clients"
-              className="dashboard-nav-item"
-            >
-              Clients
-            </Link>
-          )}
+          <Link
+            href="/dashboard/clients"
+            className="dashboard-nav-item"
+          >
+            Clients
+          </Link>
 
-          {/* Admin + Communications */}
-          {(isAdmin || isCommunications) && (
-            <>
-              <Link
-                href="/dashboard/leads"
-                className="dashboard-nav-item"
-              >
-                Leads
-              </Link>
+          <Link
+            href="/dashboard/leads"
+            className="dashboard-nav-item"
+          >
+            Leads
+          </Link>
 
-              <Link
-                href="/dashboard/projects"
-                className="dashboard-nav-item"
-              >
-                Projects
-              </Link>
+          <Link
+            href="/dashboard/projects"
+            className="dashboard-nav-item"
+          >
+            Projects
+          </Link>
 
-              <Link
-                href="/dashboard/tasks"
-                className="dashboard-nav-item"
-              >
-                Tasks
-              </Link>
-            </>
-          )}
+          <Link
+            href="/dashboard/tasks"
+            className="dashboard-nav-item"
+          >
+            Tasks
+          </Link>
 
-          {/* Admin only */}
-          {isAdmin && (
-            <>
-              <Link
-                href="/dashboard/staff"
-                className="dashboard-nav-item"
-              >
-                Staff
-              </Link>
+          <Link
+            href="/dashboard/staff"
+            className="dashboard-nav-item"
+          >
+            Staff
+          </Link>
 
-              <Link
-                href="/dashboard/invoices"
-                className="dashboard-nav-item"
-              >
-                Invoices
-              </Link>
-            </>
-          )}
+          <Link
+            href="/dashboard/invoices"
+            className="dashboard-nav-item"
+          >
+            Invoices
+          </Link>
         </nav>
 
-        {/* Admin only */}
-        {isAdmin && (
-          <div className="dashboard-sidebar-bottom">
-            <Link
-              href="/dashboard/settings"
-              className="dashboard-nav-item"
-            >
-              Settings
-            </Link>
-          </div>
-        )}
+        <div className="dashboard-sidebar-bottom">
+          <Link
+            href="/dashboard/settings"
+            className="dashboard-nav-item"
+          >
+            Settings
+          </Link>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -437,22 +420,18 @@ export default function DashboardPage() {
           <>
             {/* Stats */}
             <section className="dashboard-stats">
+              <div className="dashboard-card">
+                <p>Revenue</p>
 
-              {/* Admin only: Revenue */}
-              {isAdmin && (
-                <div className="dashboard-card">
-                  <p>Revenue</p>
+                <h2>
+                  R
+                  {Number(
+                    dashboard.revenue
+                  ).toLocaleString("en-ZA")}
+                </h2>
 
-                  <h2>
-                    R
-                    {Number(
-                      dashboard.revenue
-                    ).toLocaleString("en-ZA")}
-                  </h2>
-
-                  <span>This month</span>
-                </div>
-              )}
+                <span>This month</span>
+              </div>
 
               <div className="dashboard-card">
                 <p>Active Clients</p>
@@ -501,15 +480,12 @@ export default function DashboardPage() {
                     <h3>Projects</h3>
                   </div>
 
-                  {(isAdmin ||
-                    isCommunications) && (
-                    <Link
-                      href="/dashboard/projects"
-                      className="dashboard-link"
-                    >
-                      View all
-                    </Link>
-                  )}
+                  <Link
+                    href="/dashboard/projects"
+                    className="dashboard-link"
+                  >
+                    View all
+                  </Link>
                 </div>
 
                 {dashboard.projects.length ===
@@ -594,15 +570,12 @@ export default function DashboardPage() {
                     </h3>
                   </div>
 
-                  {(isAdmin ||
-                    isCommunications) && (
-                    <Link
-                      href="/dashboard/leads"
-                      className="dashboard-link"
-                    >
-                      View all
-                    </Link>
-                  )}
+                  <Link
+                    href="/dashboard/leads"
+                    className="dashboard-link"
+                  >
+                    View all
+                  </Link>
                 </div>
 
                 <div className="lead-pipeline">
@@ -673,15 +646,12 @@ export default function DashboardPage() {
                     <h3>Tasks</h3>
                   </div>
 
-                  {(isAdmin ||
-                    isCommunications) && (
-                    <Link
-                      href="/dashboard/tasks"
-                      className="dashboard-link"
-                    >
-                      View all
-                    </Link>
-                  )}
+                  <Link
+                    href="/dashboard/tasks"
+                    className="dashboard-link"
+                  >
+                    View all
+                  </Link>
                 </div>
 
                 {dashboard
