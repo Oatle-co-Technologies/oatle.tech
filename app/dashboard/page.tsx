@@ -7,8 +7,16 @@ import { authClient } from "@/lib/auth/client";
 
 const API_URL = "http://127.0.0.1:8000";
 
-const ADMIN_EMAIL = "oatle.tchnologies@gmail.com";
-const COMMUNICATIONS_EMAIL = "katlegothangwana@gmail.com";
+const ADMIN_EMAIL = "oatle.technologies@gmail.com";
+const COMMUNICATIONS_EMAIL = "katlegothwana@gmail.com";
+
+const greetingMessages = [
+  "I hope you're having a great day. Let's get to work.",
+  "Good to see you. Let's make some progress today.",
+  "Welcome back. You've got this — let's get things moving.",
+  "Ready when you are. Let's make today count.",
+  "Good to have you back. Let's build something great today.",
+];
 
 type DashboardProject = {
   id: number;
@@ -55,26 +63,82 @@ export default function DashboardPage() {
     useState<DashboardData | null>(null);
 
   const [userEmail, setUserEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [displayNameInput, setDisplayNameInput] =
+    useState("");
+
+  const [showNameSetup, setShowNameSetup] =
+    useState(false);
+
+  const [savingName, setSavingName] =
+    useState(false);
+
+  const [greetingMessage, setGreetingMessage] =
+    useState(greetingMessages[0]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  /*
+   * Pick one encouraging message each time
+   * the dashboard is loaded.
+   */
+  useEffect(() => {
+    const randomIndex = Math.floor(
+      Math.random() * greetingMessages.length
+    );
+
+    setGreetingMessage(
+      greetingMessages[randomIndex]
+    );
+  }, []);
+
+  /*
+   * Load the authenticated user's email
+   * and their saved display name.
+   */
   useEffect(() => {
     async function loadUser() {
       try {
-        const result = await authClient.getSession();
+        const result =
+          await authClient.getSession();
 
-        setUserEmail(
-          result.data?.user?.email?.toLowerCase() ?? ""
-        );
+        const email =
+          result.data?.user?.email
+            ?.toLowerCase()
+            .trim() ?? "";
+
+        setUserEmail(email);
+
+        if (!email) {
+          return;
+        }
+
+        const savedName =
+          window.localStorage.getItem(
+            `oatle-display-name:${email}`
+          );
+
+        if (savedName) {
+          setDisplayName(savedName);
+          setShowNameSetup(false);
+        } else {
+          setShowNameSetup(true);
+        }
       } catch (err) {
-        console.error("Failed to load authenticated user:", err);
+        console.error(
+          "Failed to load authenticated user:",
+          err
+        );
       }
     }
 
     loadUser();
   }, []);
 
+  /*
+   * Load dashboard data from FastAPI.
+   */
   async function loadDashboard() {
     try {
       setLoading(true);
@@ -109,14 +173,55 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    loadDashboard();
+    void loadDashboard();
   }, []);
 
+  /*
+   * Current role checks.
+   *
+   * These are based on the authenticated email
+   * for now. We can move this into the backend
+   * authorization system later.
+   */
   const isCommunications =
     userEmail === COMMUNICATIONS_EMAIL;
 
   const isAdmin =
     userEmail === ADMIN_EMAIL;
+
+  /*
+   * Save the user's chosen display name.
+   *
+   * For now this is stored locally so we can
+   * test the UX without changing the backend.
+   */
+  function handleSaveDisplayName(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    const name =
+      displayNameInput.trim();
+
+    if (!name || !userEmail) {
+      return;
+    }
+
+    try {
+      setSavingName(true);
+
+      window.localStorage.setItem(
+        `oatle-display-name:${userEmail}`,
+        name
+      );
+
+      setDisplayName(name);
+      setShowNameSetup(false);
+      setDisplayNameInput("");
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   return (
     <div className="dashboard">
@@ -134,35 +239,43 @@ export default function DashboardPage() {
             Overview
           </Link>
 
-          <Link
-            href="/dashboard/clients"
-            className="dashboard-nav-item"
-          >
-            Clients
-          </Link>
+          {/* Admin only */}
+          {isAdmin && (
+            <Link
+              href="/dashboard/clients"
+              className="dashboard-nav-item"
+            >
+              Clients
+            </Link>
+          )}
 
-          <Link
-            href="/dashboard/leads"
-            className="dashboard-nav-item"
-          >
-            Leads
-          </Link>
+          {/* Admin + Communications */}
+          {(isAdmin || isCommunications) && (
+            <>
+              <Link
+                href="/dashboard/leads"
+                className="dashboard-nav-item"
+              >
+                Leads
+              </Link>
 
-          <Link
-            href="/dashboard/projects"
-            className="dashboard-nav-item"
-          >
-            Projects
-          </Link>
+              <Link
+                href="/dashboard/projects"
+                className="dashboard-nav-item"
+              >
+                Projects
+              </Link>
 
-          <Link
-            href="/dashboard/tasks"
-            className="dashboard-nav-item"
-          >
-            Tasks
-          </Link>
+              <Link
+                href="/dashboard/tasks"
+                className="dashboard-nav-item"
+              >
+                Tasks
+              </Link>
+            </>
+          )}
 
-          {/* Admin-only navigation */}
+          {/* Admin only */}
           {isAdmin && (
             <>
               <Link
@@ -182,7 +295,7 @@ export default function DashboardPage() {
           )}
         </nav>
 
-        {/* Admin-only settings */}
+        {/* Admin only */}
         {isAdmin && (
           <div className="dashboard-sidebar-bottom">
             <Link
@@ -203,32 +316,103 @@ export default function DashboardPage() {
               OATLE TECHNOLOGIES
             </p>
 
-            <h1>Dashboard</h1>
+            {displayName && (
+              <h1 className="dashboard-greeting">
+                Hello {displayName},
+              </h1>
+            )}
 
             <p className="dashboard-subtitle">
-              Here's what's happening with your business.
+              {greetingMessage}
             </p>
           </div>
-
-          <button
-            type="button"
-            className="dashboard-profile"
-          >
-            {isCommunications ? "KT" : "VM"}
-          </button>
         </header>
+
+        {/* First-time display name setup */}
+        {showNameSetup && (
+          <section
+            className="dashboard-panel"
+            style={{
+              marginBottom: "24px",
+              padding: "32px",
+            }}
+          >
+            <p className="dashboard-panel-label">
+              WELCOME TO OATLE
+            </p>
+
+            <h2
+              style={{
+                marginTop: "8px",
+                marginBottom: "8px",
+              }}
+            >
+              What would you like us to call you?
+            </h2>
+
+            <p
+              style={{
+                marginBottom: "24px",
+                color: "#777",
+              }}
+            >
+              Choose the name you'd like to use
+              inside your Oatle dashboard.
+            </p>
+
+            <form
+              onSubmit={handleSaveDisplayName}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  alignItems: "center",
+                  maxWidth: "600px",
+                }}
+              >
+                <input
+                  type="text"
+                  value={displayNameInput}
+                  onChange={(event) =>
+                    setDisplayNameInput(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Display name"
+                  autoFocus
+                  required
+                  style={{
+                    flex: 1,
+                  }}
+                />
+
+                <button
+                  type="submit"
+                  disabled={savingName}
+                >
+                  {savingName
+                    ? "Saving..."
+                    : "Continue"}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
 
         {/* Error */}
         {error && (
           <div
             className="dashboard-panel"
-            style={{ marginBottom: "24px" }}
+            style={{
+              marginBottom: "24px",
+            }}
           >
             <p>{error}</p>
 
             <button
               type="button"
-              onClick={loadDashboard}
+              onClick={() => void loadDashboard()}
             >
               Try Again
             </button>
@@ -239,7 +423,9 @@ export default function DashboardPage() {
         {loading && (
           <div
             className="dashboard-panel"
-            style={{ marginBottom: "24px" }}
+            style={{
+              marginBottom: "24px",
+            }}
           >
             <p>Loading dashboard...</p>
           </div>
@@ -250,18 +436,22 @@ export default function DashboardPage() {
           <>
             {/* Stats */}
             <section className="dashboard-stats">
-              <div className="dashboard-card">
-                <p>Revenue</p>
 
-                <h2>
-                  R
-                  {Number(
-                    dashboard.revenue
-                  ).toLocaleString("en-ZA")}
-                </h2>
+              {/* Admin only: Revenue */}
+              {isAdmin && (
+                <div className="dashboard-card">
+                  <p>Revenue</p>
 
-                <span>This month</span>
-              </div>
+                  <h2>
+                    R
+                    {Number(
+                      dashboard.revenue
+                    ).toLocaleString("en-ZA")}
+                  </h2>
+
+                  <span>This month</span>
+                </div>
+              )}
 
               <div className="dashboard-card">
                 <p>Active Clients</p>
@@ -270,7 +460,9 @@ export default function DashboardPage() {
                   {dashboard.active_clients}
                 </h2>
 
-                <span>Currently active</span>
+                <span>
+                  Currently active
+                </span>
               </div>
 
               <div className="dashboard-card">
@@ -280,7 +472,9 @@ export default function DashboardPage() {
                   {dashboard.open_leads}
                 </h2>
 
-                <span>Needs attention</span>
+                <span>
+                  Needs attention
+                </span>
               </div>
 
               <div className="dashboard-card">
@@ -306,19 +500,25 @@ export default function DashboardPage() {
                     <h3>Projects</h3>
                   </div>
 
-                  <Link
-                    href="/dashboard/projects"
-                    className="dashboard-link"
-                  >
-                    View all
-                  </Link>
+                  {(isAdmin ||
+                    isCommunications) && (
+                    <Link
+                      href="/dashboard/projects"
+                      className="dashboard-link"
+                    >
+                      View all
+                    </Link>
+                  )}
                 </div>
 
-                {dashboard.projects.length === 0 ? (
+                {dashboard.projects.length ===
+                0 ? (
                   <div className="dashboard-empty">
                     <span>01</span>
 
-                    <p>No projects yet.</p>
+                    <p>
+                      No projects yet.
+                    </p>
                   </div>
                 ) : (
                   <div>
@@ -388,15 +588,20 @@ export default function DashboardPage() {
                       SALES
                     </p>
 
-                    <h3>Lead Pipeline</h3>
+                    <h3>
+                      Lead Pipeline
+                    </h3>
                   </div>
 
-                  <Link
-                    href="/dashboard/leads"
-                    className="dashboard-link"
-                  >
-                    View all
-                  </Link>
+                  {(isAdmin ||
+                    isCommunications) && (
+                    <Link
+                      href="/dashboard/leads"
+                      className="dashboard-link"
+                    >
+                      View all
+                    </Link>
+                  )}
                 </div>
 
                 <div className="lead-pipeline">
@@ -404,12 +609,18 @@ export default function DashboardPage() {
                     <span>New</span>
 
                     <strong>
-                      {dashboard.lead_pipeline.new}
+                      {
+                        dashboard
+                          .lead_pipeline
+                          .new
+                      }
                     </strong>
                   </div>
 
                   <div>
-                    <span>Contacted</span>
+                    <span>
+                      Contacted
+                    </span>
 
                     <strong>
                       {
@@ -421,7 +632,9 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <span>Proposal</span>
+                    <span>
+                      Proposal
+                    </span>
 
                     <strong>
                       {
@@ -436,7 +649,11 @@ export default function DashboardPage() {
                     <span>Won</span>
 
                     <strong>
-                      {dashboard.lead_pipeline.won}
+                      {
+                        dashboard
+                          .lead_pipeline
+                          .won
+                      }
                     </strong>
                   </div>
                 </div>
@@ -455,16 +672,20 @@ export default function DashboardPage() {
                     <h3>Tasks</h3>
                   </div>
 
-                  <Link
-                    href="/dashboard/tasks"
-                    className="dashboard-link"
-                  >
-                    View all
-                  </Link>
+                  {(isAdmin ||
+                    isCommunications) && (
+                    <Link
+                      href="/dashboard/tasks"
+                      className="dashboard-link"
+                    >
+                      View all
+                    </Link>
+                  )}
                 </div>
 
-                {dashboard.tasks_due_today
-                  .length === 0 ? (
+                {dashboard
+                  .tasks_due_today.length ===
+                0 ? (
                   <div className="dashboard-empty">
                     <span>02</span>
 
@@ -543,8 +764,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {dashboard.recent_activity
-                  .length === 0 ? (
+                {dashboard
+                  .recent_activity.length ===
+                0 ? (
                   <div className="dashboard-empty">
                     <span>03</span>
 
