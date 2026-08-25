@@ -6,10 +6,10 @@ import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/client";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "/api";
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 const ADMIN_EMAIL = "oatle.technologies@gmail.com";
-const COMMUNICATIONS_EMAIL = "katlegothwana@gmail.com";
+const COMMUNICATIONS_EMAIL = "Kathlegothangwana@gmail.com";
 
 const greetingMessages = [
   "I hope you're having a great day. Let's get to work.",
