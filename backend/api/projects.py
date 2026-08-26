@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.database.connection import SessionLocal
+from backend.database.connection import get_db
 from backend.models.project import Project
 from backend.models.client import Client
 from backend.models.pricing import Product
@@ -14,15 +14,7 @@ router = APIRouter(
 )
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@router.post("/")
+@router.post("")
 def create_project(
     project: ProjectCreate,
     db: Session = Depends(get_db),
@@ -75,7 +67,7 @@ def create_project(
     return new_project
 
 
-@router.get("/")
+@router.get("")
 def get_projects(
     db: Session = Depends(get_db),
 ):
