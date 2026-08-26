@@ -31,6 +31,7 @@ def calculate_project_amount(
     selected product plus all active add-ons assigned
     to the project, then apply the invoice discount.
     """
+
     if discount_percent < 0 or discount_percent > 100:
         raise HTTPException(
             status_code=400,
@@ -91,7 +92,7 @@ def calculate_project_amount(
 
 
 @router.get(
-    "/",
+    "",
     response_model=list[InvoiceResponse],
 )
 def get_invoices(
@@ -105,7 +106,7 @@ def get_invoices(
 
 
 @router.post(
-    "/",
+    "",
     response_model=InvoiceResponse,
 )
 def create_invoice(

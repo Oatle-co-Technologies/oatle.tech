@@ -134,7 +134,7 @@ export default function Invoices() {
       setError("");
 
       const response = await fetch(
-        `${API_URL}/invoices/`
+        `${API_URL}/invoices`
       );
 
       if (!response.ok) {
@@ -159,7 +159,7 @@ export default function Invoices() {
   async function loadClients() {
     try {
       const response = await fetch(
-        `${API_URL}/clients/`
+        `${API_URL}/clients`
       );
 
       if (!response.ok) {
@@ -178,7 +178,7 @@ export default function Invoices() {
   async function loadProjects() {
     try {
       const response = await fetch(
-        `${API_URL}/projects/`
+        `${API_URL}/projects`
       );
 
       if (!response.ok) {
@@ -481,7 +481,7 @@ export default function Invoices() {
 
       const url = editingInvoice
         ? `${API_URL}/invoices/${editingInvoice.id}`
-        : `${API_URL}/invoices/`;
+        : `${API_URL}/invoices`;
 
       const method = editingInvoice
         ? "PUT"
