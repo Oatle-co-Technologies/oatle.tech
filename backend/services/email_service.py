@@ -388,59 +388,72 @@ def send_lead_follow_up_email(
     )
 
     html_content = f"""
-    <!DOCTYPE html>
-    <html>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{safe_subject}</title>
+</head>
 
-    <head>
-        <meta charset="UTF-8">
-        <title>{safe_subject}</title>
-    </head>
+<body style="
+    margin: 0;
+    padding: 0;
+    background-color: #f7f7f7;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #222222;
+">
 
-    <body style="
-        margin: 0;
-        padding: 0;
-        background-color: #f7f7f7;
-        font-family: Arial, Helvetica, sans-serif;
-        color: #222222;
+    <div style="
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        border: 1px solid #e5e5e5;
+        padding: 40px;
     ">
 
-        <div style="
-            max-width: 600px;
-            margin: 40px auto;
-            background: #ffffff;
-            border: 1px solid #e5e5e5;
-            padding: 40px;
+        <h1 style="
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 26px;
+            color: #222222;
         ">
+            Oatle Technologies
+        </h1>
 
-            <p style="
-                font-size: 16px;
-                line-height: 1.6;
-            ">
-                Hi {safe_name},
-            </p>
+        <p style="
+            font-size: 16px;
+            line-height: 1.6;
+        ">
+            Hi {safe_name},
+        </p>
 
-            <div style="
-                font-size: 16px;
-                line-height: 1.7;
-            ">
-                {html_message}
-            </div>
-
-            <p style="
-                margin-top: 35px;
-                font-size: 14px;
-                color: #777777;
-            ">
-                Kind regards,<br>
-                <strong>Oatle Technologies</strong><br>
-                Grow. Multiply. Succeed.
-            </p>
-
+        <div style="
+            margin: 30px 0;
+            padding: 24px;
+            background: #fafafa;
+            border-left: 4px solid #d4af37;
+            font-size: 16px;
+            line-height: 1.7;
+        ">
+            {html_message}
         </div>
 
-    </body>
-    </html>
-    """
+        <p style="
+            margin-top: 35px;
+            font-size: 14px;
+            color: #777777;
+            line-height: 1.6;
+        ">
+            Kind regards,<br>
+            <strong>Oatle Technologies</strong><br>
+            Grow. Multiply. Succeed.
+        </p>
+
+    </div>
+
+</body>
+</html>
+"""
 
     # --------------------------------------------------------
     # Brevo transactional email payload.
