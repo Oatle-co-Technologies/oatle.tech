@@ -47,7 +47,7 @@ export default function ClientsPage() {
       setError("");
 
       const response = await fetch(
-        `${API_URL}/clients/`
+        `${API_URL}/clients`
       );
 
       if (!response.ok) {
@@ -82,12 +82,14 @@ export default function ClientsPage() {
 
   function openEditForm(client: Client) {
     setEditingClient(client);
+
     setForm({
       name: client.name,
       email: client.email,
       company: client.company,
       phone: client.phone,
     });
+
     setShowForm(true);
     setError("");
   }
@@ -120,7 +122,7 @@ export default function ClientsPage() {
 
       const url = editingClient
         ? `${API_URL}/clients/${editingClient.id}`
-        : `${API_URL}/clients/`;
+        : `${API_URL}/clients`;
 
       const method = editingClient ? "PUT" : "POST";
 
