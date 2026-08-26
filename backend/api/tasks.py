@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.database.connection import SessionLocal
+from backend.database.connection import get_db
 from backend.services.email_service import (
     send_task_assignment_email,
 )
@@ -18,15 +18,6 @@ router = APIRouter(
     prefix="/tasks",
     tags=["Tasks"],
 )
-
-
-def get_db():
-    db = SessionLocal()
-
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def validate_assignee(
@@ -55,26 +46,11 @@ def validate_assignee(
         )
 
 
-@router.post(
-    "/",
-    response_model=TaskResponse,
-)
-def create_task(
+def validate_task_type(
     task: TaskCreate,
-    db: Session = Depends(get_db),
+    db: Session,
 ):
-    # ---------------------------------------
-    # Validate assigned staff member
-    # ---------------------------------------
-
-    validate_assignee(task.assigned_to, db)
-
-    # ---------------------------------------
-    # Validate task type
-    # ---------------------------------------
-
     if task.task_type == "product":
-
         if task.product_service_id is None:
             raise HTTPException(
                 status_code=400,
@@ -87,7 +63,8 @@ def create_task(
         product_service = (
             db.query(ProductService)
             .filter(
-                ProductService.id == task.product_service_id
+                ProductService.id
+                == task.product_service_id
             )
             .first()
         )
@@ -99,7 +76,6 @@ def create_task(
             )
 
     elif task.task_type == "service":
-
         if task.service_id is None:
             raise HTTPException(
                 status_code=400,
@@ -127,13 +103,29 @@ def create_task(
         raise HTTPException(
             status_code=400,
             detail=(
-                "Task type must be 'product' or 'service'"
+                "Task type must be 'product' "
+                "or 'service'"
             ),
         )
 
-    # ---------------------------------------
-    # Create task
-    # ---------------------------------------
+
+@router.post(
+    "",
+    response_model=TaskResponse,
+)
+def create_task(
+    task: TaskCreate,
+    db: Session = Depends(get_db),
+):
+    validate_assignee(
+        task.assigned_to,
+        db,
+    )
+
+    validate_task_type(
+        task,
+        db,
+    )
 
     new_task = Task(
         project_id=task.project_id,
@@ -154,25 +146,24 @@ def create_task(
     db.commit()
     db.refresh(new_task)
 
-    # ---------------------------------------
-    # Send assignment email
-    # ---------------------------------------
-
     if new_task.assigned_to is not None:
-
         staff_member = (
             db.query(Staff)
-            .filter(Staff.id == new_task.assigned_to)
+            .filter(
+                Staff.id
+                == new_task.assigned_to
+            )
             .first()
         )
 
         if staff_member:
-
             send_task_assignment_email(
                 recipient_email=staff_member.email,
                 recipient_name=staff_member.name,
                 task_name=new_task.name,
-                task_description=new_task.description,
+                task_description=(
+                    new_task.description
+                ),
                 due_date=new_task.due_date,
                 priority=new_task.priority,
             )
@@ -181,7 +172,7 @@ def create_task(
 
 
 @router.get(
-    "/",
+    "",
     response_model=list[TaskResponse],
 )
 def get_tasks(
@@ -238,92 +229,52 @@ def update_task(
             detail="Task not found",
         )
 
-    validate_assignee(task.assigned_to, db)
+    validate_assignee(
+        task.assigned_to,
+        db,
+    )
 
-    # ---------------------------------------
-    # Validate task type
-    # ---------------------------------------
+    validate_task_type(
+        task,
+        db,
+    )
 
-    if task.task_type == "product":
-
-        if task.product_service_id is None:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "A product service is required "
-                    "for a product task"
-                ),
-            )
-
-        product_service = (
-            db.query(ProductService)
-            .filter(
-                ProductService.id == task.product_service_id
-            )
-            .first()
-        )
-
-        if not product_service:
-            raise HTTPException(
-                status_code=404,
-                detail="Product service not found",
-            )
-
-    elif task.task_type == "service":
-
-        if task.service_id is None:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "A service is required "
-                    "for a service task"
-                ),
-            )
-
-        service = (
-            db.query(Service)
-            .filter(
-                Service.id == task.service_id
-            )
-            .first()
-        )
-
-        if not service:
-            raise HTTPException(
-                status_code=404,
-                detail="Service not found",
-            )
-
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Task type must be 'product' or 'service'"
-            ),
-        )
-
-    # ---------------------------------------
-    # Update task
-    # ---------------------------------------
-
-    existing_task.project_id = task.project_id
-    existing_task.product_service_id = task.product_service_id
-    existing_task.service_id = task.service_id
-    existing_task.assigned_to = task.assigned_to
-    existing_task.task_type = task.task_type
+    existing_task.project_id = (
+        task.project_id
+    )
+    existing_task.product_service_id = (
+        task.product_service_id
+    )
+    existing_task.service_id = (
+        task.service_id
+    )
+    existing_task.assigned_to = (
+        task.assigned_to
+    )
+    existing_task.task_type = (
+        task.task_type
+    )
     existing_task.name = task.name
-    existing_task.description = task.description
-    existing_task.category = task.category
+    existing_task.description = (
+        task.description
+    )
+    existing_task.category = (
+        task.category
+    )
     existing_task.status = task.status
-    existing_task.priority = task.priority
-    existing_task.due_date = task.due_date
+    existing_task.priority = (
+        task.priority
+    )
+    existing_task.due_date = (
+        task.due_date
+    )
     existing_task.notes = task.notes
 
     if task.status == "completed":
-
         if existing_task.completed_at is None:
-            existing_task.completed_at = datetime.utcnow()
-
+            existing_task.completed_at = (
+                datetime.utcnow()
+            )
     else:
         existing_task.completed_at = None
 

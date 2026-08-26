@@ -143,7 +143,9 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState("");
 
-  const [form, setForm] = useState<TaskForm>(emptyForm);
+  const [form, setForm] = useState<TaskForm>({
+    ...emptyForm,
+  });
   const [saving, setSaving] = useState(false);
 
   async function loadTasks() {
@@ -151,7 +153,7 @@ export default function Tasks() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/tasks/`);
+      const response = await fetch(`${API_URL}/tasks`);
 
       if (!response.ok) {
         throw new Error(
@@ -174,7 +176,7 @@ export default function Tasks() {
 
   async function loadProjects() {
     try {
-      const response = await fetch(`${API_URL}/projects/`);
+      const response = await fetch(`${API_URL}/projects`);
 
       if (!response.ok) {
         throw new Error(
@@ -203,8 +205,8 @@ export default function Tasks() {
       ] = await Promise.all([
         fetch(`${API_URL}/pricing/products`),
         fetch(`${API_URL}/pricing/services`),
-        fetch(`${API_URL}/staff/`),
-        fetch(`${API_URL}/product-services/`),
+        fetch(`${API_URL}/staff`),
+        fetch(`${API_URL}/product-services`),
       ]);
 
       if (
@@ -342,7 +344,7 @@ export default function Tasks() {
 
   function openAddForm() {
     setEditingTask(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
     setAvailableProductServices([]);
     setShowForm(true);
     setError("");
@@ -410,7 +412,7 @@ export default function Tasks() {
   function closeForm() {
     setShowForm(false);
     setEditingTask(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
     setAvailableProductServices([]);
   }
 
@@ -526,7 +528,7 @@ export default function Tasks() {
 
       const url = editingTask
         ? `${API_URL}/tasks/${editingTask.id}`
-        : `${API_URL}/tasks/`;
+        : `${API_URL}/tasks`;
 
       const method = editingTask
         ? "PUT"
@@ -709,7 +711,6 @@ export default function Tasks() {
     <div>
       <BackToDashboard />
 
-      {/* Header controls */}
       <div
         style={{
           display: "flex",
@@ -726,7 +727,6 @@ export default function Tasks() {
         </button>
       </div>
 
-      {/* Success message */}
       {success && (
         <div
           className="dashboard-panel"
@@ -738,7 +738,6 @@ export default function Tasks() {
         </div>
       )}
 
-      {/* Add / Edit form */}
       {showForm && (
         <div
           className="dashboard-panel"
@@ -1064,14 +1063,12 @@ export default function Tasks() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="dashboard-panel">
           <p>{error}</p>
         </div>
       )}
 
-      {/* Task list */}
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <div>
