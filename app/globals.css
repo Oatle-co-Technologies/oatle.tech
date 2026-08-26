@@ -2175,6 +2175,11 @@ MOBILE
   color: #171717;
 }
 
+/* Hidden by default on desktop */
+.dashboard-mobile-header {
+  display: none;
+}
+
 .dashboard-sidebar {
   width: 240px;
   min-height: 100vh;
@@ -2374,6 +2379,10 @@ MOBILE
   font-size: 24px;
 }
 
+/* ---------------------------------------
+   Tablet
+   --------------------------------------- */
+
 @media (max-width: 1000px) {
   .dashboard-sidebar {
     width: 200px;
@@ -2392,15 +2401,17 @@ MOBILE
   }
 }
 
+/* ---------------------------------------
+   Mobile
+   --------------------------------------- */
+
 @media (max-width: 700px) {
   .dashboard {
     display: block;
     min-height: 100vh;
   }
 
-  /* -------------------------
-     Mobile Header
-     ------------------------- */
+  /* Mobile Header */
 
   .dashboard-mobile-header {
     display: flex;
@@ -2416,6 +2427,7 @@ MOBILE
 
   .dashboard-mobile-header .dashboard-logo {
     color: #fff;
+    padding: 0;
   }
 
   .dashboard-mobile-menu-button {
@@ -2428,9 +2440,7 @@ MOBILE
     font: inherit;
   }
 
-  /* -------------------------
-     Mobile Sidebar / Menu
-     ------------------------- */
+  /* Mobile Sidebar / Menu */
 
   .dashboard-sidebar {
     position: static;
@@ -2470,9 +2480,7 @@ MOBILE
     margin-top: 20px;
   }
 
-  /* -------------------------
-     Main Content
-     ------------------------- */
+  /* Main Content */
 
   .dashboard-main {
     width: 100%;
@@ -2480,8 +2488,28 @@ MOBILE
     box-sizing: border-box;
     padding: 24px 20px;
   }
-}
 
-.dashboard-mobile-header {
-  display: none;
+  .dashboard-header {
+    margin-bottom: 24px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 32px;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-panel {
+    padding: 20px;
+  }
+
+  .lead-pipeline {
+    grid-template-columns: 1fr;
+  }
 }
