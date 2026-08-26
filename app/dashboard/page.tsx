@@ -56,6 +56,37 @@ type DashboardData = {
   recent_activity: RecentActivity[];
 };
 
+const navigationItems = [
+  {
+    href: "/dashboard",
+    label: "Overview",
+  },
+  {
+    href: "/dashboard/clients",
+    label: "Clients",
+  },
+  {
+    href: "/dashboard/leads",
+    label: "Leads",
+  },
+  {
+    href: "/dashboard/projects",
+    label: "Projects",
+  },
+  {
+    href: "/dashboard/tasks",
+    label: "Tasks",
+  },
+  {
+    href: "/dashboard/staff",
+    label: "Staff",
+  },
+  {
+    href: "/dashboard/invoices",
+    label: "Invoices",
+  },
+];
+
 export default function DashboardPage() {
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
@@ -77,10 +108,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  /*
-   * Pick one encouraging message each time
-   * the dashboard is loaded.
-   */
+  const [mobileNavOpen, setMobileNavOpen] =
+    useState(false);
+
   useEffect(() => {
     const randomIndex = Math.floor(
       Math.random() * greetingMessages.length
@@ -91,10 +121,6 @@ export default function DashboardPage() {
     );
   }, []);
 
-  /*
-   * Load the authenticated user's email
-   * and their saved display name.
-   */
   useEffect(() => {
     async function loadUser() {
       try {
@@ -134,12 +160,6 @@ export default function DashboardPage() {
     loadUser();
   }, []);
 
-  /*
-   * Load dashboard data from FastAPI.
-   *
-   * IMPORTANT:
-   * Keep this API configuration unchanged.
-   */
   async function loadDashboard() {
     try {
       setLoading(true);
@@ -177,24 +197,9 @@ export default function DashboardPage() {
     void loadDashboard();
   }, []);
 
-  /*
-   * FACTORY RESET FOR UI ACCESS
-   *
-   * For now, every authenticated user can see
-   * the complete dashboard.
-   *
-   * We will move authorization into the backend
-   * after the dashboard data is working correctly.
-   */
   const isCommunications = true;
   const isAdmin = true;
 
-  /*
-   * Save the user's chosen display name.
-   *
-   * For now this is stored locally so we can
-   * test the UX without changing the backend.
-   */
   function handleSaveDisplayName(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -223,69 +228,70 @@ export default function DashboardPage() {
     }
   }
 
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+  }
+
   return (
     <div className="dashboard">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
+      {/* Mobile Header */}
+      <div className="dashboard-mobile-header">
         <div className="dashboard-logo">
           Oatle Technologies
         </div>
 
-        <nav className="dashboard-nav">
-          <Link
-            href="/dashboard"
-            className="dashboard-nav-item active"
-          >
-            Overview
-          </Link>
+        <button
+          type="button"
+          className="dashboard-mobile-menu-button"
+          onClick={() =>
+            setMobileNavOpen(
+              (current) => !current
+            )
+          }
+          aria-expanded={mobileNavOpen}
+          aria-controls="dashboard-mobile-nav"
+        >
+          {mobileNavOpen ? "Close" : "Menu"}
+        </button>
+      </div>
 
-          <Link
-            href="/dashboard/clients"
-            className="dashboard-nav-item"
-          >
-            Clients
-          </Link>
+      {/* Sidebar */}
+      <aside
+        className={`dashboard-sidebar ${
+          mobileNavOpen
+            ? "dashboard-sidebar-mobile-open"
+            : ""
+        }`}
+      >
+        <div className="dashboard-logo">
+          Oatle Technologies
+        </div>
 
-          <Link
-            href="/dashboard/leads"
-            className="dashboard-nav-item"
-          >
-            Leads
-          </Link>
-
-          <Link
-            href="/dashboard/projects"
-            className="dashboard-nav-item"
-          >
-            Projects
-          </Link>
-
-          <Link
-            href="/dashboard/tasks"
-            className="dashboard-nav-item"
-          >
-            Tasks
-          </Link>
-
-          <Link
-            href="/dashboard/staff"
-            className="dashboard-nav-item"
-          >
-            Staff
-          </Link>
-
-          <Link
-            href="/dashboard/invoices"
-            className="dashboard-nav-item"
-          >
-            Invoices
-          </Link>
+        <nav
+          id="dashboard-mobile-nav"
+          className="dashboard-nav"
+        >
+          {navigationItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dashboard-nav-item ${
+                item.href === "/dashboard"
+                  ? "active"
+                  : ""
+              }`}
+              onClick={closeMobileNav}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="dashboard-sidebar-bottom">
           <Link
             href="/dashboard/settings"
             className="dashboard-nav-item"
+            onClick={closeMobileNav}
           >
             Settings
           </Link>
@@ -312,7 +318,6 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* First-time display name setup */}
         {showNameSetup && (
           <section
             className="dashboard-panel"
@@ -384,7 +389,6 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* Error */}
         {error && (
           <div
             className="dashboard-panel"
@@ -403,7 +407,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Loading */}
         {loading && (
           <div
             className="dashboard-panel"
@@ -415,10 +418,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Dashboard */}
         {!loading && dashboard && (
           <>
-            {/* Stats */}
             <section className="dashboard-stats">
               <div className="dashboard-card">
                 <p>Revenue</p>
@@ -468,7 +469,6 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Projects + Lead Pipeline */}
             <section className="dashboard-grid">
               <div className="dashboard-panel dashboard-projects">
                 <div className="dashboard-panel-header">
@@ -634,7 +634,6 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Tasks + Recent Activity */}
             <section className="dashboard-grid">
               <div className="dashboard-panel">
                 <div className="dashboard-panel-header">

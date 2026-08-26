@@ -2395,27 +2395,73 @@ MOBILE
 @media (max-width: 700px) {
   .dashboard {
     display: block;
+    min-height: 100vh;
+  }
+
+  .dashboard-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #111;
+    color: #fff;
+  }
+
+  .dashboard-mobile-header .dashboard-logo {
+    color: #fff;
+  }
+
+  .dashboard-mobile-menu-button {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: transparent;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
   }
 
   .dashboard-sidebar {
+    position: fixed;
+    top: 65px;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    display: none;
     width: 100%;
-    min-height: auto;
-    position: static;
+    max-height: calc(100vh - 65px);
+    overflow-y: auto;
+    padding: 20px;
+    background: #111;
+  }
+
+  .dashboard-sidebar.dashboard-sidebar-mobile-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar > .dashboard-logo {
+    display: none;
   }
 
   .dashboard-nav {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .dashboard-sidebar-bottom {
-    display: none;
+    display: block;
+    margin-top: 20px;
   }
 
   .dashboard-main {
-    padding: 24px;
-  }
-
-  .dashboard-stats {
-    grid-template-columns: 1fr;
+    width: 100%;
+    margin-left: 0;
+    padding: 24px 20px;
   }
 }
