@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
+import { useAuth } from "@/lib/auth-context";
 
 type Lead = {
   id: number;
@@ -69,6 +70,7 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 export default function LeadsPage() {
+  const { userEmail } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -107,6 +109,10 @@ export default function LeadsPage() {
   // ----------------------------------------------------------
 
   async function loadLeads() {
+    if (!userEmail) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -138,7 +144,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     loadLeads();
-  }, []);
+  }, [userEmail]);
 
   // ----------------------------------------------------------
   // Add / edit lead

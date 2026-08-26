@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Project = {
@@ -124,6 +125,7 @@ const COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID = 19;
 const COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID = 28;
 
 export default function Tasks() {
+  const { userEmail } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -149,6 +151,7 @@ export default function Tasks() {
   const [saving, setSaving] = useState(false);
 
   async function loadTasks() {
+    if (!userEmail) { return; }
     try {
       setLoading(true);
       setError("");
@@ -175,6 +178,7 @@ export default function Tasks() {
   }
 
   async function loadProjects() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(`${API_URL}/projects`);
 
@@ -196,6 +200,7 @@ export default function Tasks() {
   }
 
   async function loadTaskOptions() {
+    if (!userEmail) { return; }
     try {
       const [
         productsResponse,
@@ -254,6 +259,7 @@ export default function Tasks() {
     productId: string,
     assigneeId: string = form.assigned_to
   ) {
+    if (!userEmail) { return; }
     if (!productId) {
       setAvailableProductServices([]);
       return;
@@ -340,7 +346,7 @@ export default function Tasks() {
       void loadProjects();
       void loadTaskOptions();
     });
-  }, []);
+  }, [userEmail]);
 
   function openAddForm() {
     setEditingTask(null);

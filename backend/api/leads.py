@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_current_staff
 from backend.models.lead import Lead
 from backend.schemas.lead import LeadCreate
 from backend.services.email_service import (
@@ -14,6 +15,7 @@ from backend.services.email_service import (
 router = APIRouter(
     prefix="/leads",
     tags=["Leads"],
+    dependencies=[Depends(get_current_staff)],
 )
 
 

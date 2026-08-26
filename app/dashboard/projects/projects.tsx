@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Client = {
@@ -74,6 +75,7 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 export default function Projects() {
+  const { userEmail } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -100,6 +102,7 @@ export default function Projects() {
   const [saving, setSaving] = useState(false);
 
   async function loadProjects() {
+    if (!userEmail) { return; }
     try {
       setLoading(true);
       setError("");
@@ -136,6 +139,7 @@ export default function Projects() {
   }
 
   async function loadClients() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/clients/`
@@ -161,6 +165,7 @@ export default function Projects() {
   }
 
   async function loadProducts() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/pricing/products`
@@ -190,6 +195,7 @@ export default function Projects() {
   }
 
   async function loadAddons() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/pricing/addons`
@@ -221,6 +227,7 @@ export default function Projects() {
   async function loadProjectAddons(
     projectId: number
   ) {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/projects/${projectId}/addons`
@@ -253,7 +260,7 @@ export default function Projects() {
     loadClients();
     loadProducts();
     loadAddons();
-  }, []);
+  }, [userEmail]);
 
   function openAddForm() {
     setEditingProject(null);

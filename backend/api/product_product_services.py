@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
+from backend.dependencies import get_current_staff
 from backend.models.pricing import Product
 from backend.models.product_service import ProductService
 from backend.models.product_product_service import ProductProductService
@@ -14,6 +15,7 @@ from backend.schemas.product_product_service import (
 router = APIRouter(
     prefix="/product-product-services",
     tags=["Product Product Services"],
+    dependencies=[Depends(get_current_staff)],
 )
 
 

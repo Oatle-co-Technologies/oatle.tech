@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type StaffMember = {
@@ -30,6 +31,7 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 export default function Staff() {
+  const { userEmail } = useAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -42,6 +44,7 @@ export default function Staff() {
   const [saving, setSaving] = useState(false);
 
   async function loadStaff() {
+    if (!userEmail) { return; }
     try {
       setLoading(true);
       setError("");
@@ -73,7 +76,7 @@ export default function Staff() {
     void Promise.resolve().then(() => {
       void loadStaff();
     });
-  }, []);
+  }, [userEmail]);
 
   function openAddForm() {
     setEditingStaff(null);

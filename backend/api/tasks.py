@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_current_staff
 from backend.models.product_service import ProductService
 from backend.models.pricing import Service
 from backend.models.staff import Staff
@@ -17,6 +18,7 @@ from backend.services.email_service import (
 router = APIRouter(
     prefix="/tasks",
     tags=["Tasks"],
+    dependencies=[Depends(get_current_staff)],
 )
 
 

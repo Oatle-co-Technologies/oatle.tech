@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_current_staff
 from backend.models.project import Project
 from backend.models.pricing import AddOn
 from backend.models.project_addon import ProjectAddOn
@@ -10,6 +11,7 @@ from backend.models.project_addon import ProjectAddOn
 router = APIRouter(
     prefix="/projects",
     tags=["Project Add-ons"],
+    dependencies=[Depends(get_current_staff)],
 )
 
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
+import { useAuth } from "@/lib/auth-context";
 
 type Client = {
   id: number;
@@ -32,6 +33,7 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 export default function ClientsPage() {
+  const { userEmail } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -42,6 +44,10 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
 
   async function loadClients() {
+    if (!userEmail) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -70,8 +76,8 @@ export default function ClientsPage() {
   }
 
   useEffect(() => {
-    loadClients();
-  }, []);
+    void loadClients();
+  }, [userEmail]);
 
   function openAddForm() {
     setEditingClient(null);

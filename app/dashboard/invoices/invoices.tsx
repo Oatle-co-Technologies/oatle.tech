@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import emailjs from "@emailjs/browser";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
@@ -92,6 +93,7 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 export default function Invoices() {
+  const { userEmail } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -129,6 +131,7 @@ export default function Invoices() {
     useState<number | null>(null);
 
   async function loadInvoices() {
+    if (!userEmail) { return; }
     try {
       setLoading(true);
       setError("");
@@ -157,6 +160,7 @@ export default function Invoices() {
   }
 
   async function loadClients() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/clients`
@@ -176,6 +180,7 @@ export default function Invoices() {
   }
 
   async function loadProjects() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/projects`
@@ -195,6 +200,7 @@ export default function Invoices() {
   }
 
   async function loadProducts() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/pricing/products`
@@ -216,6 +222,7 @@ export default function Invoices() {
   }
 
   async function loadAddOns() {
+    if (!userEmail) { return; }
     try {
       const response = await fetch(
         `${API_URL}/pricing/addons`
@@ -239,6 +246,7 @@ export default function Invoices() {
   async function loadProjectAddOns(
     projectId: string
   ) {
+    if (!userEmail) { return; }
     if (!projectId) {
       setProjectAddOns([]);
       return;
@@ -275,7 +283,7 @@ export default function Invoices() {
     loadProjects();
     loadProducts();
     loadAddOns();
-  }, []);
+  }, [userEmail]);
 
   useEffect(() => {
     loadProjectAddOns(form.project_id);

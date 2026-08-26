@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_admin_staff
 from backend.models.staff import Staff
 from backend.schemas.staff import StaffCreate, StaffResponse
 
@@ -9,6 +10,7 @@ from backend.schemas.staff import StaffCreate, StaffResponse
 router = APIRouter(
     prefix="/staff",
     tags=["Staff"],
+    dependencies=[Depends(get_admin_staff)],
 )
 
 

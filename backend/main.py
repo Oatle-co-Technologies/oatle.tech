@@ -30,6 +30,7 @@ from backend.api.product_product_services import (
     router as product_product_services_router,
 )
 from backend.api.dashboard import router as dashboard_router
+from backend.api.auth import router as auth_router
 
 app = FastAPI()
 
@@ -57,6 +58,7 @@ app.include_router(project_addons_router)
 app.include_router(staff_router)
 app.include_router(product_product_services_router)
 app.include_router(dashboard_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

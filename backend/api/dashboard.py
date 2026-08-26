@@ -5,11 +5,13 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
+from backend.dependencies import get_current_staff
 from backend.models.client import Client
 from backend.models.lead import Lead
 from backend.models.project import Project
 from backend.models.task import Task
 from backend.models.invoice import Invoice
+from backend.models.staff import Staff
 
 router = APIRouter(
     prefix="/dashboard",
@@ -28,6 +30,7 @@ def get_db():
 
 @router.get("/summary")
 def get_dashboard_summary(
+    staff: Staff = Depends(get_current_staff),
     db: Session = Depends(get_db),
 ):
     today = date.today()
@@ -243,8 +246,7 @@ def get_dashboard_summary(
         for task in recent_tasks
     ]
 
-    return {
-        "revenue": float(revenue),
+    response: dict = {
         "active_clients": active_clients,
         "open_leads": open_leads,
         "projects_in_progress": active_project_count,
@@ -258,3 +260,8 @@ def get_dashboard_summary(
         "tasks_due_today": tasks_data,
         "recent_activity": recent_activity,
     }
+
+    if staff.access_level == "admin":
+        response["revenue"] = float(revenue)
+
+    return response

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
+import { useAuth } from "@/lib/auth-context";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
@@ -77,6 +79,9 @@ const navigationItems = [
     href: "/dashboard/tasks",
     label: "Tasks",
   },
+];
+
+const adminNavigationItems = [
   {
     href: "/dashboard/staff",
     label: "Staff",
@@ -88,10 +93,12 @@ const navigationItems = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { staff, loading: authLoading } = useAuth();
+
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
 
-  const [userEmail, setUserEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [displayNameInput, setDisplayNameInput] =
     useState("");
@@ -105,100 +112,15 @@ export default function DashboardPage() {
   const [greetingMessage, setGreetingMessage] =
     useState(greetingMessages[0]);
 
-  const [loading, setLoading] = useState(true);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [mobileNavOpen, setMobileNavOpen] =
     useState(false);
 
-  useEffect(() => {
-    const randomIndex = Math.floor(
-      Math.random() * greetingMessages.length
-    );
+  const isAdmin = staff?.access_level === "admin";
 
-    setGreetingMessage(
-      greetingMessages[randomIndex]
-    );
-  }, []);
-
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const result =
-          await authClient.getSession();
-
-        const email =
-          result.data?.user?.email
-            ?.toLowerCase()
-            .trim() ?? "";
-
-        setUserEmail(email);
-
-        if (!email) {
-          return;
-        }
-
-        const savedName =
-          window.localStorage.getItem(
-            `oatle-display-name:${email}`
-          );
-
-        if (savedName) {
-          setDisplayName(savedName);
-          setShowNameSetup(false);
-        } else {
-          setShowNameSetup(true);
-        }
-      } catch (err) {
-        console.error(
-          "Failed to load authenticated user:",
-          err
-        );
-      }
-    }
-
-    loadUser();
-  }, []);
-
-  async function loadDashboard() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await fetch(
-        `${API_URL}/dashboard/summary`,
-        {
-          cache: "no-store",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to load dashboard (${response.status})`
-        );
-      }
-
-      const data: DashboardData =
-        await response.json();
-
-      setDashboard(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load dashboard"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadDashboard();
-  }, []);
-
-  const isCommunications = true;
-  const isAdmin = true;
+  const userEmail = staff?.email || "";
 
   function handleSaveDisplayName(
     event: React.FormEvent<HTMLFormElement>
@@ -230,6 +152,47 @@ export default function DashboardPage() {
 
   function closeMobileNav() {
     setMobileNavOpen(false);
+  }
+
+  async function loadDashboard() {
+    try {
+      setDashboardLoading(true);
+      setError("");
+
+      const response = await fetch(
+        `${API_URL}/dashboard/summary`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to load dashboard (${response.status})`
+        );
+      }
+
+      const data: DashboardData =
+        await response.json();
+
+      setDashboard(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load dashboard"
+      );
+    } finally {
+      setDashboardLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [userEmail]);
+
+  if (!authLoading && !staff) {
+    router.push("/dashboard/unauthorized");
   }
 
   return (
@@ -285,6 +248,17 @@ export default function DashboardPage() {
               {item.label}
             </Link>
           ))}
+          {isAdmin &&
+            adminNavigationItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="dashboard-nav-item"
+                onClick={closeMobileNav}
+              >
+                {item.label}
+              </Link>
+            ))}
         </nav>
 
         <div className="dashboard-sidebar-bottom">
@@ -407,7 +381,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {loading && (
+        {dashboardLoading && (
           <div
             className="dashboard-panel"
             style={{
@@ -418,21 +392,23 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!loading && dashboard && (
+        {!dashboardLoading && dashboard && (
           <>
             <section className="dashboard-stats">
-              <div className="dashboard-card">
-                <p>Revenue</p>
+              {isAdmin && (
+                <div className="dashboard-card">
+                  <p>Revenue</p>
 
-                <h2>
-                  R
-                  {Number(
-                    dashboard.revenue
-                  ).toLocaleString("en-ZA")}
-                </h2>
+                  <h2>
+                    R
+                    {Number(
+                      dashboard.revenue
+                    ).toLocaleString("en-ZA")}
+                  </h2>
 
-                <span>This month</span>
-              </div>
+                  <span>This month</span>
+                </div>
+              )}
 
               <div className="dashboard-card">
                 <p>Active Clients</p>

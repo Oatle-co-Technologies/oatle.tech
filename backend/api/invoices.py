@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_admin_staff
 from backend.models.invoice import Invoice
 from backend.models.project import Project
 from backend.models.pricing import AddOn, Product
@@ -17,6 +18,7 @@ from backend.schemas.invoice import (
 router = APIRouter(
     prefix="/invoices",
     tags=["Invoices"],
+    dependencies=[Depends(get_admin_staff)],
 )
 
 
