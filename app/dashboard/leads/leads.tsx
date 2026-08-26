@@ -55,6 +55,24 @@ const emptyForm: LeadForm = {
   marketing_sms_opt_in: false,
 };
 
+/*
+ * Keep the API base consistent with the working Clients page.
+ *
+ * Production:
+ *   /api/backend
+ *
+ * Local development:
+ *   NEXT_PUBLIC_API_URL can override this.
+ *
+ * Removing trailing slashes prevents accidental URLs such as:
+ *   /api/backend//leads/
+ */
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend"
+).replace(/\/+$/, "");
+
+const LEADS_URL = `${API_BASE}/leads`;
+
 function toDateTimeLocal(value: string | null) {
   if (!value) {
     return "";
@@ -67,6 +85,7 @@ function toDateTimeLocal(value: string | null) {
   }
 
   const offset = date.getTimezoneOffset();
+
   const localDate = new Date(
     date.getTime() - offset * 60 * 1000
   );
@@ -79,11 +98,14 @@ function toISOStringOrNull(value: string) {
     return null;
   }
 
-  return new Date(value).toISOString();
-}
+  const date = new Date(value);
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+}
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -97,14 +119,20 @@ export default function LeadsPage() {
   const [form, setForm] = useState<LeadForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  /*
+   * GET /api/backend/leads/
+   */
   async function loadLeads() {
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/leads/`
-      );
+      const response = await fetch(`${LEADS_URL}/`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -132,7 +160,7 @@ export default function LeadsPage() {
 
   function openAddForm() {
     setEditingLead(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
     setShowForm(true);
     setError("");
   }
@@ -150,7 +178,7 @@ export default function LeadsPage() {
       response: lead.response ?? "",
       follow_up_reason:
         lead.follow_up_reason ?? "",
-      contact_attempts: lead.contact_attempts,
+      contact_attempts: lead.contact_attempts ?? 0,
       last_contacted_at: toDateTimeLocal(
         lead.last_contacted_at
       ),
@@ -159,9 +187,9 @@ export default function LeadsPage() {
       ),
       notes: lead.notes ?? "",
       marketing_email_opt_in:
-        lead.marketing_email_opt_in,
+        lead.marketing_email_opt_in ?? false,
       marketing_sms_opt_in:
-        lead.marketing_sms_opt_in,
+        lead.marketing_sms_opt_in ?? false,
     });
 
     setShowForm(true);
@@ -171,7 +199,7 @@ export default function LeadsPage() {
   function closeForm() {
     setShowForm(false);
     setEditingLead(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
   }
 
   function handleChange(
@@ -203,6 +231,42 @@ export default function LeadsPage() {
     }));
   }
 
+  /*
+   * Convert the frontend form into exactly the fields
+   * expected by LeadCreate.
+   */
+  function buildPayload(formData: LeadForm) {
+    return {
+      name: formData.name,
+      email: formData.email,
+      company: formData.company || null,
+      phone: formData.phone || null,
+      source: formData.source || null,
+      stage: formData.stage,
+      response: formData.response || null,
+      follow_up_reason:
+        formData.follow_up_reason || null,
+      contact_attempts: Number(
+        formData.contact_attempts
+      ),
+      last_contacted_at: toISOStringOrNull(
+        formData.last_contacted_at
+      ),
+      next_follow_up_at: toISOStringOrNull(
+        formData.next_follow_up_at
+      ),
+      notes: formData.notes || null,
+      marketing_email_opt_in:
+        formData.marketing_email_opt_in,
+      marketing_sms_opt_in:
+        formData.marketing_sms_opt_in,
+    };
+  }
+
+  /*
+   * POST /api/backend/leads/
+   * PUT  /api/backend/leads/{id}
+   */
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -212,26 +276,11 @@ export default function LeadsPage() {
       setSaving(true);
       setError("");
 
-      const payload = {
-        ...form,
-        company: form.company || null,
-        phone: form.phone || null,
-        source: form.source || null,
-        response: form.response || null,
-        follow_up_reason:
-          form.follow_up_reason || null,
-        last_contacted_at: toISOStringOrNull(
-          form.last_contacted_at
-        ),
-        next_follow_up_at: toISOStringOrNull(
-          form.next_follow_up_at
-        ),
-        notes: form.notes || null,
-      };
+      const payload = buildPayload(form);
 
       const url = editingLead
-        ? `${API_URL}/leads/${editingLead.id}`
-        : `${API_URL}/leads/`;
+        ? `${LEADS_URL}/${editingLead.id}`
+        : `${LEADS_URL}/`;
 
       const method = editingLead ? "PUT" : "POST";
 
@@ -239,15 +288,28 @@ export default function LeadsPage() {
         method,
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
+        let detail = "";
+
+        try {
+          const errorData = await response.json();
+
+          if (typeof errorData?.detail === "string") {
+            detail = `: ${errorData.detail}`;
+          }
+        } catch {
+          // Keep the HTTP status as the useful error.
+        }
+
         throw new Error(
           `Failed to ${
             editingLead ? "update" : "create"
-          } lead (${response.status})`
+          } lead (${response.status})${detail}`
         );
       }
 
@@ -264,6 +326,9 @@ export default function LeadsPage() {
     }
   }
 
+  /*
+   * PUT /api/backend/leads/{id}
+   */
   async function updateLead(
     lead: Lead,
     changes: Partial<Lead>
@@ -271,50 +336,61 @@ export default function LeadsPage() {
     try {
       setError("");
 
+      const updatedLead: Lead = {
+        ...lead,
+        ...changes,
+      };
+
       const payload = {
-        name: lead.name,
-        email: lead.email,
-        company: lead.company,
-        phone: lead.phone,
-        source: lead.source,
-        stage: changes.stage ?? lead.stage,
-        response:
-          changes.response ?? lead.response,
+        name: updatedLead.name,
+        email: updatedLead.email,
+        company: updatedLead.company,
+        phone: updatedLead.phone,
+        source: updatedLead.source,
+        stage: updatedLead.stage,
+        response: updatedLead.response,
         follow_up_reason:
-          changes.follow_up_reason ??
-          lead.follow_up_reason,
+          updatedLead.follow_up_reason,
         contact_attempts:
-          changes.contact_attempts ??
-          lead.contact_attempts,
+          updatedLead.contact_attempts,
         last_contacted_at:
-          changes.last_contacted_at ??
-          lead.last_contacted_at,
+          updatedLead.last_contacted_at,
         next_follow_up_at:
-          changes.next_follow_up_at ??
-          lead.next_follow_up_at,
-        notes: changes.notes ?? lead.notes,
+          updatedLead.next_follow_up_at,
+        notes: updatedLead.notes,
         marketing_email_opt_in:
-          changes.marketing_email_opt_in ??
-          lead.marketing_email_opt_in,
+          updatedLead.marketing_email_opt_in,
         marketing_sms_opt_in:
-          changes.marketing_sms_opt_in ??
-          lead.marketing_sms_opt_in,
+          updatedLead.marketing_sms_opt_in,
       };
 
       const response = await fetch(
-        `${API_URL}/leads/${lead.id}`,
+        `${LEADS_URL}/${lead.id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Accept: "application/json",
           },
           body: JSON.stringify(payload),
         }
       );
 
       if (!response.ok) {
+        let detail = "";
+
+        try {
+          const errorData = await response.json();
+
+          if (typeof errorData?.detail === "string") {
+            detail = `: ${errorData.detail}`;
+          }
+        } catch {
+          // Ignore malformed error responses.
+        }
+
         throw new Error(
-          `Failed to update lead (${response.status})`
+          `Failed to update lead (${response.status})${detail}`
         );
       }
 
@@ -359,6 +435,9 @@ export default function LeadsPage() {
     });
   }
 
+  /*
+   * DELETE /api/backend/leads/{id}
+   */
   async function handleDelete(leadId: number) {
     const confirmed = window.confirm(
       "Are you sure you want to permanently delete this lead?"
@@ -372,15 +451,30 @@ export default function LeadsPage() {
       setError("");
 
       const response = await fetch(
-        `${API_URL}/leads/${leadId}`,
+        `${LEADS_URL}/${leadId}`,
         {
           method: "DELETE",
+          headers: {
+            Accept: "application/json",
+          },
         }
       );
 
       if (!response.ok) {
+        let detail = "";
+
+        try {
+          const errorData = await response.json();
+
+          if (typeof errorData?.detail === "string") {
+            detail = `: ${errorData.detail}`;
+          }
+        } catch {
+          // Ignore malformed error responses.
+        }
+
         throw new Error(
-          `Failed to delete lead (${response.status})`
+          `Failed to delete lead (${response.status})${detail}`
         );
       }
 
@@ -479,7 +573,7 @@ export default function LeadsPage() {
 
               <input
                 name="source"
-                placeholder="Source (Website, Referral, LinkedIn...)"
+                placeholder="Source"
                 value={form.source}
                 onChange={handleChange}
               />
@@ -537,9 +631,7 @@ export default function LeadsPage() {
                 type="number"
                 min="0"
                 placeholder="Contact attempts"
-                value={
-                  form.contact_attempts
-                }
+                value={form.contact_attempts}
                 onChange={handleChange}
               />
 
@@ -548,9 +640,7 @@ export default function LeadsPage() {
                 <input
                   name="last_contacted_at"
                   type="datetime-local"
-                  value={
-                    form.last_contacted_at
-                  }
+                  value={form.last_contacted_at}
                   onChange={handleChange}
                 />
               </label>
@@ -560,9 +650,7 @@ export default function LeadsPage() {
                 <input
                   name="next_follow_up_at"
                   type="datetime-local"
-                  value={
-                    form.next_follow_up_at
-                  }
+                  value={form.next_follow_up_at}
                   onChange={handleChange}
                 />
               </label>
@@ -594,9 +682,7 @@ export default function LeadsPage() {
                   checked={
                     form.marketing_email_opt_in
                   }
-                  onChange={
-                    handleCheckboxChange
-                  }
+                  onChange={handleCheckboxChange}
                 />{" "}
                 Email marketing
               </label>
@@ -608,9 +694,7 @@ export default function LeadsPage() {
                   checked={
                     form.marketing_sms_opt_in
                   }
-                  onChange={
-                    handleCheckboxChange
-                  }
+                  onChange={handleCheckboxChange}
                 />{" "}
                 SMS marketing
               </label>
@@ -806,9 +890,7 @@ export default function LeadsPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        handleDelete(
-                          lead.id
-                        )
+                        handleDelete(lead.id)
                       }
                     >
                       Delete

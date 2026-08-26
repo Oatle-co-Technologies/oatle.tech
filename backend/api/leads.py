@@ -1,21 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.database.connection import SessionLocal
+from backend.database.connection import get_db
 from backend.models.lead import Lead
 from backend.schemas.lead import LeadCreate
 
 
-router = APIRouter(prefix="/leads", tags=["Leads"])
-
-
-def get_db():
-    db = SessionLocal()
-
-    try:
-        yield db
-    finally:
-        db.close()
+router = APIRouter(
+    prefix="/leads",
+    tags=["Leads"],
+)
 
 
 @router.post("/")
@@ -48,9 +42,10 @@ def create_lead(
 
 
 @router.get("/")
-def get_leads(db: Session = Depends(get_db)):
-    leads = db.query(Lead).all()
-    return leads
+def get_leads(
+    db: Session = Depends(get_db),
+):
+    return db.query(Lead).all()
 
 
 @router.get("/{lead_id}")
@@ -103,8 +98,12 @@ def update_lead(
     existing_lead.last_contacted_at = lead.last_contacted_at
     existing_lead.next_follow_up_at = lead.next_follow_up_at
     existing_lead.notes = lead.notes
-    existing_lead.marketing_email_opt_in = lead.marketing_email_opt_in
-    existing_lead.marketing_sms_opt_in = lead.marketing_sms_opt_in
+    existing_lead.marketing_email_opt_in = (
+        lead.marketing_email_opt_in
+    )
+    existing_lead.marketing_sms_opt_in = (
+        lead.marketing_sms_opt_in
+    )
 
     db.commit()
     db.refresh(existing_lead)
@@ -132,4 +131,6 @@ def delete_lead(
     db.delete(lead)
     db.commit()
 
-    return {"message": "Lead deleted successfully"}
+    return {
+        "message": "Lead deleted successfully"
+    }
