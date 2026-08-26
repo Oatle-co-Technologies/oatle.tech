@@ -1,28 +1,20 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
 from backend.models.lead import Lead
 from backend.schemas.lead import LeadCreate
-from backend.services.email_service import send_lead_follow_up_email
+from backend.services.email_service import (
+    send_lead_follow_up_email,
+)
 
 
 router = APIRouter(
     prefix="/leads",
     tags=["Leads"],
 )
-
-
-# ============================================================
-# LEAD EMAIL REQUEST
-# ============================================================
-
-class LeadFollowUpEmail(BaseModel):
-    subject: str = Field(..., min_length=1)
-    message: str = Field(..., min_length=1)
 
 
 # ============================================================
@@ -94,86 +86,6 @@ def get_lead(
 
 
 # ============================================================
-# SEND FOLLOW-UP EMAIL
-# ============================================================
-
-@router.post("/{lead_id}/send-email")
-def send_lead_email(
-    lead_id: int,
-    email_data: LeadFollowUpEmail,
-    db: Session = Depends(get_db),
-):
-    """
-    Send a follow-up email to a lead through Brevo.
-
-    The email is sent from the configured
-    Oatle Technologies communications address.
-    """
-
-    lead = (
-        db.query(Lead)
-        .filter(Lead.id == lead_id)
-        .first()
-    )
-
-    if not lead:
-        raise HTTPException(
-            status_code=404,
-            detail="Lead not found",
-        )
-
-    if not lead.email:
-        raise HTTPException(
-            status_code=400,
-            detail="This lead does not have an email address",
-        )
-
-    if not email_data.subject.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Email subject cannot be empty",
-        )
-
-    if not email_data.message.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Email message cannot be empty",
-        )
-
-    # Send the email through Brevo.
-    email_sent = send_lead_follow_up_email(
-        recipient_email=lead.email,
-        recipient_name=lead.name,
-        subject=email_data.subject,
-        message=email_data.message,
-    )
-
-    if not email_sent:
-        raise HTTPException(
-            status_code=502,
-            detail="Failed to send email",
-        )
-
-    # Record the successful contact.
-    lead.last_contacted_at = datetime.utcnow()
-
-    lead.contact_attempts = (
-        (lead.contact_attempts or 0) + 1
-    )
-
-    db.commit()
-    db.refresh(lead)
-
-    return {
-        "message": "Follow-up email sent successfully",
-        "lead_id": lead.id,
-        "recipient": lead.email,
-        "last_contacted_at": lead.last_contacted_at,
-        "contact_attempts": lead.contact_attempts,
-    }
-
-
-# ============================================================
 # UPDATE LEAD
 # ============================================================
 
@@ -233,6 +145,81 @@ def update_lead(
     db.refresh(existing_lead)
 
     return existing_lead
+
+
+# ============================================================
+# SEND LEAD FOLLOW-UP EMAIL
+# ============================================================
+
+@router.post("/{lead_id}/send-email")
+def send_lead_email(
+    lead_id: int,
+    email_data: dict,
+    db: Session = Depends(get_db),
+):
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id)
+        .first()
+    )
+
+    if not lead:
+        raise HTTPException(
+            status_code=404,
+            detail="Lead not found",
+        )
+
+    subject = email_data.get("subject", "")
+    message = email_data.get("message", "")
+
+    if not subject.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Email subject is required",
+        )
+
+    if not message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Email message is required",
+        )
+
+    if not lead.email:
+        raise HTTPException(
+            status_code=400,
+            detail="Lead does not have an email address",
+        )
+
+    sent = send_lead_follow_up_email(
+        recipient_email=lead.email,
+        recipient_name=lead.name,
+        subject=subject,
+        message=message,
+    )
+
+    if not sent:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to send email",
+        )
+
+    # Only record the contact after Brevo
+    # successfully accepts the email.
+    lead.contact_attempts = (
+        lead.contact_attempts + 1
+    )
+
+    lead.last_contacted_at = datetime.utcnow()
+
+    lead.stage = "contacted"
+
+    db.commit()
+    db.refresh(lead)
+
+    return {
+        "message": "Email sent successfully",
+        "lead": lead,
+    }
 
 
 # ============================================================

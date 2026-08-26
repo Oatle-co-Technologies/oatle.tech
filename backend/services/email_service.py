@@ -1,3 +1,4 @@
+import html
 import logging
 import os
 
@@ -6,14 +7,22 @@ from dotenv import load_dotenv
 
 from backend.database.connection import BASE_DIR
 
+
 load_dotenv(BASE_DIR / ".env")
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# BREVO CONFIGURATION
+# ============================================================
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
+# Default sender.
+# Kept for compatibility with the existing setup.
 BREVO_SENDER_EMAIL = os.getenv(
     "BREVO_SENDER_EMAIL",
     "communications@oatle-technologies.co.za",
@@ -23,6 +32,47 @@ BREVO_SENDER_NAME = os.getenv(
     "BREVO_SENDER_NAME",
     "Oatle Technologies",
 )
+
+
+# Optional separate senders.
+#
+# If these are not configured, both email types fall back
+# to BREVO_SENDER_EMAIL / BREVO_SENDER_NAME.
+#
+# This allows Oatle to use multiple verified Brevo senders
+# without needing multiple Brevo accounts or API keys.
+
+BREVO_TASK_SENDER_EMAIL = os.getenv(
+    "BREVO_TASK_SENDER_EMAIL",
+    BREVO_SENDER_EMAIL,
+)
+
+BREVO_TASK_SENDER_NAME = os.getenv(
+    "BREVO_TASK_SENDER_NAME",
+    BREVO_SENDER_NAME,
+)
+
+BREVO_LEAD_SENDER_EMAIL = os.getenv(
+    "BREVO_LEAD_SENDER_EMAIL",
+    BREVO_SENDER_EMAIL,
+)
+
+BREVO_LEAD_SENDER_NAME = os.getenv(
+    "BREVO_LEAD_SENDER_NAME",
+    BREVO_SENDER_NAME,
+)
+
+
+# ============================================================
+# HEADERS
+# ============================================================
+
+def get_brevo_headers():
+    return {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
 
 
 # ============================================================
@@ -43,10 +93,15 @@ def send_task_assignment_email(
     """
 
     if not BREVO_API_KEY:
-        logger.error("BREVO_API_KEY is not configured.")
+        logger.error(
+            "BREVO_API_KEY is not configured."
+        )
         return False
 
-    description = task_description or "No description provided."
+    description = (
+        task_description
+        or "No description provided."
+    )
 
     due_date_text = (
         due_date.strftime("%Y-%m-%d")
@@ -54,9 +109,14 @@ def send_task_assignment_email(
         else "No due date"
     )
 
-    priority_text = priority or "Not specified"
+    priority_text = (
+        priority
+        or "Not specified"
+    )
 
-    subject = f"New Task Assigned: {task_name}"
+    subject = (
+        f"New Task Assigned: {task_name}"
+    )
 
     html_content = f"""
     <!DOCTYPE html>
@@ -91,7 +151,7 @@ def send_task_assignment_email(
             </h1>
 
             <p style="font-size: 16px;">
-                Hi {recipient_name},
+                Hi {html.escape(recipient_name)},
             </p>
 
             <p style="
@@ -113,22 +173,22 @@ def send_task_assignment_email(
                     margin-top: 0;
                     font-size: 20px;
                 ">
-                    {task_name}
+                    {html.escape(task_name)}
                 </h2>
 
                 <p>
                     <strong>Description:</strong><br>
-                    {description}
+                    {html.escape(description)}
                 </p>
 
                 <p>
                     <strong>Priority:</strong>
-                    {priority_text}
+                    {html.escape(priority_text)}
                 </p>
 
                 <p>
                     <strong>Due date:</strong>
-                    {due_date_text}
+                    {html.escape(due_date_text)}
                 </p>
 
             </div>
@@ -137,8 +197,8 @@ def send_task_assignment_email(
                 font-size: 15px;
                 line-height: 1.6;
             ">
-                Please log in to the Oatle Technologies dashboard
-                to view and manage your task.
+                Please log in to the Oatle Technologies
+                dashboard to view and manage your task.
             </p>
 
             <p style="
@@ -158,8 +218,8 @@ def send_task_assignment_email(
 
     payload = {
         "sender": {
-            "name": BREVO_SENDER_NAME,
-            "email": BREVO_SENDER_EMAIL,
+            "name": BREVO_TASK_SENDER_NAME,
+            "email": BREVO_TASK_SENDER_EMAIL,
         },
         "to": [
             {
@@ -171,17 +231,11 @@ def send_task_assignment_email(
         "htmlContent": html_content,
     }
 
-    headers = {
-        "accept": "application/json",
-        "api-key": BREVO_API_KEY,
-        "content-type": "application/json",
-    }
-
     try:
         response = requests.post(
             BREVO_API_URL,
             json=payload,
-            headers=headers,
+            headers=get_brevo_headers(),
             timeout=10,
         )
 
@@ -196,10 +250,21 @@ def send_task_assignment_email(
 
     except requests.RequestException as exc:
         logger.error(
-            "Failed to send task assignment email to %s: %s",
+            "Failed to send task assignment email "
+            "to %s: %s",
             recipient_email,
             exc,
         )
+
+        if response is not None:
+            logger.error(
+                "Brevo status: %s",
+                response.status_code,
+            )
+            logger.error(
+                "Brevo response: %s",
+                response.text,
+            )
 
         return False
 
@@ -223,37 +288,53 @@ def send_lead_follow_up_email(
     """
 
     if not BREVO_API_KEY:
-        logger.error("BREVO_API_KEY is not configured.")
+        logger.error(
+            "BREVO_API_KEY is not configured."
+        )
         return False
 
     if not recipient_email:
-        logger.error("Lead email address is missing.")
+        logger.error(
+            "Lead email address is missing."
+        )
         return False
 
     if not subject.strip():
-        logger.error("Lead follow-up email subject is empty.")
+        logger.error(
+            "Lead follow-up email subject is empty."
+        )
         return False
 
     if not message.strip():
-        logger.error("Lead follow-up email message is empty.")
+        logger.error(
+            "Lead follow-up email message is empty."
+        )
         return False
 
-    # Convert the plain-text message into simple HTML.
-    # This preserves line breaks when displayed in the email.
+    # Escape user-provided content before putting it
+    # inside HTML.
+    safe_name = html.escape(
+        recipient_name
+    )
+
+    safe_subject = html.escape(
+        subject
+    )
+
     html_message = (
-        message
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+        html.escape(message)
+        .replace("\r\n", "<br>")
         .replace("\n", "<br>")
+        .replace("\r", "<br>")
     )
 
     html_content = f"""
     <!DOCTYPE html>
     <html>
+
     <head>
         <meta charset="UTF-8">
-        <title>{subject}</title>
+        <title>{safe_subject}</title>
     </head>
 
     <body style="
@@ -276,7 +357,7 @@ def send_lead_follow_up_email(
                 font-size: 16px;
                 line-height: 1.6;
             ">
-                Hi {recipient_name},
+                Hi {safe_name},
             </p>
 
             <div style="
@@ -302,10 +383,15 @@ def send_lead_follow_up_email(
     </html>
     """
 
+    # IMPORTANT:
+    #
+    # Brevo's transactional API allows one message body
+    # type per request. We therefore send htmlContent only,
+    # matching the working task implementation.
     payload = {
         "sender": {
-            "name": BREVO_SENDER_NAME,
-            "email": BREVO_SENDER_EMAIL,
+            "name": BREVO_LEAD_SENDER_NAME,
+            "email": BREVO_LEAD_SENDER_EMAIL,
         },
         "to": [
             {
@@ -315,20 +401,13 @@ def send_lead_follow_up_email(
         ],
         "subject": subject,
         "htmlContent": html_content,
-        "textContent": message,
-    }
-
-    headers = {
-        "accept": "application/json",
-        "api-key": BREVO_API_KEY,
-        "content-type": "application/json",
     }
 
     try:
         response = requests.post(
             BREVO_API_URL,
             json=payload,
-            headers=headers,
+            headers=get_brevo_headers(),
             timeout=10,
         )
 
@@ -339,13 +418,30 @@ def send_lead_follow_up_email(
             recipient_email,
         )
 
+        logger.info(
+            "Brevo response: %s",
+            response.text,
+        )
+
         return True
 
     except requests.RequestException as exc:
         logger.error(
-            "Failed to send lead follow-up email to %s: %s",
+            "Failed to send lead follow-up email "
+            "to %s: %s",
             recipient_email,
             exc,
         )
+
+        if response is not None:
+            logger.error(
+                "Brevo status: %s",
+                response.status_code,
+            )
+
+            logger.error(
+                "Brevo response: %s",
+                response.text,
+            )
 
         return False

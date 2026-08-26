@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.services.email_service import (
-    send_task_assignment_email,
-)
 from backend.models.product_service import ProductService
 from backend.models.pricing import Service
 from backend.models.staff import Staff
 from backend.models.task import Task
 from backend.schemas.task import TaskCreate, TaskResponse
+from backend.services.email_service import (
+    send_task_assignment_email,
+)
 
 
 router = APIRouter(
@@ -19,6 +19,10 @@ router = APIRouter(
     tags=["Tasks"],
 )
 
+
+# ============================================================
+# VALIDATE ASSIGNEE
+# ============================================================
 
 def validate_assignee(
     assigned_to: int | None,
@@ -46,11 +50,16 @@ def validate_assignee(
         )
 
 
+# ============================================================
+# VALIDATE TASK TYPE
+# ============================================================
+
 def validate_task_type(
     task: TaskCreate,
     db: Session,
 ):
     if task.task_type == "product":
+
         if task.product_service_id is None:
             raise HTTPException(
                 status_code=400,
@@ -76,6 +85,7 @@ def validate_task_type(
             )
 
     elif task.task_type == "service":
+
         if task.service_id is None:
             raise HTTPException(
                 status_code=400,
@@ -108,6 +118,10 @@ def validate_task_type(
             ),
         )
 
+
+# ============================================================
+# CREATE TASK
+# ============================================================
 
 @router.post(
     "",
@@ -146,7 +160,12 @@ def create_task(
     db.commit()
     db.refresh(new_task)
 
+    # ========================================================
+    # SEND TASK ASSIGNMENT EMAIL
+    # ========================================================
+
     if new_task.assigned_to is not None:
+
         staff_member = (
             db.query(Staff)
             .filter(
@@ -157,19 +176,22 @@ def create_task(
         )
 
         if staff_member:
+
             send_task_assignment_email(
                 recipient_email=staff_member.email,
                 recipient_name=staff_member.name,
                 task_name=new_task.name,
-                task_description=(
-                    new_task.description
-                ),
+                task_description=new_task.description,
                 due_date=new_task.due_date,
                 priority=new_task.priority,
             )
 
     return new_task
 
+
+# ============================================================
+# GET ALL TASKS
+# ============================================================
 
 @router.get(
     "",
@@ -184,6 +206,10 @@ def get_tasks(
         .all()
     )
 
+
+# ============================================================
+# GET SINGLE TASK
+# ============================================================
 
 @router.get(
     "/{task_id}",
@@ -207,6 +233,10 @@ def get_task(
 
     return task
 
+
+# ============================================================
+# UPDATE TASK
+# ============================================================
 
 @router.put(
     "/{task_id}",
@@ -239,42 +269,53 @@ def update_task(
         db,
     )
 
-    existing_task.project_id = (
-        task.project_id
-    )
+    existing_task.project_id = task.project_id
+
     existing_task.product_service_id = (
         task.product_service_id
     )
+
     existing_task.service_id = (
         task.service_id
     )
+
     existing_task.assigned_to = (
         task.assigned_to
     )
+
     existing_task.task_type = (
         task.task_type
     )
+
     existing_task.name = task.name
+
     existing_task.description = (
         task.description
     )
+
     existing_task.category = (
         task.category
     )
+
     existing_task.status = task.status
+
     existing_task.priority = (
         task.priority
     )
+
     existing_task.due_date = (
         task.due_date
     )
+
     existing_task.notes = task.notes
 
     if task.status == "completed":
+
         if existing_task.completed_at is None:
             existing_task.completed_at = (
                 datetime.utcnow()
             )
+
     else:
         existing_task.completed_at = None
 
@@ -283,6 +324,10 @@ def update_task(
 
     return existing_task
 
+
+# ============================================================
+# DELETE TASK
+# ============================================================
 
 @router.delete("/{task_id}")
 def delete_task(
