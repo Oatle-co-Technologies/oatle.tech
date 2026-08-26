@@ -2481,3 +2481,7 @@ MOBILE
     padding: 24px 20px;
   }
 }
+
+.dashboard-mobile-header {
+  display: none;
+}
