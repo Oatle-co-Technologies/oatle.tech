@@ -2398,17 +2398,20 @@ MOBILE
     min-height: 100vh;
   }
 
+  /* -------------------------
+     Mobile Header
+     ------------------------- */
+
   .dashboard-mobile-header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    width: 100%;
     padding: 16px 20px;
     background: #111;
     color: #fff;
+    box-sizing: border-box;
   }
 
   .dashboard-mobile-header .dashboard-logo {
@@ -2425,16 +2428,17 @@ MOBILE
     font: inherit;
   }
 
+  /* -------------------------
+     Mobile Sidebar / Menu
+     ------------------------- */
+
   .dashboard-sidebar {
-    position: fixed;
-    top: 65px;
-    left: 0;
-    right: 0;
-    z-index: 99;
+    position: static;
     display: none;
     width: 100%;
-    max-height: calc(100vh - 65px);
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
+    box-sizing: border-box;
     padding: 20px;
     background: #111;
   }
@@ -2452,6 +2456,13 @@ MOBILE
     display: flex;
     flex-direction: column;
     gap: 4px;
+    width: 100%;
+  }
+
+  .dashboard-nav-item {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .dashboard-sidebar-bottom {
@@ -2459,9 +2470,14 @@ MOBILE
     margin-top: 20px;
   }
 
+  /* -------------------------
+     Main Content
+     ------------------------- */
+
   .dashboard-main {
     width: 100%;
     margin-left: 0;
+    box-sizing: border-box;
     padding: 24px 20px;
   }
 }
