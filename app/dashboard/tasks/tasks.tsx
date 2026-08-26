@@ -114,7 +114,8 @@ const categories = [
   "other",
 ];
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 const DEVELOPER_PRODUCT_SERVICE_MIN_ID = 2;
 const DEVELOPER_PRODUCT_SERVICE_MAX_ID = 18;

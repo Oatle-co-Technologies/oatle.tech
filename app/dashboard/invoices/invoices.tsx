@@ -88,6 +88,9 @@ const EMAILJS_SERVICE_ID = "service_4mg8nys";
 const EMAILJS_INVOICE_TEMPLATE_ID = "template_x1bok19";
 const EMAILJS_PUBLIC_KEY = "G21rP3jrxQohCHe1l";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -131,7 +134,7 @@ export default function Invoices() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/invoices/"
+        `${API_URL}/invoices/`
       );
 
       if (!response.ok) {
@@ -156,7 +159,7 @@ export default function Invoices() {
   async function loadClients() {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/clients/"
+        `${API_URL}/clients/`
       );
 
       if (!response.ok) {
@@ -175,7 +178,7 @@ export default function Invoices() {
   async function loadProjects() {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/projects/"
+        `${API_URL}/projects/`
       );
 
       if (!response.ok) {
@@ -194,7 +197,7 @@ export default function Invoices() {
   async function loadProducts() {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/pricing/products"
+        `${API_URL}/pricing/products`
       );
 
       if (!response.ok) {
@@ -215,7 +218,7 @@ export default function Invoices() {
   async function loadAddOns() {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/pricing/addons"
+        `${API_URL}/pricing/addons`
       );
 
       if (!response.ok) {
@@ -245,7 +248,7 @@ export default function Invoices() {
       setLoadingAddOns(true);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/projects/${projectId}/addons`
+        `${API_URL}/projects/${projectId}/addons`
       );
 
       if (!response.ok) {
@@ -298,7 +301,7 @@ export default function Invoices() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/projects/${form.project_id}/addons/${selectedAddonId}`,
+        `${API_URL}/projects/${form.project_id}/addons/${selectedAddonId}`,
         {
           method: "POST",
         }
@@ -340,7 +343,7 @@ export default function Invoices() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/projects/${projectId}/addons/${addonId}`,
+        `${API_URL}/projects/${projectId}/addons/${addonId}`,
         {
           method: "DELETE",
         }
@@ -477,8 +480,8 @@ export default function Invoices() {
       };
 
       const url = editingInvoice
-        ? `http://127.0.0.1:8000/invoices/${editingInvoice.id}`
-        : "http://127.0.0.1:8000/invoices/";
+        ? `${API_URL}/invoices/${editingInvoice.id}`
+        : `${API_URL}/invoices/`;
 
       const method = editingInvoice
         ? "PUT"
@@ -537,7 +540,7 @@ export default function Invoices() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/invoices/${invoiceId}`,
+        `${API_URL}/invoices/${invoiceId}`,
         {
           method: "DELETE",
         }
@@ -606,7 +609,7 @@ export default function Invoices() {
 
       const projectResponse =
         await fetch(
-          `http://127.0.0.1:8000/projects/${invoice.project_id}`
+          `${API_URL}/projects/${invoice.project_id}`
         );
 
       if (!projectResponse.ok) {
@@ -642,7 +645,7 @@ export default function Invoices() {
 
       const addonsResponse =
         await fetch(
-          `http://127.0.0.1:8000/projects/${invoice.project_id}/addons`
+          `${API_URL}/projects/${invoice.project_id}/addons`
         );
 
       if (!addonsResponse.ok) {
@@ -783,7 +786,7 @@ export default function Invoices() {
 
       const updateResponse =
         await fetch(
-          `http://127.0.0.1:8000/invoices/${invoice.id}`,
+          `${API_URL}/invoices/${invoice.id}`,
           {
             method: "PUT",
 

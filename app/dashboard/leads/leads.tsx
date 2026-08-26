@@ -82,6 +82,9 @@ function toISOStringOrNull(value: string) {
   return new Date(value).toISOString();
 }
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +103,7 @@ export default function LeadsPage() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/leads/"
+        `${API_URL}/leads/`
       );
 
       if (!response.ok) {
@@ -227,8 +230,8 @@ export default function LeadsPage() {
       };
 
       const url = editingLead
-        ? `http://127.0.0.1:8000/leads/${editingLead.id}`
-        : "http://127.0.0.1:8000/leads/";
+        ? `${API_URL}/leads/${editingLead.id}`
+        : `${API_URL}/leads/`;
 
       const method = editingLead ? "PUT" : "POST";
 
@@ -299,7 +302,7 @@ export default function LeadsPage() {
       };
 
       const response = await fetch(
-        `http://127.0.0.1:8000/leads/${lead.id}`,
+        `${API_URL}/leads/${lead.id}`,
         {
           method: "PUT",
           headers: {
@@ -369,7 +372,7 @@ export default function LeadsPage() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/leads/${leadId}`,
+        `${API_URL}/leads/${leadId}`,
         {
           method: "DELETE",
         }

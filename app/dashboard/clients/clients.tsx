@@ -28,6 +28,9 @@ const emptyForm: ClientForm = {
   phone: "",
 };
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +47,7 @@ export default function ClientsPage() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/clients/"
+        `${API_URL}/clients/`
       );
 
       if (!response.ok) {
@@ -116,8 +119,8 @@ export default function ClientsPage() {
       setError("");
 
       const url = editingClient
-        ? `http://127.0.0.1:8000/clients/${editingClient.id}`
-        : "http://127.0.0.1:8000/clients/";
+        ? `${API_URL}/clients/${editingClient.id}`
+        : `${API_URL}/clients/`;
 
       const method = editingClient ? "PUT" : "POST";
 
@@ -163,7 +166,7 @@ export default function ClientsPage() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/clients/${clientId}`,
+        `${API_URL}/clients/${clientId}`,
         {
           method: "DELETE",
         }
