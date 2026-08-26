@@ -1,16 +1,13 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // The FastAPI backend (mounted at /api/backend/* via vercel.json rewrites)
-  // defines its collection routes WITH trailing slashes (e.g. /clients/,
-  // /leads/, /projects/, /tasks/, /staff/, /invoices/) and the dashboard
-  // frontend calls them that way. By default Next.js issues a 308 redirect
-  // that strips trailing slashes BEFORE vercel.json rewrites are evaluated,
-  // which caused /api/backend/clients/ -> /api/backend/clients -> FastAPI
-  // redirect_slashes 307 -> /clients/?path=clients -> Vercel 404.
-  // Disabling the automatic trailing-slash redirect lets the original URL
-  // reach the /api/index serverless function intact.
-  skipTrailingSlashRedirect: true,
-};
+// NOTE: Do not enable skipTrailingSlashRedirect here. Vercel's rewrite
+// engine cannot match "/api/backend/:path*" against URLs ending in a
+// trailing slash, so trailing-slash API calls (/api/backend/clients/,
+// /leads/, /projects/, ...) must rely on the platform's default 308
+// normalization (which preserves method and body) to reach the
+// api/index FastAPI wrapper in a matchable form. That wrapper snaps the
+// stripped path onto FastAPI's registered routes, so no further
+// redirect occurs afterwards.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
