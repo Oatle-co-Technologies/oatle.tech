@@ -21,8 +21,17 @@ BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
-# Default sender.
+
+# ------------------------------------------------------------
+# Default sender
+# ------------------------------------------------------------
+#
 # Kept for compatibility with the existing setup.
+#
+# If the specialised sender variables below are not present,
+# this sender will be used as the fallback.
+#
+
 BREVO_SENDER_EMAIL = os.getenv(
     "BREVO_SENDER_EMAIL",
     "communications@oatle-technologies.co.za",
@@ -34,17 +43,22 @@ BREVO_SENDER_NAME = os.getenv(
 )
 
 
-# Optional separate senders.
+# ------------------------------------------------------------
+# Task notification sender
+# ------------------------------------------------------------
 #
-# If these are not configured, both email types fall back
-# to BREVO_SENDER_EMAIL / BREVO_SENDER_NAME.
+# This allows task notifications to continue using the
+# notifications sender if configured.
 #
-# This allows Oatle to use multiple verified Brevo senders
-# without needing multiple Brevo accounts or API keys.
+# Example:
+#
+# BREVO_TASK_SENDER_EMAIL=notifications@oatle-technologies.co.za
+# BREVO_TASK_SENDER_NAME=Oatle Technologies
+#
 
 BREVO_TASK_SENDER_EMAIL = os.getenv(
     "BREVO_TASK_SENDER_EMAIL",
-    BREVO_SENDER_EMAIL,
+    "notifications@oatle-technologies.co.za",
 )
 
 BREVO_TASK_SENDER_NAME = os.getenv(
@@ -52,9 +66,23 @@ BREVO_TASK_SENDER_NAME = os.getenv(
     BREVO_SENDER_NAME,
 )
 
+
+# ------------------------------------------------------------
+# Lead communication sender
+# ------------------------------------------------------------
+#
+# Lead follow-up emails are intentionally sent from the
+# communications address.
+#
+# Example:
+#
+# BREVO_LEAD_SENDER_EMAIL=communications@oatle-technologies.co.za
+# BREVO_LEAD_SENDER_NAME=Oatle Technologies
+#
+
 BREVO_LEAD_SENDER_EMAIL = os.getenv(
     "BREVO_LEAD_SENDER_EMAIL",
-    BREVO_SENDER_EMAIL,
+    "communications@oatle-technologies.co.za",
 )
 
 BREVO_LEAD_SENDER_NAME = os.getenv(
@@ -64,10 +92,15 @@ BREVO_LEAD_SENDER_NAME = os.getenv(
 
 
 # ============================================================
-# HEADERS
+# BREVO HEADERS
 # ============================================================
 
 def get_brevo_headers():
+    """
+    Return the headers required by the Brevo transactional
+    email API.
+    """
+
     return {
         "accept": "application/json",
         "api-key": BREVO_API_KEY,
@@ -90,11 +123,19 @@ def send_task_assignment_email(
     """
     Send an email notification when a staff member
     is assigned a task.
+
+    This uses the task notification sender.
     """
 
     if not BREVO_API_KEY:
         logger.error(
             "BREVO_API_KEY is not configured."
+        )
+        return False
+
+    if not recipient_email:
+        logger.error(
+            "Task recipient email address is missing."
         )
         return False
 
@@ -121,6 +162,7 @@ def send_task_assignment_email(
     html_content = f"""
     <!DOCTYPE html>
     <html>
+
     <head>
         <meta charset="UTF-8">
         <title>New Task Assigned</title>
@@ -231,6 +273,8 @@ def send_task_assignment_email(
         "htmlContent": html_content,
     }
 
+    response = None
+
     try:
         response = requests.post(
             BREVO_API_URL,
@@ -246,9 +290,15 @@ def send_task_assignment_email(
             recipient_email,
         )
 
+        logger.info(
+            "Brevo response: %s",
+            response.text,
+        )
+
         return True
 
     except requests.RequestException as exc:
+
         logger.error(
             "Failed to send task assignment email "
             "to %s: %s",
@@ -261,6 +311,7 @@ def send_task_assignment_email(
                 "Brevo status: %s",
                 response.status_code,
             )
+
             logger.error(
                 "Brevo response: %s",
                 response.text,
@@ -285,6 +336,9 @@ def send_lead_follow_up_email(
 
     The communication specialist provides the subject
     and message from the dashboard.
+
+    This email is sent through Brevo using the verified
+    communications@oatle-technologies.co.za sender.
     """
 
     if not BREVO_API_KEY:
@@ -299,6 +353,9 @@ def send_lead_follow_up_email(
         )
         return False
 
+    if not recipient_name:
+        recipient_name = "there"
+
     if not subject.strip():
         logger.error(
             "Lead follow-up email subject is empty."
@@ -311,8 +368,10 @@ def send_lead_follow_up_email(
         )
         return False
 
-    # Escape user-provided content before putting it
-    # inside HTML.
+    # --------------------------------------------------------
+    # Escape user-provided content before placing it into HTML.
+    # --------------------------------------------------------
+
     safe_name = html.escape(
         recipient_name
     )
@@ -383,11 +442,14 @@ def send_lead_follow_up_email(
     </html>
     """
 
-    # IMPORTANT:
+    # --------------------------------------------------------
+    # Brevo transactional email payload.
     #
-    # Brevo's transactional API allows one message body
-    # type per request. We therefore send htmlContent only,
-    # matching the working task implementation.
+    # We intentionally use htmlContent only.
+    # Brevo documents htmlContent and textContent as
+    # alternative body types for a request.
+    # --------------------------------------------------------
+
     payload = {
         "sender": {
             "name": BREVO_LEAD_SENDER_NAME,
@@ -403,7 +465,17 @@ def send_lead_follow_up_email(
         "htmlContent": html_content,
     }
 
+    response = None
+
     try:
+
+        logger.info(
+            "Sending lead follow-up email to %s "
+            "from %s",
+            recipient_email,
+            BREVO_LEAD_SENDER_EMAIL,
+        )
+
         response = requests.post(
             BREVO_API_URL,
             json=payload,
@@ -414,8 +486,14 @@ def send_lead_follow_up_email(
         response.raise_for_status()
 
         logger.info(
-            "Lead follow-up email sent to %s",
+            "Lead follow-up email sent successfully "
+            "to %s",
             recipient_email,
+        )
+
+        logger.info(
+            "Brevo response status: %s",
+            response.status_code,
         )
 
         logger.info(
@@ -426,6 +504,7 @@ def send_lead_follow_up_email(
         return True
 
     except requests.RequestException as exc:
+
         logger.error(
             "Failed to send lead follow-up email "
             "to %s: %s",
@@ -433,7 +512,12 @@ def send_lead_follow_up_email(
             exc,
         )
 
+        # This is deliberately verbose while we are testing.
+        # If Brevo rejects the request, the actual Brevo
+        # response will appear in the backend logs.
+
         if response is not None:
+
             logger.error(
                 "Brevo status: %s",
                 response.status_code,
@@ -442,6 +526,12 @@ def send_lead_follow_up_email(
             logger.error(
                 "Brevo response: %s",
                 response.text,
+            )
+
+        else:
+
+            logger.error(
+                "No HTTP response was received from Brevo."
             )
 
         return False
