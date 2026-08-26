@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.database.connection import SessionLocal
+from backend.database.connection import get_db
 from backend.models.staff import Staff
 from backend.schemas.staff import StaffCreate, StaffResponse
 
@@ -12,15 +12,7 @@ router = APIRouter(
 )
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@router.post("/", response_model=StaffResponse)
+@router.post("", response_model=StaffResponse)
 def create_staff(
     staff: StaffCreate,
     db: Session = Depends(get_db),
@@ -54,7 +46,10 @@ def create_staff(
     return new_staff
 
 
-@router.get("/", response_model=list[StaffResponse])
+@router.get(
+    "",
+    response_model=list[StaffResponse],
+)
 def get_staff(
     db: Session = Depends(get_db),
 ):
@@ -65,7 +60,10 @@ def get_staff(
     )
 
 
-@router.get("/{staff_id}", response_model=StaffResponse)
+@router.get(
+    "/{staff_id}",
+    response_model=StaffResponse,
+)
 def get_staff_member(
     staff_id: int,
     db: Session = Depends(get_db),
@@ -85,7 +83,10 @@ def get_staff_member(
     return staff
 
 
-@router.put("/{staff_id}", response_model=StaffResponse)
+@router.put(
+    "/{staff_id}",
+    response_model=StaffResponse,
+)
 def update_staff(
     staff_id: int,
     staff_data: StaffCreate,

@@ -36,7 +36,9 @@ export default function Staff() {
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] =
     useState<StaffMember | null>(null);
-  const [form, setForm] = useState<StaffForm>(emptyForm);
+  const [form, setForm] = useState<StaffForm>({
+    ...emptyForm,
+  });
   const [saving, setSaving] = useState(false);
 
   async function loadStaff() {
@@ -44,7 +46,7 @@ export default function Staff() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/staff/`);
+      const response = await fetch(`${API_URL}/staff`);
 
       if (!response.ok) {
         throw new Error(
@@ -52,7 +54,10 @@ export default function Staff() {
         );
       }
 
-      setStaff(await response.json());
+      const data: StaffMember[] =
+        await response.json();
+
+      setStaff(data);
     } catch (err) {
       setError(
         err instanceof Error
@@ -72,7 +77,7 @@ export default function Staff() {
 
   function openAddForm() {
     setEditingStaff(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
     setShowForm(true);
     setError("");
   }
@@ -97,7 +102,7 @@ export default function Staff() {
   function closeForm() {
     setShowForm(false);
     setEditingStaff(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
   }
 
   function handleChange(
@@ -128,27 +133,37 @@ export default function Staff() {
       setSaving(true);
       setError("");
 
-      const response = await fetch(
-        editingStaff
-          ? `${API_URL}/staff/${editingStaff.id}`
-          : `${API_URL}/staff/`,
-        {
-          method: editingStaff ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...form,
-            job_title: form.job_title || null,
-          }),
-        }
-      );
+      const url = editingStaff
+        ? `${API_URL}/staff/${editingStaff.id}`
+        : `${API_URL}/staff`;
+
+      const method = editingStaff
+        ? "PUT"
+        : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...form,
+          job_title:
+            form.job_title || null,
+        }),
+      });
 
       if (!response.ok) {
+        const errorData =
+          await response.json().catch(() => null);
+
         throw new Error(
-          `Failed to ${
-            editingStaff ? "update" : "create"
-          } staff member (${response.status})`
+          errorData?.detail ||
+            `Failed to ${
+              editingStaff
+                ? "update"
+                : "create"
+            } staff member (${response.status})`
         );
       }
 
@@ -165,12 +180,15 @@ export default function Staff() {
     }
   }
 
-  async function handleDelete(staffId: number) {
-    if (
-      !window.confirm(
+  async function handleDelete(
+    staffId: number
+  ) {
+    const confirmed =
+      window.confirm(
         "Are you sure you want to delete this staff member?"
-      )
-    ) {
+      );
+
+    if (!confirmed) {
       return;
     }
 
@@ -185,8 +203,12 @@ export default function Staff() {
       );
 
       if (!response.ok) {
+        const errorData =
+          await response.json().catch(() => null);
+
         throw new Error(
-          `Failed to delete staff member (${response.status})`
+          errorData?.detail ||
+            `Failed to delete staff member (${response.status})`
         );
       }
 
@@ -223,7 +245,9 @@ export default function Staff() {
       {showForm && (
         <div
           className="dashboard-panel"
-          style={{ marginBottom: "24px" }}
+          style={{
+            marginBottom: "24px",
+          }}
         >
           <div className="dashboard-panel-header">
             <div>
@@ -282,6 +306,7 @@ export default function Staff() {
                 <option value="member">
                   Member
                 </option>
+
                 <option value="admin">
                   Admin
                 </option>
@@ -295,9 +320,11 @@ export default function Staff() {
                 <option value="employee">
                   Employee
                 </option>
+
                 <option value="contractor">
                   Contractor
                 </option>
+
                 <option value="intern">
                   Intern
                 </option>
@@ -314,7 +341,9 @@ export default function Staff() {
                   <input
                     name="is_temporary"
                     type="checkbox"
-                    checked={form.is_temporary}
+                    checked={
+                      form.is_temporary
+                    }
                     onChange={handleChange}
                   />{" "}
                   Temporary
@@ -387,11 +416,16 @@ export default function Staff() {
           </button>
         </div>
 
-        {loading && <p>Loading staff...</p>}
-
-        {!loading && staff.length === 0 && (
-          <p>No staff members yet.</p>
+        {loading && (
+          <p>Loading staff...</p>
         )}
+
+        {!loading &&
+          staff.length === 0 && (
+            <p>
+              No staff members yet.
+            </p>
+          )}
 
         {!loading &&
           staff.length > 0 &&
@@ -400,9 +434,11 @@ export default function Staff() {
               key={member.id}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr auto",
+                gridTemplateColumns:
+                  "1fr auto",
                 gap: "24px",
-                alignItems: "start",
+                alignItems:
+                  "start",
                 padding: "20px 0",
                 borderBottom:
                   "1px solid #e5e5e5",
@@ -411,7 +447,8 @@ export default function Staff() {
               <div>
                 <h2
                   style={{
-                    margin: "0 0 10px",
+                    margin:
+                      "0 0 10px",
                   }}
                 >
                   {member.name}
@@ -421,11 +458,13 @@ export default function Staff() {
 
                 <p>
                   Role:{" "}
-                  {member.job_title || "Not set"}
+                  {member.job_title ||
+                    "Not set"}
                 </p>
 
                 <p>
-                  Access: {member.access_level}
+                  Access:{" "}
+                  {member.access_level}
                 </p>
 
                 <p>
@@ -454,7 +493,9 @@ export default function Staff() {
                 <button
                   type="button"
                   onClick={() =>
-                    openEditForm(member)
+                    openEditForm(
+                      member
+                    )
                   }
                 >
                   Edit
@@ -463,7 +504,9 @@ export default function Staff() {
                 <button
                   type="button"
                   onClick={() =>
-                    handleDelete(member.id)
+                    handleDelete(
+                      member.id
+                    )
                   }
                 >
                   Delete
