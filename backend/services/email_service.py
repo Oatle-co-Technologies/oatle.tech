@@ -13,15 +13,21 @@ logger = logging.getLogger(__name__)
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+
 BREVO_SENDER_EMAIL = os.getenv(
     "BREVO_SENDER_EMAIL",
-    "notifications@oatle-technologies.co.za",
+    "communications@oatle-technologies.co.za",
 )
+
 BREVO_SENDER_NAME = os.getenv(
     "BREVO_SENDER_NAME",
     "Oatle Technologies",
 )
 
+
+# ============================================================
+# TASK ASSIGNMENT EMAIL
+# ============================================================
 
 def send_task_assignment_email(
     recipient_email: str,
@@ -32,7 +38,8 @@ def send_task_assignment_email(
     priority: str | None = None,
 ):
     """
-    Send an email notification when a staff member is assigned a task.
+    Send an email notification when a staff member
+    is assigned a task.
     """
 
     if not BREVO_API_KEY:
@@ -87,7 +94,10 @@ def send_task_assignment_email(
                 Hi {recipient_name},
             </p>
 
-            <p style="font-size: 16px; line-height: 1.6;">
+            <p style="
+                font-size: 16px;
+                line-height: 1.6;
+            ">
                 You have been assigned a new task at
                 <strong>Oatle Technologies</strong>.
             </p>
@@ -187,6 +197,153 @@ def send_task_assignment_email(
     except requests.RequestException as exc:
         logger.error(
             "Failed to send task assignment email to %s: %s",
+            recipient_email,
+            exc,
+        )
+
+        return False
+
+
+# ============================================================
+# LEAD FOLLOW-UP EMAIL
+# ============================================================
+
+def send_lead_follow_up_email(
+    recipient_email: str,
+    recipient_name: str,
+    subject: str,
+    message: str,
+):
+    """
+    Send a follow-up email to a lead from the
+    Oatle Technologies communications address.
+
+    The communication specialist provides the subject
+    and message from the dashboard.
+    """
+
+    if not BREVO_API_KEY:
+        logger.error("BREVO_API_KEY is not configured.")
+        return False
+
+    if not recipient_email:
+        logger.error("Lead email address is missing.")
+        return False
+
+    if not subject.strip():
+        logger.error("Lead follow-up email subject is empty.")
+        return False
+
+    if not message.strip():
+        logger.error("Lead follow-up email message is empty.")
+        return False
+
+    # Convert the plain-text message into simple HTML.
+    # This preserves line breaks when displayed in the email.
+    html_message = (
+        message
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\n", "<br>")
+    )
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{subject}</title>
+    </head>
+
+    <body style="
+        margin: 0;
+        padding: 0;
+        background-color: #f7f7f7;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #222222;
+    ">
+
+        <div style="
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            padding: 40px;
+        ">
+
+            <p style="
+                font-size: 16px;
+                line-height: 1.6;
+            ">
+                Hi {recipient_name},
+            </p>
+
+            <div style="
+                font-size: 16px;
+                line-height: 1.7;
+            ">
+                {html_message}
+            </div>
+
+            <p style="
+                margin-top: 35px;
+                font-size: 14px;
+                color: #777777;
+            ">
+                Kind regards,<br>
+                <strong>Oatle Technologies</strong><br>
+                Grow. Multiply. Succeed.
+            </p>
+
+        </div>
+
+    </body>
+    </html>
+    """
+
+    payload = {
+        "sender": {
+            "name": BREVO_SENDER_NAME,
+            "email": BREVO_SENDER_EMAIL,
+        },
+        "to": [
+            {
+                "email": recipient_email,
+                "name": recipient_name,
+            }
+        ],
+        "subject": subject,
+        "htmlContent": html_content,
+        "textContent": message,
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
+
+    try:
+        response = requests.post(
+            BREVO_API_URL,
+            json=payload,
+            headers=headers,
+            timeout=10,
+        )
+
+        response.raise_for_status()
+
+        logger.info(
+            "Lead follow-up email sent to %s",
+            recipient_email,
+        )
+
+        return True
+
+    except requests.RequestException as exc:
+        logger.error(
+            "Failed to send lead follow-up email to %s: %s",
             recipient_email,
             exc,
         )

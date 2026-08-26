@@ -38,6 +38,11 @@ type LeadForm = {
   marketing_sms_opt_in: boolean;
 };
 
+type EmailForm = {
+  subject: string;
+  message: string;
+};
+
 const emptyForm: LeadForm = {
   name: "",
   email: "",
@@ -53,6 +58,11 @@ const emptyForm: LeadForm = {
   notes: "",
   marketing_email_opt_in: false,
   marketing_sms_opt_in: false,
+};
+
+const emptyEmailForm: EmailForm = {
+  subject: "",
+  message: "",
 };
 
 const API_URL =
@@ -72,6 +82,29 @@ export default function LeadsPage() {
     useState<LeadForm>(emptyForm);
 
   const [saving, setSaving] = useState(false);
+
+  // ----------------------------------------------------------
+  // Email composer state
+  // ----------------------------------------------------------
+
+  const [emailLead, setEmailLead] =
+    useState<Lead | null>(null);
+
+  const [emailForm, setEmailForm] =
+    useState<EmailForm>(emptyEmailForm);
+
+  const [sendingEmail, setSendingEmail] =
+    useState(false);
+
+  const [emailError, setEmailError] =
+    useState("");
+
+  const [emailSuccess, setEmailSuccess] =
+    useState("");
+
+  // ----------------------------------------------------------
+  // Load leads
+  // ----------------------------------------------------------
 
   async function loadLeads() {
     try {
@@ -106,6 +139,10 @@ export default function LeadsPage() {
   useEffect(() => {
     loadLeads();
   }, []);
+
+  // ----------------------------------------------------------
+  // Add / edit lead
+  // ----------------------------------------------------------
 
   function openAddForm() {
     setEditingLead(null);
@@ -310,6 +347,10 @@ export default function LeadsPage() {
     }
   }
 
+  // ----------------------------------------------------------
+  // Generic lead update
+  // ----------------------------------------------------------
+
   async function updateLead(
     lead: Lead,
     changes: Partial<Lead>
@@ -433,6 +474,130 @@ export default function LeadsPage() {
       stage: "dropped",
     });
   }
+
+  // ----------------------------------------------------------
+  // Email composer
+  // ----------------------------------------------------------
+
+  function openEmailComposer(
+    lead: Lead
+  ) {
+    setEmailLead(lead);
+
+    setEmailForm({
+      subject: `Following up with ${lead.name}`,
+      message: "",
+    });
+
+    setEmailError("");
+    setEmailSuccess("");
+  }
+
+  function closeEmailComposer() {
+    if (sendingEmail) {
+      return;
+    }
+
+    setEmailLead(null);
+    setEmailForm({
+      ...emptyEmailForm,
+    });
+
+    setEmailError("");
+    setEmailSuccess("");
+  }
+
+  function handleEmailChange(
+    event: React.ChangeEvent<
+      HTMLInputElement |
+        HTMLTextAreaElement
+    >
+  ) {
+    const { name, value } =
+      event.target;
+
+    setEmailForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function handleSendEmail(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    if (!emailLead) {
+      return;
+    }
+
+    try {
+      setSendingEmail(true);
+      setEmailError("");
+      setEmailSuccess("");
+
+      const response = await fetch(
+        `${API_URL}/leads/${emailLead.id}/send-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            subject:
+              emailForm.subject,
+            message:
+              emailForm.message,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        let detail = "";
+
+        try {
+          const errorData =
+            await response.json();
+
+          if (
+            typeof errorData?.detail ===
+            "string"
+          ) {
+            detail = `: ${errorData.detail}`;
+          }
+        } catch {
+          // Ignore malformed error responses.
+        }
+
+        throw new Error(
+          `Failed to send email (${response.status})${detail}`
+        );
+      }
+
+      setEmailSuccess(
+        "Email sent successfully."
+      );
+
+      setEmailForm({
+        ...emptyEmailForm,
+      });
+
+      await loadLeads();
+    } catch (err) {
+      setEmailError(
+        err instanceof Error
+          ? err.message
+          : "Failed to send email"
+      );
+    } finally {
+      setSendingEmail(false);
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Delete lead
+  // ----------------------------------------------------------
 
   async function handleDelete(
     leadId: number
@@ -943,6 +1108,17 @@ export default function LeadsPage() {
                           Edit
                         </button>
 
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openEmailComposer(
+                              lead
+                            )
+                          }
+                        >
+                          Email Follow-Up
+                        </button>
+
                         {lead.stage !==
                           "won" &&
                           lead.stage !==
@@ -995,6 +1171,220 @@ export default function LeadsPage() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Email composer */}
+                    {emailLead?.id ===
+                      lead.id && (
+                      <div
+                        className="dashboard-panel"
+                        style={{
+                          marginTop: "20px",
+                          background:
+                            "#fafafa",
+                        }}
+                      >
+                        <div className="dashboard-panel-header">
+                          <div>
+                            <p className="dashboard-panel-label">
+                              CLIENT COMMUNICATION
+                            </p>
+
+                            <h3>
+                              Email Follow-Up
+                            </h3>
+                          </div>
+                        </div>
+
+                        <form
+                          onSubmit={
+                            handleSendEmail
+                          }
+                        >
+                          <div
+                            style={{
+                              marginBottom:
+                                "16px",
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin:
+                                  "0 0 6px",
+                                fontSize:
+                                  "13px",
+                                color:
+                                  "#777",
+                              }}
+                            >
+                              To
+                            </p>
+
+                            <input
+                              type="email"
+                              value={
+                                emailLead.email
+                              }
+                              disabled
+                              style={{
+                                width:
+                                  "100%",
+                                boxSizing:
+                                  "border-box",
+                              }}
+                            />
+                          </div>
+
+                          <div
+                            style={{
+                              marginBottom:
+                                "16px",
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin:
+                                  "0 0 6px",
+                                fontSize:
+                                  "13px",
+                                color:
+                                  "#777",
+                              }}
+                            >
+                              Subject
+                            </p>
+
+                            <input
+                              name="subject"
+                              type="text"
+                              placeholder="Email subject"
+                              value={
+                                emailForm.subject
+                              }
+                              onChange={
+                                handleEmailChange
+                              }
+                              required
+                              disabled={
+                                sendingEmail
+                              }
+                              style={{
+                                width:
+                                  "100%",
+                                boxSizing:
+                                  "border-box",
+                              }}
+                            />
+                          </div>
+
+                          <div
+                            style={{
+                              marginBottom:
+                                "16px",
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin:
+                                  "0 0 6px",
+                                fontSize:
+                                  "13px",
+                                color:
+                                  "#777",
+                              }}
+                            >
+                              Message
+                            </p>
+
+                            <textarea
+                              name="message"
+                              placeholder="Write your follow-up email..."
+                              value={
+                                emailForm.message
+                              }
+                              onChange={
+                                handleEmailChange
+                              }
+                              required
+                              disabled={
+                                sendingEmail
+                              }
+                              rows={8}
+                              style={{
+                                width:
+                                  "100%",
+                                boxSizing:
+                                  "border-box",
+                                resize:
+                                  "vertical",
+                              }}
+                            />
+                          </div>
+
+                          {emailError && (
+                            <div
+                              className="dashboard-panel"
+                              style={{
+                                marginBottom:
+                                  "16px",
+                              }}
+                            >
+                              <p>
+                                {
+                                  emailError
+                                }
+                              </p>
+                            </div>
+                          )}
+
+                          {emailSuccess && (
+                            <div
+                              className="dashboard-panel"
+                              style={{
+                                marginBottom:
+                                  "16px",
+                              }}
+                            >
+                              <p>
+                                {
+                                  emailSuccess
+                                }
+                              </p>
+                            </div>
+                          )}
+
+                          <div
+                            style={{
+                              display:
+                                "flex",
+                              gap: "12px",
+                            }}
+                          >
+                            <button
+                              type="submit"
+                              disabled={
+                                sendingEmail
+                              }
+                            >
+                              {sendingEmail
+                                ? "Sending..."
+                                : "Send Email"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={
+                                closeEmailComposer
+                              }
+                              disabled={
+                                sendingEmail
+                              }
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
                   </div>
                 )
               )}

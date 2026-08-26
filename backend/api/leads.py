@@ -1,9 +1,13 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
 from backend.models.lead import Lead
 from backend.schemas.lead import LeadCreate
+from backend.services.email_service import send_lead_follow_up_email
 
 
 router = APIRouter(
@@ -11,6 +15,19 @@ router = APIRouter(
     tags=["Leads"],
 )
 
+
+# ============================================================
+# LEAD EMAIL REQUEST
+# ============================================================
+
+class LeadFollowUpEmail(BaseModel):
+    subject: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+
+
+# ============================================================
+# CREATE LEAD
+# ============================================================
 
 @router.post("")
 def create_lead(
@@ -41,12 +58,20 @@ def create_lead(
     return new_lead
 
 
+# ============================================================
+# GET ALL LEADS
+# ============================================================
+
 @router.get("")
 def get_leads(
     db: Session = Depends(get_db),
 ):
     return db.query(Lead).all()
 
+
+# ============================================================
+# GET SINGLE LEAD
+# ============================================================
 
 @router.get("/{lead_id}")
 def get_lead(
@@ -67,6 +92,90 @@ def get_lead(
 
     return lead
 
+
+# ============================================================
+# SEND FOLLOW-UP EMAIL
+# ============================================================
+
+@router.post("/{lead_id}/send-email")
+def send_lead_email(
+    lead_id: int,
+    email_data: LeadFollowUpEmail,
+    db: Session = Depends(get_db),
+):
+    """
+    Send a follow-up email to a lead through Brevo.
+
+    The email is sent from the configured
+    Oatle Technologies communications address.
+    """
+
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id)
+        .first()
+    )
+
+    if not lead:
+        raise HTTPException(
+            status_code=404,
+            detail="Lead not found",
+        )
+
+    if not lead.email:
+        raise HTTPException(
+            status_code=400,
+            detail="This lead does not have an email address",
+        )
+
+    if not email_data.subject.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Email subject cannot be empty",
+        )
+
+    if not email_data.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Email message cannot be empty",
+        )
+
+    # Send the email through Brevo.
+    email_sent = send_lead_follow_up_email(
+        recipient_email=lead.email,
+        recipient_name=lead.name,
+        subject=email_data.subject,
+        message=email_data.message,
+    )
+
+    if not email_sent:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to send email",
+        )
+
+    # Record the successful contact.
+    lead.last_contacted_at = datetime.utcnow()
+
+    lead.contact_attempts = (
+        (lead.contact_attempts or 0) + 1
+    )
+
+    db.commit()
+    db.refresh(lead)
+
+    return {
+        "message": "Follow-up email sent successfully",
+        "lead_id": lead.id,
+        "recipient": lead.email,
+        "last_contacted_at": lead.last_contacted_at,
+        "contact_attempts": lead.contact_attempts,
+    }
+
+
+# ============================================================
+# UPDATE LEAD
+# ============================================================
 
 @router.put("/{lead_id}")
 def update_lead(
@@ -93,22 +202,29 @@ def update_lead(
     existing_lead.source = lead.source
     existing_lead.stage = lead.stage
     existing_lead.response = lead.response
+
     existing_lead.follow_up_reason = (
         lead.follow_up_reason
     )
+
     existing_lead.contact_attempts = (
         lead.contact_attempts
     )
+
     existing_lead.last_contacted_at = (
         lead.last_contacted_at
     )
+
     existing_lead.next_follow_up_at = (
         lead.next_follow_up_at
     )
+
     existing_lead.notes = lead.notes
+
     existing_lead.marketing_email_opt_in = (
         lead.marketing_email_opt_in
     )
+
     existing_lead.marketing_sms_opt_in = (
         lead.marketing_sms_opt_in
     )
@@ -118,6 +234,10 @@ def update_lead(
 
     return existing_lead
 
+
+# ============================================================
+# DELETE LEAD
+# ============================================================
 
 @router.delete("/{lead_id}")
 def delete_lead(
