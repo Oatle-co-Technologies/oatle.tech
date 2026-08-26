@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
 from backend.database.connection import SessionLocal
 from backend.models.pricing import Product
 from backend.models.product_service import ProductService
@@ -13,6 +10,7 @@ from backend.schemas.product_product_service import (
     ProductProductServiceResponse,
 )
 
+
 router = APIRouter(
     prefix="/product-product-services",
     tags=["Product Product Services"],
@@ -21,7 +19,6 @@ router = APIRouter(
 
 def get_db():
     db = SessionLocal()
-
     try:
         yield db
     finally:
@@ -29,7 +26,7 @@ def get_db():
 
 
 @router.post(
-    "/",
+    "",
     response_model=ProductProductServiceResponse,
 )
 def create_product_product_service(
@@ -92,13 +89,16 @@ def create_product_product_service(
 
 
 @router.get(
-    "/",
+    "",
     response_model=list[ProductProductServiceResponse],
 )
 def get_product_product_services(
     db: Session = Depends(get_db),
 ):
-    return db.query(ProductProductService).all()
+    return (
+        db.query(ProductProductService)
+        .all()
+    )
 
 
 @router.get(

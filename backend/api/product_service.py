@@ -6,7 +6,6 @@ from backend.models.product_service import ProductService
 from backend.schemas.product_service import ProductServiceCreate
 
 
-
 router = APIRouter(
     prefix="/product-services",
     tags=["Product Services"],
@@ -21,7 +20,7 @@ def get_db():
         db.close()
 
 
-@router.post("/")
+@router.post("")
 def create_product_service(
     product_service: ProductServiceCreate,
     db: Session = Depends(get_db),
@@ -51,11 +50,16 @@ def create_product_service(
     return new_product_service
 
 
-@router.get("/")
+@router.get("")
 def get_product_services(
     db: Session = Depends(get_db),
 ):
-    return db.query(ProductService).all()
+    return (
+        db.query(ProductService)
+        .filter(ProductService.active == True)
+        .order_by(ProductService.name)
+        .all()
+    )
 
 
 @router.get("/{product_service_id}")

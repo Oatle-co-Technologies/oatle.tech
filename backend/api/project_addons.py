@@ -1,13 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-
 from backend.models.project import Project
-
 from backend.models.pricing import AddOn
-
 from backend.models.project_addon import ProjectAddOn
 
 
@@ -22,7 +18,6 @@ def get_project_addons(
     project_id: int,
     db: Session = Depends(get_db),
 ):
-
     project = (
         db.query(Project)
         .filter(Project.id == project_id)
@@ -41,7 +36,9 @@ def get_project_addons(
             ProjectAddOn,
             ProjectAddOn.addon_id == AddOn.id,
         )
-        .filter(ProjectAddOn.project_id == project_id)
+        .filter(
+            ProjectAddOn.project_id == project_id
+        )
         .all()
     )
 
@@ -54,7 +51,6 @@ def add_addon_to_project(
     addon_id: int,
     db: Session = Depends(get_db),
 ):
-
     project = (
         db.query(Project)
         .filter(Project.id == project_id)
@@ -102,6 +98,7 @@ def add_addon_to_project(
 
     db.add(project_addon)
     db.commit()
+    db.refresh(project_addon)
 
     return {
         "message": "Add-on added to project successfully",
@@ -116,7 +113,6 @@ def remove_addon_from_project(
     addon_id: int,
     db: Session = Depends(get_db),
 ):
-
     project_addon = (
         db.query(ProjectAddOn)
         .filter(

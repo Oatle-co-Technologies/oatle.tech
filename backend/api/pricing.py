@@ -12,6 +12,7 @@ from backend.schemas.pricing import (
     ServiceResponse,
 )
 
+
 router = APIRouter(
     prefix="/pricing",
     tags=["Pricing"],
