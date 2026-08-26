@@ -55,57 +55,8 @@ const emptyForm: LeadForm = {
   marketing_sms_opt_in: false,
 };
 
-/*
- * Keep the API base consistent with the working Clients page.
- *
- * Production:
- *   /api/backend
- *
- * Local development:
- *   NEXT_PUBLIC_API_URL can override this.
- *
- * Removing trailing slashes prevents accidental URLs such as:
- *   /api/backend//leads/
- */
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL || "/api/backend"
-).replace(/\/+$/, "");
-
-const LEADS_URL = `${API_BASE}/leads`;
-
-function toDateTimeLocal(value: string | null) {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const offset = date.getTimezoneOffset();
-
-  const localDate = new Date(
-    date.getTime() - offset * 60 * 1000
-  );
-
-  return localDate.toISOString().slice(0, 16);
-}
-
-function toISOStringOrNull(value: string) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date.toISOString();
-}
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -113,26 +64,23 @@ export default function LeadsPage() {
   const [error, setError] = useState("");
 
   const [showForm, setShowForm] = useState(false);
+
   const [editingLead, setEditingLead] =
     useState<Lead | null>(null);
 
-  const [form, setForm] = useState<LeadForm>(emptyForm);
+  const [form, setForm] =
+    useState<LeadForm>(emptyForm);
+
   const [saving, setSaving] = useState(false);
 
-  /*
-   * GET /api/backend/leads/
-   */
   async function loadLeads() {
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${LEADS_URL}/`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/leads`
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -140,7 +88,8 @@ export default function LeadsPage() {
         );
       }
 
-      const data: Lead[] = await response.json();
+      const data: Lead[] =
+        await response.json();
 
       setLeads(data);
     } catch (err) {
@@ -178,18 +127,31 @@ export default function LeadsPage() {
       response: lead.response ?? "",
       follow_up_reason:
         lead.follow_up_reason ?? "",
-      contact_attempts: lead.contact_attempts ?? 0,
-      last_contacted_at: toDateTimeLocal(
+      contact_attempts:
+        lead.contact_attempts ?? 0,
+      last_contacted_at:
         lead.last_contacted_at
-      ),
-      next_follow_up_at: toDateTimeLocal(
+          ? new Date(
+              lead.last_contacted_at
+            )
+              .toISOString()
+              .slice(0, 16)
+          : "",
+      next_follow_up_at:
         lead.next_follow_up_at
-      ),
+          ? new Date(
+              lead.next_follow_up_at
+            )
+              .toISOString()
+              .slice(0, 16)
+          : "",
       notes: lead.notes ?? "",
       marketing_email_opt_in:
-        lead.marketing_email_opt_in ?? false,
+        lead.marketing_email_opt_in ??
+        false,
       marketing_sms_opt_in:
-        lead.marketing_sms_opt_in ?? false,
+        lead.marketing_sms_opt_in ??
+        false,
     });
 
     setShowForm(true);
@@ -209,7 +171,8 @@ export default function LeadsPage() {
         HTMLTextAreaElement
     >
   ) {
-    const { name, value } = event.target;
+    const { name, value } =
+      event.target;
 
     setForm((current) => ({
       ...current,
@@ -223,7 +186,8 @@ export default function LeadsPage() {
   function handleCheckboxChange(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const { name, checked } = event.target;
+    const { name, checked } =
+      event.target;
 
     setForm((current) => ({
       ...current,
@@ -231,31 +195,41 @@ export default function LeadsPage() {
     }));
   }
 
-  /*
-   * Convert the frontend form into exactly the fields
-   * expected by LeadCreate.
-   */
-  function buildPayload(formData: LeadForm) {
+  function buildPayload(
+    formData: LeadForm
+  ) {
     return {
       name: formData.name,
       email: formData.email,
-      company: formData.company || null,
-      phone: formData.phone || null,
-      source: formData.source || null,
+      company:
+        formData.company || null,
+      phone:
+        formData.phone || null,
+      source:
+        formData.source || null,
       stage: formData.stage,
-      response: formData.response || null,
+      response:
+        formData.response || null,
       follow_up_reason:
-        formData.follow_up_reason || null,
+        formData.follow_up_reason ||
+        null,
       contact_attempts: Number(
         formData.contact_attempts
       ),
-      last_contacted_at: toISOStringOrNull(
+      last_contacted_at:
         formData.last_contacted_at
-      ),
-      next_follow_up_at: toISOStringOrNull(
+          ? new Date(
+              formData.last_contacted_at
+            ).toISOString()
+          : null,
+      next_follow_up_at:
         formData.next_follow_up_at
-      ),
-      notes: formData.notes || null,
+          ? new Date(
+              formData.next_follow_up_at
+            ).toISOString()
+          : null,
+      notes:
+        formData.notes || null,
       marketing_email_opt_in:
         formData.marketing_email_opt_in,
       marketing_sms_opt_in:
@@ -263,10 +237,6 @@ export default function LeadsPage() {
     };
   }
 
-  /*
-   * POST /api/backend/leads/
-   * PUT  /api/backend/leads/{id}
-   */
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -276,39 +246,53 @@ export default function LeadsPage() {
       setSaving(true);
       setError("");
 
-      const payload = buildPayload(form);
+      const payload =
+        buildPayload(form);
 
       const url = editingLead
-        ? `${LEADS_URL}/${editingLead.id}`
-        : `${LEADS_URL}/`;
+        ? `${API_URL}/leads/${editingLead.id}`
+        : `${API_URL}/leads`;
 
-      const method = editingLead ? "PUT" : "POST";
+      const method = editingLead
+        ? "PUT"
+        : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        url,
+        {
+          method,
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(
+            payload
+          ),
+        }
+      );
 
       if (!response.ok) {
         let detail = "";
 
         try {
-          const errorData = await response.json();
+          const errorData =
+            await response.json();
 
-          if (typeof errorData?.detail === "string") {
+          if (
+            typeof errorData?.detail ===
+            "string"
+          ) {
             detail = `: ${errorData.detail}`;
           }
         } catch {
-          // Keep the HTTP status as the useful error.
+          // Ignore malformed error responses.
         }
 
         throw new Error(
           `Failed to ${
-            editingLead ? "update" : "create"
+            editingLead
+              ? "update"
+              : "create"
           } lead (${response.status})${detail}`
         );
       }
@@ -326,9 +310,6 @@ export default function LeadsPage() {
     }
   }
 
-  /*
-   * PUT /api/backend/leads/{id}
-   */
   async function updateLead(
     lead: Lead,
     changes: Partial<Lead>
@@ -344,11 +325,15 @@ export default function LeadsPage() {
       const payload = {
         name: updatedLead.name,
         email: updatedLead.email,
-        company: updatedLead.company,
+        company:
+          updatedLead.company,
         phone: updatedLead.phone,
-        source: updatedLead.source,
-        stage: updatedLead.stage,
-        response: updatedLead.response,
+        source:
+          updatedLead.source,
+        stage:
+          updatedLead.stage,
+        response:
+          updatedLead.response,
         follow_up_reason:
           updatedLead.follow_up_reason,
         contact_attempts:
@@ -357,7 +342,8 @@ export default function LeadsPage() {
           updatedLead.last_contacted_at,
         next_follow_up_at:
           updatedLead.next_follow_up_at,
-        notes: updatedLead.notes,
+        notes:
+          updatedLead.notes,
         marketing_email_opt_in:
           updatedLead.marketing_email_opt_in,
         marketing_sms_opt_in:
@@ -365,14 +351,16 @@ export default function LeadsPage() {
       };
 
       const response = await fetch(
-        `${LEADS_URL}/${lead.id}`,
+        `${API_URL}/leads/${lead.id}`,
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
+            "Content-Type":
+              "application/json",
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(
+            payload
+          ),
         }
       );
 
@@ -380,9 +368,13 @@ export default function LeadsPage() {
         let detail = "";
 
         try {
-          const errorData = await response.json();
+          const errorData =
+            await response.json();
 
-          if (typeof errorData?.detail === "string") {
+          if (
+            typeof errorData?.detail ===
+            "string"
+          ) {
             detail = `: ${errorData.detail}`;
           }
         } catch {
@@ -404,7 +396,9 @@ export default function LeadsPage() {
     }
   }
 
-  async function contactAgain(lead: Lead) {
+  async function contactAgain(
+    lead: Lead
+  ) {
     await updateLead(lead, {
       stage: "contacted",
       contact_attempts:
@@ -414,17 +408,22 @@ export default function LeadsPage() {
     });
   }
 
-  async function markNotNow(lead: Lead) {
+  async function markNotNow(
+    lead: Lead
+  ) {
     await updateLead(lead, {
       stage: "not_now",
       response: "not_now",
     });
   }
 
-  async function markDropped(lead: Lead) {
-    const confirmed = window.confirm(
-      `Drop ${lead.name} from the active pipeline?`
-    );
+  async function markDropped(
+    lead: Lead
+  ) {
+    const confirmed =
+      window.confirm(
+        `Drop ${lead.name} from the active pipeline?`
+      );
 
     if (!confirmed) {
       return;
@@ -435,13 +434,13 @@ export default function LeadsPage() {
     });
   }
 
-  /*
-   * DELETE /api/backend/leads/{id}
-   */
-  async function handleDelete(leadId: number) {
-    const confirmed = window.confirm(
-      "Are you sure you want to permanently delete this lead?"
-    );
+  async function handleDelete(
+    leadId: number
+  ) {
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to permanently delete this lead?"
+      );
 
     if (!confirmed) {
       return;
@@ -451,12 +450,9 @@ export default function LeadsPage() {
       setError("");
 
       const response = await fetch(
-        `${LEADS_URL}/${leadId}`,
+        `${API_URL}/leads/${leadId}`,
         {
           method: "DELETE",
-          headers: {
-            Accept: "application/json",
-          },
         }
       );
 
@@ -464,9 +460,13 @@ export default function LeadsPage() {
         let detail = "";
 
         try {
-          const errorData = await response.json();
+          const errorData =
+            await response.json();
 
-          if (typeof errorData?.detail === "string") {
+          if (
+            typeof errorData?.detail ===
+            "string"
+          ) {
             detail = `: ${errorData.detail}`;
           }
         } catch {
@@ -496,7 +496,8 @@ export default function LeadsPage() {
       <div
         style={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent:
+            "flex-end",
           marginBottom: "24px",
         }}
       >
@@ -513,7 +514,9 @@ export default function LeadsPage() {
       {showForm && (
         <div
           className="dashboard-panel"
-          style={{ marginBottom: "24px" }}
+          style={{
+            marginBottom: "24px",
+          }}
         >
           <div className="dashboard-panel-header">
             <div>
@@ -531,7 +534,9 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form
+            onSubmit={handleSubmit}
+          >
             <div
               style={{
                 display: "grid",
@@ -544,7 +549,9 @@ export default function LeadsPage() {
                 name="name"
                 placeholder="Name"
                 value={form.name}
-                onChange={handleChange}
+                onChange={
+                  handleChange
+                }
                 required
               />
 
@@ -553,50 +560,78 @@ export default function LeadsPage() {
                 type="email"
                 placeholder="Email"
                 value={form.email}
-                onChange={handleChange}
+                onChange={
+                  handleChange
+                }
                 required
               />
 
               <input
                 name="company"
                 placeholder="Company"
-                value={form.company}
-                onChange={handleChange}
+                value={
+                  form.company
+                }
+                onChange={
+                  handleChange
+                }
               />
 
               <input
                 name="phone"
                 placeholder="Phone"
-                value={form.phone}
-                onChange={handleChange}
+                value={
+                  form.phone
+                }
+                onChange={
+                  handleChange
+                }
               />
 
               <input
                 name="source"
                 placeholder="Source"
-                value={form.source}
-                onChange={handleChange}
+                value={
+                  form.source
+                }
+                onChange={
+                  handleChange
+                }
               />
 
               <select
                 name="stage"
-                value={form.stage}
-                onChange={handleChange}
+                value={
+                  form.stage
+                }
+                onChange={
+                  handleChange
+                }
               >
-                <option value="new">New</option>
+                <option value="new">
+                  New
+                </option>
+
                 <option value="contacted">
                   Contacted
                 </option>
+
                 <option value="responded">
                   Responded
                 </option>
+
                 <option value="proposal">
                   Proposal
                 </option>
+
                 <option value="not_now">
                   Not Now
                 </option>
-                <option value="won">Won</option>
+
+                <option value="won">
+                  Won
+                </option>
+
                 <option value="dropped">
                   Dropped
                 </option>
@@ -604,16 +639,25 @@ export default function LeadsPage() {
 
               <select
                 name="response"
-                value={form.response}
-                onChange={handleChange}
+                value={
+                  form.response
+                }
+                onChange={
+                  handleChange
+                }
               >
                 <option value="">
                   No response recorded
                 </option>
+
                 <option value="yes">
                   Yes / Interested
                 </option>
-                <option value="no">No</option>
+
+                <option value="no">
+                  No
+                </option>
+
                 <option value="not_now">
                   Not Now
                 </option>
@@ -622,8 +666,12 @@ export default function LeadsPage() {
               <input
                 name="follow_up_reason"
                 placeholder="Follow-up reason"
-                value={form.follow_up_reason}
-                onChange={handleChange}
+                value={
+                  form.follow_up_reason
+                }
+                onChange={
+                  handleChange
+                }
               />
 
               <input
@@ -631,27 +679,41 @@ export default function LeadsPage() {
                 type="number"
                 min="0"
                 placeholder="Contact attempts"
-                value={form.contact_attempts}
-                onChange={handleChange}
+                value={
+                  form.contact_attempts
+                }
+                onChange={
+                  handleChange
+                }
               />
 
               <label>
                 Last contacted
+
                 <input
                   name="last_contacted_at"
                   type="datetime-local"
-                  value={form.last_contacted_at}
-                  onChange={handleChange}
+                  value={
+                    form.last_contacted_at
+                  }
+                  onChange={
+                    handleChange
+                  }
                 />
               </label>
 
               <label>
                 Next follow-up
+
                 <input
                   name="next_follow_up_at"
                   type="datetime-local"
-                  value={form.next_follow_up_at}
-                  onChange={handleChange}
+                  value={
+                    form.next_follow_up_at
+                  }
+                  onChange={
+                    handleChange
+                  }
                 />
               </label>
             </div>
@@ -660,7 +722,9 @@ export default function LeadsPage() {
               name="notes"
               placeholder="Notes"
               value={form.notes}
-              onChange={handleChange}
+              onChange={
+                handleChange
+              }
               rows={4}
               style={{
                 width: "100%",
@@ -682,7 +746,9 @@ export default function LeadsPage() {
                   checked={
                     form.marketing_email_opt_in
                   }
-                  onChange={handleCheckboxChange}
+                  onChange={
+                    handleCheckboxChange
+                  }
                 />{" "}
                 Email marketing
               </label>
@@ -694,7 +760,9 @@ export default function LeadsPage() {
                   checked={
                     form.marketing_sms_opt_in
                   }
-                  onChange={handleCheckboxChange}
+                  onChange={
+                    handleCheckboxChange
+                  }
                 />{" "}
                 SMS marketing
               </label>
@@ -720,7 +788,9 @@ export default function LeadsPage() {
 
               <button
                 type="button"
-                onClick={closeForm}
+                onClick={
+                  closeForm
+                }
                 disabled={saving}
               >
                 Cancel
@@ -734,7 +804,9 @@ export default function LeadsPage() {
       {error && (
         <div
           className="dashboard-panel"
-          style={{ marginBottom: "24px" }}
+          style={{
+            marginBottom: "24px",
+          }}
         >
           <p>{error}</p>
         </div>
@@ -754,153 +826,180 @@ export default function LeadsPage() {
           <button
             type="button"
             className="dashboard-link"
-            onClick={loadLeads}
+            onClick={
+              loadLeads
+            }
           >
             Refresh
           </button>
         </div>
 
-        {loading && <p>Loading leads...</p>}
-
-        {!loading && leads.length === 0 && (
-          <p>No leads yet.</p>
+        {loading && (
+          <p>Loading leads...</p>
         )}
 
-        {!loading && leads.length > 0 && (
-          <div>
-            {leads.map((lead) => (
-              <div
-                key={lead.id}
-                style={{
-                  padding: "20px 0",
-                  borderBottom:
-                    "1px solid #e5e5e5",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    gap: "20px",
-                  }}
-                >
-                  <div>
-                    <h2>{lead.name}</h2>
+        {!loading &&
+          leads.length === 0 && (
+            <p>No leads yet.</p>
+          )}
 
-                    <p>
-                      {lead.company ||
-                        "No company"}
-                    </p>
-
-                    <p>{lead.email}</p>
-
-                    <p>
-                      {lead.phone ||
-                        "No phone number"}
-                    </p>
-
-                    <p>
-                      Stage:{" "}
-                      <strong>
-                        {lead.stage}
-                      </strong>
-                    </p>
-
-                    <p>
-                      Response:{" "}
-                      {lead.response ||
-                        "No response"}
-                    </p>
-
-                    <p>
-                      Contact attempts:{" "}
-                      {lead.contact_attempts}
-                    </p>
-
-                    {lead.next_follow_up_at && (
-                      <p>
-                        Next follow-up:{" "}
-                        {new Date(
-                          lead.next_follow_up_at
-                        ).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-
+        {!loading &&
+          leads.length > 0 && (
+            <div>
+              {leads.map(
+                (lead) => (
                   <div
+                    key={
+                      lead.id
+                    }
                     style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "10px",
-                      alignContent:
-                        "flex-start",
-                      justifyContent:
-                        "flex-end",
+                      padding:
+                        "20px 0",
+                      borderBottom:
+                        "1px solid #e5e5e5",
                     }}
                   >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openEditForm(lead)
-                      }
+                    <div
+                      style={{
+                        display:
+                          "flex",
+                        justifyContent:
+                          "space-between",
+                        gap: "20px",
+                      }}
                     >
-                      Edit
-                    </button>
+                      <div>
+                        <h2>
+                          {lead.name}
+                        </h2>
 
-                    {lead.stage !== "won" &&
-                      lead.stage !==
-                        "dropped" && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              contactAgain(
-                                lead
-                              )
+                        <p>
+                          {lead.company ||
+                            "No company"}
+                        </p>
+
+                        <p>
+                          {lead.email}
+                        </p>
+
+                        <p>
+                          {lead.phone ||
+                            "No phone number"}
+                        </p>
+
+                        <p>
+                          Stage:{" "}
+                          <strong>
+                            {
+                              lead.stage
                             }
-                          >
-                            Contact Again
-                          </button>
+                          </strong>
+                        </p>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              markNotNow(
-                                lead
-                              )
-                            }
-                          >
-                            Not Now
-                          </button>
+                        <p>
+                          Response:{" "}
+                          {lead.response ||
+                            "No response"}
+                        </p>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              markDropped(
-                                lead
-                              )
-                            }
-                          >
-                            Drop
-                          </button>
-                        </>
-                      )}
+                        <p>
+                          Contact attempts:{" "}
+                          {
+                            lead.contact_attempts
+                          }
+                        </p>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleDelete(lead.id)
-                      }
-                    >
-                      Delete
-                    </button>
+                        {lead.next_follow_up_at && (
+                          <p>
+                            Next follow-up:{" "}
+                            {new Date(
+                              lead.next_follow_up_at
+                            ).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          display:
+                            "flex",
+                          flexWrap:
+                            "wrap",
+                          gap: "10px",
+                          alignContent:
+                            "flex-start",
+                          justifyContent:
+                            "flex-end",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openEditForm(
+                              lead
+                            )
+                          }
+                        >
+                          Edit
+                        </button>
+
+                        {lead.stage !==
+                          "won" &&
+                          lead.stage !==
+                            "dropped" && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  contactAgain(
+                                    lead
+                                  )
+                                }
+                              >
+                                Contact Again
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  markNotNow(
+                                    lead
+                                  )
+                                }
+                              >
+                                Not Now
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  markDropped(
+                                    lead
+                                  )
+                                }
+                              >
+                                Drop
+                              </button>
+                            </>
+                          )}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDelete(
+                              lead.id
+                            )
+                          }
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                )
+              )}
+            </div>
+          )}
       </div>
     </div>
   );

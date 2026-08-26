@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-@router.post("/")
+@router.post("")
 def create_lead(
     lead: LeadCreate,
     db: Session = Depends(get_db),
@@ -41,7 +41,7 @@ def create_lead(
     return new_lead
 
 
-@router.get("/")
+@router.get("")
 def get_leads(
     db: Session = Depends(get_db),
 ):
@@ -93,10 +93,18 @@ def update_lead(
     existing_lead.source = lead.source
     existing_lead.stage = lead.stage
     existing_lead.response = lead.response
-    existing_lead.follow_up_reason = lead.follow_up_reason
-    existing_lead.contact_attempts = lead.contact_attempts
-    existing_lead.last_contacted_at = lead.last_contacted_at
-    existing_lead.next_follow_up_at = lead.next_follow_up_at
+    existing_lead.follow_up_reason = (
+        lead.follow_up_reason
+    )
+    existing_lead.contact_attempts = (
+        lead.contact_attempts
+    )
+    existing_lead.last_contacted_at = (
+        lead.last_contacted_at
+    )
+    existing_lead.next_follow_up_at = (
+        lead.next_follow_up_at
+    )
     existing_lead.notes = lead.notes
     existing_lead.marketing_email_opt_in = (
         lead.marketing_email_opt_in
