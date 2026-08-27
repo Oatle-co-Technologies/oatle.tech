@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, Request
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
@@ -18,7 +19,11 @@ def get_current_staff(
     request: Request,
     db: Session = Depends(get_db),
 ) -> Staff:
-    email = request.headers.get("X-User-Email", "").strip().lower()
+    email = (
+        request.headers.get("X-User-Email", "")
+        .strip()
+        .lower()
+    )
 
     if not email:
         raise HTTPException(
