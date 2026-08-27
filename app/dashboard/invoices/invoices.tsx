@@ -60,6 +60,7 @@ type Invoice = {
 type InvoiceForm = {
   client_id: string;
   project_id: string;
+  quoted_amount: string;
   discount_percent: string;
   status: string;
   issue_date: string;
@@ -70,6 +71,7 @@ type InvoiceForm = {
 const emptyForm: InvoiceForm = {
   client_id: "",
   project_id: "",
+  quoted_amount: "",
   discount_percent: "0",
   status: "draft",
   issue_date: "",
@@ -94,6 +96,7 @@ const API_URL =
 
 export default function Invoices() {
   const { userEmail } = useAuth();
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -131,7 +134,10 @@ export default function Invoices() {
     useState<number | null>(null);
 
   async function loadInvoices() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -160,7 +166,10 @@ export default function Invoices() {
   }
 
   async function loadClients() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/clients`
@@ -180,7 +189,10 @@ export default function Invoices() {
   }
 
   async function loadProjects() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/projects`
@@ -200,7 +212,10 @@ export default function Invoices() {
   }
 
   async function loadProducts() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/pricing/products`
@@ -222,7 +237,10 @@ export default function Invoices() {
   }
 
   async function loadAddOns() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/pricing/addons`
@@ -246,7 +264,10 @@ export default function Invoices() {
   async function loadProjectAddOns(
     projectId: string
   ) {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     if (!projectId) {
       setProjectAddOns([]);
       return;
@@ -424,6 +445,8 @@ export default function Invoices() {
         ? String(invoice.project_id)
         : "",
 
+      quoted_amount: "",
+
       discount_percent: String(
         invoice.discount_percent ?? 0
       ),
@@ -469,6 +492,11 @@ export default function Invoices() {
         project_id: form.project_id
           ? Number(form.project_id)
           : null,
+
+        quoted_amount:
+          form.quoted_amount.trim() !== ""
+            ? Number(form.quoted_amount)
+            : null,
 
         discount_percent:
           Number(
@@ -643,8 +671,10 @@ export default function Invoices() {
       }
 
       if (
+        product.pricing_type !==
+          "quoted" &&
         product.base_price ===
-        null
+          null
       ) {
         throw new Error(
           "The selected product does not have a base price."
@@ -665,11 +695,6 @@ export default function Invoices() {
       const addons: AddOn[] =
         await addonsResponse.json();
 
-      const productPrice =
-        Number(
-          product.base_price
-        );
-
       const addonsTotal =
         addons.reduce(
           (
@@ -683,19 +708,82 @@ export default function Invoices() {
           0
         );
 
-      const subtotal =
-        productPrice +
-        addonsTotal;
-
       const discountPercent =
         Number(
           invoice.discount_percent ??
             0
         );
 
-      const discountAmount =
-        subtotal *
-        (discountPercent / 100);
+      let productPrice: number;
+      let subtotal: number;
+      let discountAmount: number;
+
+      /*
+       * FIXED PRODUCT
+       *
+       * The catalogue base price is the
+       * product price.
+       */
+      if (
+        product.pricing_type !==
+        "quoted"
+      ) {
+        productPrice =
+          Number(
+            product.base_price
+          );
+
+        subtotal =
+          productPrice +
+          addonsTotal;
+
+        discountAmount =
+          subtotal *
+          (discountPercent /
+            100);
+      }
+
+      /*
+       * QUOTED PRODUCT
+       *
+       * invoice.amount is the final amount
+       * after add-ons and discount.
+       *
+       * Reconstruct the subtotal first,
+       * then subtract add-ons to determine
+       * the actual quoted product amount.
+       */
+      else {
+        if (
+          discountPercent >=
+          100
+        ) {
+          throw new Error(
+            "A 100% discount cannot be used to calculate the quoted amount."
+          );
+        }
+
+        subtotal =
+          discountPercent > 0
+            ? Number(
+                invoice.amount
+              ) /
+              (1 -
+                discountPercent /
+                  100)
+            : Number(
+                invoice.amount
+              );
+
+        productPrice =
+          subtotal -
+          addonsTotal;
+
+        discountAmount =
+          subtotal *
+          (discountPercent /
+            100);
+      }
 
       const amountDue =
         Number(invoice.amount);
@@ -769,12 +857,25 @@ export default function Invoices() {
         EMAILJS_PUBLIC_KEY
       );
 
+      /*
+       * Keep the backend invoice status in sync.
+       *
+       * For quoted products, send the reconstructed
+       * quoted product amount rather than the final
+       * invoice amount.
+       */
       const updatePayload = {
         client_id:
           invoice.client_id,
 
         project_id:
           invoice.project_id,
+
+        quoted_amount:
+          product.pricing_type ===
+          "quoted"
+            ? productPrice
+            : null,
 
         discount_percent:
           invoice.discount_percent ??
@@ -811,10 +912,12 @@ export default function Invoices() {
 
       if (!updateResponse.ok) {
         const data =
-          await updateResponse.json();
+          await updateResponse
+            .json()
+            .catch(() => null);
 
         throw new Error(
-          data.detail ||
+          data?.detail ||
             "Invoice was emailed, but the status could not be updated."
         );
       }
@@ -1065,6 +1168,105 @@ export default function Invoices() {
                 </select>
               </div>
 
+              {/* Quoted Amount */}
+
+              {form.project_id &&
+                (() => {
+                  const project =
+                    projects.find(
+                      (item) =>
+                        item.id ===
+                        Number(
+                          form.project_id
+                        )
+                    );
+
+                  const product =
+                    project
+                      ? products.find(
+                          (
+                            item
+                          ) =>
+                            item.id ===
+                            project.product_id
+                        )
+                      : null;
+
+                  if (
+                    product?.pricing_type !==
+                    "quoted"
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      style={{
+                        display:
+                          "grid",
+                        gridTemplateColumns:
+                          "120px 1fr",
+                        alignItems:
+                          "center",
+                        gap: "12px",
+                        gridColumn:
+                          "1 / -1",
+                      }}
+                    >
+                      <label htmlFor="quoted_amount">
+                        Quoted Amount
+                      </label>
+
+                      <div>
+                        <div
+                          style={{
+                            display:
+                              "flex",
+                            alignItems:
+                              "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <span>
+                            R
+                          </span>
+
+                          <input
+                            id="quoted_amount"
+                            name="quoted_amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={
+                              form.quoted_amount
+                            }
+                            onChange={
+                              handleChange
+                            }
+                            placeholder="Enter quoted amount"
+                            required
+                          />
+                        </div>
+
+                        <p
+                          style={{
+                            margin:
+                              "6px 0 0",
+                            fontSize:
+                              "13px",
+                            color:
+                              "#777",
+                          }}
+                        >
+                          Enter the final
+                          quoted price for
+                          this product.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
               {/* Invoice Pricing Breakdown */}
 
               {form.project_id && (
@@ -1112,7 +1314,16 @@ export default function Invoices() {
                         : null;
 
                     const productPrice =
-                      product?.base_price
+                      product?.pricing_type ===
+                      "quoted"
+                        ? Number(
+                            form.quoted_amount ||
+                              0
+                          )
+                        : product?.base_price !==
+                              null &&
+                          product?.base_price !==
+                              undefined
                         ? Number(
                             product.base_price
                           )

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
@@ -14,6 +15,7 @@ from backend.schemas.invoice import (
     InvoiceResponse,
     InvoiceUpdate,
 )
+
 
 router = APIRouter(
     prefix="/invoices",
@@ -58,14 +60,30 @@ def calculate_project_amount(
             detail="Product not found",
         )
 
-    if product.base_price is not None:
-        subtotal = float(product.base_price)
-    elif quoted_amount is not None:
+    # Quoted products use the amount entered on the invoice.
+    # Fixed products continue using their catalogue base price.
+    if product.pricing_type == "quoted":
+        if quoted_amount is None:
+            raise HTTPException(
+                status_code=400,
+                detail="A quoted amount is required for this product",
+            )
+
+        if quoted_amount < 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Quoted amount cannot be negative",
+            )
+
         subtotal = float(quoted_amount)
+
+    elif product.base_price is not None:
+        subtotal = float(product.base_price)
+
     else:
         raise HTTPException(
             status_code=400,
-            detail="A quoted amount is required for this product",
+            detail="A base price is required for this product",
         )
 
     project_addons = (
@@ -135,7 +153,7 @@ def create_invoice(
 
     amount = calculate_project_amount(
         project=project,
-        quoted_amount=None,
+        quoted_amount=invoice.quoted_amount,
         discount_percent=invoice.discount_percent,
         db=db,
     )
@@ -228,7 +246,7 @@ def update_invoice(
 
     amount = calculate_project_amount(
         project=project,
-        quoted_amount=None,
+        quoted_amount=invoice_data.quoted_amount,
         discount_percent=invoice_data.discount_percent,
         db=db,
     )
