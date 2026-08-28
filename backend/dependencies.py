@@ -60,7 +60,7 @@ def get_current_staff(
         payload = jwt.decode(
             token,
             signing_key.key,
-            algorithms=["RS256", "ES256"],
+            algorithms=[signing_key.algorithm_name],
             options={
                 "verify_aud": False,
             },
