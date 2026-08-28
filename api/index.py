@@ -7,9 +7,11 @@ directory, so this file exposes the existing FastAPI application from
 
 Production requests arrive under the `/api/backend` prefix (for example
 `/api/backend/dashboard/summary`), while the FastAPI routes are defined
-without that prefix (`/dashboard/summary`, `/clients/`, ...). The ASGI
-wrapper below strips the prefix before passing the request to the
-existing app, preserving the public `/api/backend/*` URL structure.
+without that prefix (`/dashboard/summary`, `/clients/`, ...). Requests
+first pass through a Next.js route handler, which obtains a Neon JWT from
+the server-side session and forwards the target path in a private routing
+header. The ASGI wrapper below uses that path before passing the request
+to the existing app, preserving the public `/api/backend/*` URL structure.
 
 Trailing-slash handling: Vercel's rewrite engine cannot match
 `/api/backend/:path*` against URLs that END with a slash, so Vercel's
@@ -37,6 +39,7 @@ if PROJECT_ROOT not in sys.path:
 from backend.main import app as backend_app  # noqa: E402
 
 API_PREFIX = "/api/backend"
+BACKEND_PATH_HEADER = b"x-oatle-backend-path"
 
 _route_paths = None
 
@@ -68,9 +71,19 @@ async def app(scope, receive, send):
     """
     if scope["type"] == "http":
         path = scope.get("path", "")
+        headers = dict(scope.get("headers", []))
+        forwarded_path = headers.get(BACKEND_PATH_HEADER)
 
-        if path == API_PREFIX or path.startswith(API_PREFIX + "/"):
+        if forwarded_path:
+            new_path = forwarded_path.decode("utf-8")
+        elif path == API_PREFIX or path.startswith(API_PREFIX + "/"):
             new_path = path[len(API_PREFIX):] or "/"
+        else:
+            new_path = None
+
+        if new_path:
+            if not new_path.startswith("/"):
+                new_path = "/" + new_path
 
             route_paths = _registered_route_paths()
 

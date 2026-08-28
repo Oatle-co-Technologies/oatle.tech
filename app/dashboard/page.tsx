@@ -188,12 +188,18 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    void loadDashboard();
-  }, [userEmail]);
+    if (!authLoading && !staff) {
+      router.replace("/dashboard/unauthorized");
+    }
+  }, [authLoading, router, staff]);
 
-  if (!authLoading && !staff) {
-    router.push("/dashboard/unauthorized");
-  }
+  useEffect(() => {
+    if (authLoading || !staff) {
+      return;
+    }
+
+    void loadDashboard();
+  }, [authLoading, staff]);
 
   return (
     <div className="dashboard">
