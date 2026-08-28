@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.dependencies import get_current_staff
 from backend.models.lead import Lead
 from backend.schemas.lead import LeadCreate
 from backend.services.email_service import (
@@ -15,7 +15,6 @@ from backend.services.email_service import (
 router = APIRouter(
     prefix="/leads",
     tags=["Leads"],
-    dependencies=[Depends(get_current_staff)],
 )
 
 
@@ -116,29 +115,14 @@ def update_lead(
     existing_lead.source = lead.source
     existing_lead.stage = lead.stage
     existing_lead.response = lead.response
-
-    existing_lead.follow_up_reason = (
-        lead.follow_up_reason
-    )
-
-    existing_lead.contact_attempts = (
-        lead.contact_attempts
-    )
-
-    existing_lead.last_contacted_at = (
-        lead.last_contacted_at
-    )
-
-    existing_lead.next_follow_up_at = (
-        lead.next_follow_up_at
-    )
-
+    existing_lead.follow_up_reason = lead.follow_up_reason
+    existing_lead.contact_attempts = lead.contact_attempts
+    existing_lead.last_contacted_at = lead.last_contacted_at
+    existing_lead.next_follow_up_at = lead.next_follow_up_at
     existing_lead.notes = lead.notes
-
     existing_lead.marketing_email_opt_in = (
         lead.marketing_email_opt_in
     )
-
     existing_lead.marketing_sms_opt_in = (
         lead.marketing_sms_opt_in
     )
@@ -210,9 +194,7 @@ def send_lead_email(
     lead.contact_attempts = (
         lead.contact_attempts + 1
     )
-
     lead.last_contacted_at = datetime.utcnow()
-
     lead.stage = "contacted"
 
     db.commit()

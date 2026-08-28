@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.dependencies import get_current_staff
 from backend.models.pricing import AddOn, Product, Service
 from backend.schemas.pricing import (
     AddOnCreate,
@@ -17,7 +17,6 @@ from backend.schemas.pricing import (
 router = APIRouter(
     prefix="/pricing",
     tags=["Pricing"],
-    dependencies=[Depends(get_current_staff)],
 )
 
 

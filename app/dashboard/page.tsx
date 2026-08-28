@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
-import { useAuth } from "@/lib/auth-context";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
@@ -43,7 +41,7 @@ type RecentActivity = {
 };
 
 type DashboardData = {
-  revenue: number;
+  revenue?: number;
   active_clients: number;
   open_leads: number;
   projects_in_progress: number;
@@ -93,11 +91,10 @@ const adminNavigationItems = [
 ];
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { staff, loading: authLoading } = useAuth();
-
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
+
+  const [userEmail, setUserEmail] = useState("");
 
   const [displayName, setDisplayName] = useState("");
   const [displayNameInput, setDisplayNameInput] =
@@ -112,23 +109,25 @@ export default function DashboardPage() {
   const [greetingMessage, setGreetingMessage] =
     useState(greetingMessages[0]);
 
-  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [authLoading, setAuthLoading] =
+    useState(true);
+
+  const [dashboardLoading, setDashboardLoading] =
+    useState(true);
+
   const [error, setError] = useState("");
 
   const [mobileNavOpen, setMobileNavOpen] =
     useState(false);
 
-  const isAdmin = staff?.access_level === "admin";
-
-  const userEmail = staff?.email || "";
+  const isAdmin = false;
 
   function handleSaveDisplayName(
     event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    const name =
-      displayNameInput.trim();
+    const name = displayNameInput.trim();
 
     if (!name || !userEmail) {
       return;
@@ -188,18 +187,61 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    if (!authLoading && !staff) {
-      router.replace("/dashboard/unauthorized");
+    async function loadSession() {
+      try {
+        const result =
+          await authClient.getSession();
+
+        const email =
+          result.data?.user?.email
+            ?.toLowerCase()
+            .trim() || "";
+
+        setUserEmail(email);
+      } catch {
+        setUserEmail("");
+      } finally {
+        setAuthLoading(false);
+      }
     }
-  }, [authLoading, router, staff]);
+
+    void loadSession();
+  }, []);
 
   useEffect(() => {
-    if (authLoading || !staff) {
+    if (authLoading) {
       return;
     }
 
     void loadDashboard();
-  }, [authLoading, staff]);
+  }, [authLoading]);
+
+  useEffect(() => {
+    if (!userEmail) {
+      return;
+    }
+
+    const savedName =
+      window.localStorage.getItem(
+        `oatle-display-name:${userEmail}`
+      );
+
+    if (savedName) {
+      setDisplayName(savedName);
+    } else {
+      setShowNameSetup(true);
+    }
+  }, [userEmail]);
+
+  useEffect(() => {
+    const randomIndex = Math.floor(
+      Math.random() * greetingMessages.length
+    );
+
+    setGreetingMessage(
+      greetingMessages[randomIndex]
+    );
+  }, []);
 
   return (
     <div className="dashboard">
@@ -254,6 +296,7 @@ export default function DashboardPage() {
               {item.label}
             </Link>
           ))}
+
           {isAdmin &&
             adminNavigationItems.map((item) => (
               <Link
@@ -401,20 +444,21 @@ export default function DashboardPage() {
         {!dashboardLoading && dashboard && (
           <>
             <section className="dashboard-stats">
-              {isAdmin && (
-                <div className="dashboard-card">
-                  <p>Revenue</p>
+              {isAdmin &&
+                dashboard.revenue !== undefined && (
+                  <div className="dashboard-card">
+                    <p>Revenue</p>
 
-                  <h2>
-                    R
-                    {Number(
-                      dashboard.revenue
-                    ).toLocaleString("en-ZA")}
-                  </h2>
+                    <h2>
+                      R
+                      {Number(
+                        dashboard.revenue
+                      ).toLocaleString("en-ZA")}
+                    </h2>
 
-                  <span>This month</span>
-                </div>
-              )}
+                    <span>This month</span>
+                  </div>
+                )}
 
               <div className="dashboard-card">
                 <p>Active Clients</p>

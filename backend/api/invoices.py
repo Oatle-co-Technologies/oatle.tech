@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.dependencies import get_admin_staff
 from backend.models.invoice import Invoice
 from backend.models.project import Project
 from backend.models.pricing import AddOn, Product
@@ -20,7 +19,6 @@ from backend.schemas.invoice import (
 router = APIRouter(
     prefix="/invoices",
     tags=["Invoices"],
-    dependencies=[Depends(get_admin_staff)],
 )
 
 
@@ -62,6 +60,7 @@ def calculate_project_amount(
 
     # Quoted products use the amount entered on the invoice.
     # Fixed products continue using their catalogue base price.
+
     if product.pricing_type == "quoted":
         if quoted_amount is None:
             raise HTTPException(

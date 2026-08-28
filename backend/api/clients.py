@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
-from backend.dependencies import get_current_staff
 from backend.models.client import Client
 from backend.schemas.client import ClientCreate
 
 router = APIRouter(
     prefix="/clients",
     tags=["Clients"],
-    dependencies=[Depends(get_current_staff)],
 )
 
 

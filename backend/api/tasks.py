@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.dependencies import get_current_staff
 from backend.models.product_service import ProductService
 from backend.models.pricing import Service
 from backend.models.staff import Staff
@@ -18,7 +18,6 @@ from backend.services.email_service import (
 router = APIRouter(
     prefix="/tasks",
     tags=["Tasks"],
-    dependencies=[Depends(get_current_staff)],
 )
 
 
@@ -61,7 +60,6 @@ def validate_task_type(
     db: Session,
 ):
     if task.task_type == "product":
-
         if task.product_service_id is None:
             raise HTTPException(
                 status_code=400,
@@ -74,8 +72,7 @@ def validate_task_type(
         product_service = (
             db.query(ProductService)
             .filter(
-                ProductService.id
-                == task.product_service_id
+                ProductService.id == task.product_service_id
             )
             .first()
         )
@@ -87,7 +84,6 @@ def validate_task_type(
             )
 
     elif task.task_type == "service":
-
         if task.service_id is None:
             raise HTTPException(
                 status_code=400,
@@ -167,18 +163,15 @@ def create_task(
     # ========================================================
 
     if new_task.assigned_to is not None:
-
         staff_member = (
             db.query(Staff)
             .filter(
-                Staff.id
-                == new_task.assigned_to
+                Staff.id == new_task.assigned_to
             )
             .first()
         )
 
         if staff_member:
-
             send_task_assignment_email(
                 recipient_email=staff_member.email,
                 recipient_name=staff_member.name,
@@ -272,52 +265,23 @@ def update_task(
     )
 
     existing_task.project_id = task.project_id
-
     existing_task.product_service_id = (
         task.product_service_id
     )
-
-    existing_task.service_id = (
-        task.service_id
-    )
-
-    existing_task.assigned_to = (
-        task.assigned_to
-    )
-
-    existing_task.task_type = (
-        task.task_type
-    )
-
+    existing_task.service_id = task.service_id
+    existing_task.assigned_to = task.assigned_to
+    existing_task.task_type = task.task_type
     existing_task.name = task.name
-
-    existing_task.description = (
-        task.description
-    )
-
-    existing_task.category = (
-        task.category
-    )
-
+    existing_task.description = task.description
+    existing_task.category = task.category
     existing_task.status = task.status
-
-    existing_task.priority = (
-        task.priority
-    )
-
-    existing_task.due_date = (
-        task.due_date
-    )
-
+    existing_task.priority = task.priority
+    existing_task.due_date = task.due_date
     existing_task.notes = task.notes
 
     if task.status == "completed":
-
         if existing_task.completed_at is None:
-            existing_task.completed_at = (
-                datetime.utcnow()
-            )
-
+            existing_task.completed_at = datetime.utcnow()
     else:
         existing_task.completed_at = None
 
