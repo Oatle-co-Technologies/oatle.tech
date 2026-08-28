@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
-import { useAuth } from "@/lib/auth-context";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
@@ -81,16 +79,9 @@ const navigationItems = [
   },
 ];
 
-const adminNavigationItems = [
-  {
-    href: "/dashboard/staff",
-    label: "Staff",
-  },
-  {
-    href: "/dashboard/invoices",
-    label: "Invoices",
-  },
-];
+function formatLabel(value: string) {
+  return value.replace(/_/g, " ");
+}
 
 export default function DashboardPage() {
   const [dashboard, setDashboard] =
@@ -201,9 +192,6 @@ export default function DashboardPage() {
   useEffect(() => {
     void loadDashboard();
   }, []);
-
-  const isCommunications = true;
-  const isAdmin = true;
 
   function handleSaveDisplayName(
     event: React.FormEvent<HTMLFormElement>
@@ -323,6 +311,7 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        {/* Display Name Setup */}
         {showNameSetup && (
           <section
             className="dashboard-panel"
@@ -394,6 +383,7 @@ export default function DashboardPage() {
           </section>
         )}
 
+        {/* Error */}
         {error && (
           <div
             className="dashboard-panel"
@@ -412,6 +402,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Loading */}
         {loading && (
           <div
             className="dashboard-panel"
@@ -425,6 +416,7 @@ export default function DashboardPage() {
 
         {!loading && dashboard && (
           <>
+            {/* Stats */}
             <section className="dashboard-stats">
               <div className="dashboard-card">
                 <p>Revenue</p>
@@ -474,6 +466,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
+            {/* Projects + Lead Pipeline */}
             <section className="dashboard-grid">
               <div className="dashboard-panel dashboard-projects">
                 <div className="dashboard-panel-header">
@@ -536,9 +529,8 @@ export default function DashboardPage() {
                                   "#777",
                               }}
                             >
-                              {project.status.replace(
-                                "_",
-                                " "
+                              {formatLabel(
+                                project.status
                               )}
                             </p>
                           </div>
@@ -639,6 +631,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
+            {/* Tasks + Recent Activity */}
             <section className="dashboard-grid">
               <div className="dashboard-panel">
                 <div className="dashboard-panel-header">
@@ -702,9 +695,8 @@ export default function DashboardPage() {
                                   "#777",
                               }}
                             >
-                              {task.status.replace(
-                                "_",
-                                " "
+                              {formatLabel(
+                                task.status
                               )}
                             </p>
                           </div>
@@ -776,10 +768,12 @@ export default function DashboardPage() {
                                 "#777",
                             }}
                           >
-                            {activity.type} ·{" "}
-                            {activity.status.replace(
-                              "_",
-                              " "
+                            {formatLabel(
+                              activity.type
+                            )}{" "}
+                            ·{" "}
+                            {formatLabel(
+                              activity.status
                             )}
                           </p>
                         </div>
