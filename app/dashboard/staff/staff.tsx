@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { useAuth } from "@/lib/auth-context";
+
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type StaffMember = {
@@ -32,24 +34,33 @@ const API_URL =
 
 export default function Staff() {
   const { userEmail } = useAuth();
+
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+
   const [editingStaff, setEditingStaff] =
     useState<StaffMember | null>(null);
+
   const [form, setForm] = useState<StaffForm>({
     ...emptyForm,
   });
+
   const [saving, setSaving] = useState(false);
 
   async function loadStaff() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/staff`);
+      const response = await fetch(
+        `${API_URL}/staff`
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -73,9 +84,7 @@ export default function Staff() {
   }
 
   useEffect(() => {
-    void Promise.resolve().then(() => {
-      void loadStaff();
-    });
+    void loadStaff();
   }, [userEmail]);
 
   function openAddForm() {
@@ -85,7 +94,9 @@ export default function Staff() {
     setError("");
   }
 
-  function openEditForm(member: StaffMember) {
+  function openEditForm(
+    member: StaffMember
+  ) {
     setEditingStaff(member);
 
     setForm({
@@ -93,8 +104,10 @@ export default function Staff() {
       email: member.email,
       job_title: member.job_title ?? "",
       access_level: member.access_level,
-      employment_type: member.employment_type,
-      is_temporary: member.is_temporary,
+      employment_type:
+        member.employment_type,
+      is_temporary:
+        member.is_temporary,
       active: member.active,
     });
 
@@ -113,7 +126,8 @@ export default function Staff() {
       HTMLInputElement | HTMLSelectElement
     >
   ) {
-    const { name, value, type } = event.target;
+    const { name, value, type } =
+      event.target;
 
     const checked =
       type === "checkbox" &&
@@ -147,7 +161,8 @@ export default function Staff() {
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
         body: JSON.stringify({
           ...form,
@@ -158,7 +173,9 @@ export default function Staff() {
 
       if (!response.ok) {
         const errorData =
-          await response.json().catch(() => null);
+          await response
+            .json()
+            .catch(() => null);
 
         throw new Error(
           errorData?.detail ||
@@ -171,6 +188,7 @@ export default function Staff() {
       }
 
       closeForm();
+
       await loadStaff();
     } catch (err) {
       setError(
@@ -207,7 +225,9 @@ export default function Staff() {
 
       if (!response.ok) {
         const errorData =
-          await response.json().catch(() => null);
+          await response
+            .json()
+            .catch(() => null);
 
         throw new Error(
           errorData?.detail ||
@@ -226,24 +246,22 @@ export default function Staff() {
   }
 
   return (
-    <div>
+    <div className="dashboard-page">
       <BackToDashboard />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "24px",
-        }}
-      >
+      {/* Header controls */}
+
+      <div className="dashboard-page-actions">
         <button
           type="button"
-          className="dashboard-link"
+          className="dashboard-action-primary"
           onClick={openAddForm}
         >
           + Add Staff Member
         </button>
       </div>
+
+      {/* Add / Edit form */}
 
       {showForm && (
         <div
@@ -269,14 +287,7 @@ export default function Staff() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div className="dashboard-form-grid">
               <input
                 name="name"
                 placeholder="Full Name"
@@ -297,13 +308,17 @@ export default function Staff() {
               <input
                 name="job_title"
                 placeholder="Job Title"
-                value={form.job_title ?? ""}
+                value={
+                  form.job_title ?? ""
+                }
                 onChange={handleChange}
               />
 
               <select
                 name="access_level"
-                value={form.access_level}
+                value={
+                  form.access_level
+                }
                 onChange={handleChange}
               >
                 <option value="member">
@@ -317,7 +332,9 @@ export default function Staff() {
 
               <select
                 name="employment_type"
-                value={form.employment_type}
+                value={
+                  form.employment_type
+                }
                 onChange={handleChange}
               >
                 <option value="employee">
@@ -333,13 +350,7 @@ export default function Staff() {
                 </option>
               </select>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
-                }}
-              >
+              <div className="dashboard-checkbox-group">
                 <label>
                   <input
                     name="is_temporary"
@@ -364,15 +375,10 @@ export default function Staff() {
               </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "20px",
-              }}
-            >
+            <div className="dashboard-form-actions">
               <button
                 type="submit"
+                className="dashboard-action-primary"
                 disabled={saving}
               >
                 {saving
@@ -384,6 +390,7 @@ export default function Staff() {
 
               <button
                 type="button"
+                className="dashboard-action-secondary"
                 onClick={closeForm}
                 disabled={saving}
               >
@@ -394,11 +401,17 @@ export default function Staff() {
         </div>
       )}
 
+      {/* Error */}
+
       {error && (
-        <div className="dashboard-panel">
-          <p>{error}</p>
+        <div className="dashboard-panel dashboard-error-panel">
+          <p className="dashboard-error">
+            {error}
+          </p>
         </div>
       )}
+
+      {/* Staff list */}
 
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
@@ -420,12 +433,14 @@ export default function Staff() {
         </div>
 
         {loading && (
-          <p>Loading staff...</p>
+          <p className="dashboard-muted">
+            Loading staff...
+          </p>
         )}
 
         {!loading &&
           staff.length === 0 && (
-            <p>
+            <p className="dashboard-muted">
               No staff members yet.
             </p>
           )}
@@ -435,27 +450,10 @@ export default function Staff() {
           staff.map((member) => (
             <div
               key={member.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "1fr auto",
-                gap: "24px",
-                alignItems:
-                  "start",
-                padding: "20px 0",
-                borderBottom:
-                  "1px solid #e5e5e5",
-              }}
+              className="dashboard-list-row dashboard-staff-row"
             >
-              <div>
-                <h2
-                  style={{
-                    margin:
-                      "0 0 10px",
-                  }}
-                >
-                  {member.name}
-                </h2>
+              <div className="dashboard-list-content">
+                <h2>{member.name}</h2>
 
                 <p>{member.email}</p>
 
@@ -465,36 +463,54 @@ export default function Staff() {
                     "Not set"}
                 </p>
 
-                <p>
-                  Access:{" "}
-                  {member.access_level}
-                </p>
+                <div className="dashboard-status-group">
+                  <div className="dashboard-status-item">
+                    <span className="dashboard-status-label">
+                      Access
+                    </span>
 
-                <p>
-                  Employment:{" "}
-                  {member.employment_type}
-                  {member.is_temporary
-                    ? " (temporary)"
-                    : ""}
-                </p>
+                    <span className="dashboard-status dashboard-status-info">
+                      {member.access_level}
+                    </span>
+                  </div>
 
-                <p>
-                  Status:{" "}
-                  {member.active
-                    ? "Active"
-                    : "Inactive"}
-                </p>
+                  <div className="dashboard-status-item">
+                    <span className="dashboard-status-label">
+                      Employment
+                    </span>
+
+                    <span className="dashboard-status dashboard-status-info">
+                      {member.employment_type}
+                      {member.is_temporary
+                        ? " · Temporary"
+                        : ""}
+                    </span>
+                  </div>
+
+                  <div className="dashboard-status-item">
+                    <span className="dashboard-status-label">
+                      Status
+                    </span>
+
+                    <span
+                      className={
+                        member.active
+                          ? "dashboard-status dashboard-status-active"
+                          : "dashboard-status dashboard-status-inactive"
+                      }
+                    >
+                      {member.active
+                        ? "Active"
+                        : "Inactive"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  paddingTop: "2px",
-                }}
-              >
+              <div className="dashboard-list-actions">
                 <button
                   type="button"
+                  className="dashboard-action-edit"
                   onClick={() =>
                     openEditForm(
                       member
@@ -506,6 +522,7 @@ export default function Staff() {
 
                 <button
                   type="button"
+                  className="dashboard-action-delete"
                   onClick={() =>
                     handleDelete(
                       member.id

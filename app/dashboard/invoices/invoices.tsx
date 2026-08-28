@@ -431,9 +431,7 @@ export default function Invoices() {
     setError("");
   }
 
-  function openEditForm(
-    invoice: Invoice
-  ) {
+  function openEditForm(invoice: Invoice) {
     setEditingInvoice(invoice);
 
     setForm({
@@ -720,9 +718,6 @@ export default function Invoices() {
 
       /*
        * FIXED PRODUCT
-       *
-       * The catalogue base price is the
-       * product price.
        */
       if (
         product.pricing_type !==
@@ -745,13 +740,6 @@ export default function Invoices() {
 
       /*
        * QUOTED PRODUCT
-       *
-       * invoice.amount is the final amount
-       * after add-ons and discount.
-       *
-       * Reconstruct the subtotal first,
-       * then subtract add-ons to determine
-       * the actual quoted product amount.
        */
       else {
         if (
@@ -857,13 +845,6 @@ export default function Invoices() {
         EMAILJS_PUBLIC_KEY
       );
 
-      /*
-       * Keep the backend invoice status in sync.
-       *
-       * For quoted products, send the reconstructed
-       * quoted product amount rather than the final
-       * invoice amount.
-       */
       const updatePayload = {
         client_id:
           invoice.client_id,
@@ -996,26 +977,28 @@ export default function Invoices() {
     );
   }
 
+  function getStatusClass(
+    status: string
+  ) {
+    const normalizedStatus =
+      status
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+
+    return `dashboard-status dashboard-status-${normalizedStatus}`;
+  }
+
   return (
-    <div>
+    <div className="dashboard-page">
       <BackToDashboard />
 
       {/* Add Invoice */}
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent:
-            "flex-end",
-          marginBottom: "24px",
-        }}
-      >
+      <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-link"
-          onClick={
-            openAddForm
-          }
+          onClick={openAddForm}
         >
           + Add Invoice
         </button>
@@ -1024,13 +1007,10 @@ export default function Invoices() {
       {/* Error */}
 
       {error && (
-        <div
-          className="dashboard-panel"
-          style={{
-            marginBottom: "24px",
-          }}
-        >
-          <p>{error}</p>
+        <div className="dashboard-panel dashboard-error-panel">
+          <p className="dashboard-error">
+            {error}
+          </p>
         </div>
       )}
 
@@ -1059,31 +1039,11 @@ export default function Invoices() {
             </div>
           </div>
 
-          <form
-            onSubmit={
-              handleSubmit
-            }
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "20px 32px",
-              }}
-            >
+          <form onSubmit={handleSubmit}>
+            <div className="dashboard-form-grid-wide">
               {/* Client */}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                }}
-              >
+              <div className="dashboard-form-field">
                 <label htmlFor="client_id">
                   Client
                 </label>
@@ -1091,12 +1051,8 @@ export default function Invoices() {
                 <select
                   id="client_id"
                   name="client_id"
-                  value={
-                    form.client_id
-                  }
-                  onChange={
-                    handleChange
-                  }
+                  value={form.client_id}
+                  onChange={handleChange}
                   required
                 >
                   <option value="">
@@ -1106,12 +1062,8 @@ export default function Invoices() {
                   {clients.map(
                     (client) => (
                       <option
-                        key={
-                          client.id
-                        }
-                        value={
-                          client.id
-                        }
+                        key={client.id}
+                        value={client.id}
                       >
                         {client.name}
                       </option>
@@ -1122,16 +1074,7 @@ export default function Invoices() {
 
               {/* Project */}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                }}
-              >
+              <div className="dashboard-form-field">
                 <label htmlFor="project_id">
                   Project
                 </label>
@@ -1139,12 +1082,8 @@ export default function Invoices() {
                 <select
                   id="project_id"
                   name="project_id"
-                  value={
-                    form.project_id
-                  }
-                  onChange={
-                    handleChange
-                  }
+                  value={form.project_id}
+                  onChange={handleChange}
                   required
                 >
                   <option value="">
@@ -1154,12 +1093,8 @@ export default function Invoices() {
                   {projects.map(
                     (project) => (
                       <option
-                        key={
-                          project.id
-                        }
-                        value={
-                          project.id
-                        }
+                        key={project.id}
+                        value={project.id}
                       >
                         {project.name}
                       </option>
@@ -1184,9 +1119,7 @@ export default function Invoices() {
                   const product =
                     project
                       ? products.find(
-                          (
-                            item
-                          ) =>
+                          (item) =>
                             item.id ===
                             project.product_id
                         )
@@ -1200,36 +1133,14 @@ export default function Invoices() {
                   }
 
                   return (
-                    <div
-                      style={{
-                        display:
-                          "grid",
-                        gridTemplateColumns:
-                          "120px 1fr",
-                        alignItems:
-                          "center",
-                        gap: "12px",
-                        gridColumn:
-                          "1 / -1",
-                      }}
-                    >
+                    <div className="dashboard-form-field dashboard-form-field-full">
                       <label htmlFor="quoted_amount">
                         Quoted Amount
                       </label>
 
                       <div>
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <span>
-                            R
-                          </span>
+                        <div className="dashboard-input-prefix">
+                          <span>R</span>
 
                           <input
                             id="quoted_amount"
@@ -1248,16 +1159,7 @@ export default function Invoices() {
                           />
                         </div>
 
-                        <p
-                          style={{
-                            margin:
-                              "6px 0 0",
-                            fontSize:
-                              "13px",
-                            color:
-                              "#777",
-                          }}
-                        >
+                        <p className="dashboard-form-help">
                           Enter the final
                           quoted price for
                           this product.
@@ -1270,25 +1172,8 @@ export default function Invoices() {
               {/* Invoice Pricing Breakdown */}
 
               {form.project_id && (
-                <div
-                  style={{
-                    gridColumn:
-                      "1 / -1",
-                    padding:
-                      "18px 0",
-                    borderTop:
-                      "1px solid #e5e5e5",
-                    borderBottom:
-                      "1px solid #e5e5e5",
-                  }}
-                >
-                  <p
-                    style={{
-                      margin:
-                        "0 0 16px",
-                      fontWeight: 600,
-                    }}
-                  >
+                <div className="dashboard-form-section dashboard-form-field-full">
+                  <p className="dashboard-form-section-title">
                     Invoice Breakdown
                   </p>
 
@@ -1305,9 +1190,7 @@ export default function Invoices() {
                     const product =
                       project
                         ? products.find(
-                            (
-                              item
-                            ) =>
+                            (item) =>
                               item.id ===
                               project.product_id
                           )
@@ -1363,16 +1246,7 @@ export default function Invoices() {
 
                     return (
                       <div>
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            padding:
-                              "10px 0",
-                          }}
-                        >
+                        <div className="dashboard-breakdown-row">
                           <span>
                             {product?.name ||
                               "Product"}
@@ -1392,16 +1266,7 @@ export default function Invoices() {
                               key={
                                 addon.id
                               }
-                              style={{
-                                display:
-                                  "flex",
-                                justifyContent:
-                                  "space-between",
-                                padding:
-                                  "10px 0",
-                                borderTop:
-                                  "1px solid #e5e5e5",
-                              }}
+                              className="dashboard-breakdown-row"
                             >
                               <span>
                                 {addon.name}
@@ -1419,20 +1284,7 @@ export default function Invoices() {
                           )
                         )}
 
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            padding:
-                              "12px 0",
-                            borderTop:
-                              "1px solid #e5e5e5",
-                            fontWeight:
-                              600,
-                          }}
-                        >
+                        <div className="dashboard-breakdown-row dashboard-breakdown-subtotal">
                           <span>
                             Subtotal
                           </span>
@@ -1445,16 +1297,7 @@ export default function Invoices() {
                           </span>
                         </div>
 
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            padding:
-                              "10px 0",
-                          }}
-                        >
+                        <div className="dashboard-breakdown-row">
                           <span>
                             Discount (
                             {discount}
@@ -1469,24 +1312,7 @@ export default function Invoices() {
                           </span>
                         </div>
 
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            padding:
-                              "16px 0 0",
-                            marginTop:
-                              "6px",
-                            borderTop:
-                              "2px solid #171717",
-                            fontWeight:
-                              700,
-                            fontSize:
-                              "18px",
-                          }}
-                        >
+                        <div className="dashboard-breakdown-total">
                           <span>
                             Amount Due
                           </span>
@@ -1504,39 +1330,12 @@ export default function Invoices() {
 
                   {/* Add-ons */}
 
-                  <div
-                    style={{
-                      marginTop:
-                        "24px",
-                      paddingTop:
-                        "18px",
-                      borderTop:
-                        "1px solid #e5e5e5",
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin:
-                          "0 0 12px",
-                        fontWeight: 600,
-                      }}
-                    >
+                  <div className="dashboard-form-subsection">
+                    <p className="dashboard-form-section-title">
                       Project Add-ons
                     </p>
 
-                    <div
-                      style={{
-                        display:
-                          "grid",
-                        gridTemplateColumns:
-                          "1fr auto",
-                        gap: "12px",
-                        alignItems:
-                          "center",
-                        marginBottom:
-                          "16px",
-                      }}
-                    >
+                    <div className="dashboard-addon-controls">
                       <select
                         value={
                           selectedAddonId
@@ -1545,9 +1344,7 @@ export default function Invoices() {
                           event
                         ) =>
                           setSelectedAddonId(
-                            event
-                              .target
-                              .value
+                            event.target.value
                           )
                         }
                         disabled={
@@ -1562,9 +1359,7 @@ export default function Invoices() {
 
                         {allAddOns
                           .filter(
-                            (
-                              addon
-                            ) =>
+                            (addon) =>
                               addon.active !==
                                 false &&
                               !projectAddOns.some(
@@ -1576,9 +1371,7 @@ export default function Invoices() {
                               )
                           )
                           .map(
-                            (
-                              addon
-                            ) => (
+                            (addon) => (
                               <option
                                 key={
                                   addon.id
@@ -1603,6 +1396,7 @@ export default function Invoices() {
 
                       <button
                         type="button"
+                        className="dashboard-action-primary"
                         onClick={
                           handleAddAddonToProject
                         }
@@ -1618,7 +1412,7 @@ export default function Invoices() {
                     </div>
 
                     {loadingAddOns && (
-                      <p>
+                      <p className="dashboard-muted">
                         Loading project
                         add-ons...
                       </p>
@@ -1627,13 +1421,7 @@ export default function Invoices() {
                     {!loadingAddOns &&
                       projectAddOns.length ===
                         0 && (
-                        <p
-                          style={{
-                            margin: 0,
-                            color:
-                              "#777",
-                          }}
-                        >
+                        <p className="dashboard-muted">
                           No add-ons
                           assigned to this
                           project yet.
@@ -1643,34 +1431,14 @@ export default function Invoices() {
                     {!loadingAddOns &&
                       projectAddOns.length >
                         0 && (
-                        <div
-                          style={{
-                            display:
-                              "grid",
-                            gap:
-                              "10px",
-                          }}
-                        >
+                        <div className="dashboard-addon-list">
                           {projectAddOns.map(
-                            (
-                              addon
-                            ) => (
+                            (addon) => (
                               <div
                                 key={
                                   addon.id
                                 }
-                                style={{
-                                  display:
-                                    "flex",
-                                  justifyContent:
-                                    "space-between",
-                                  alignItems:
-                                    "center",
-                                  gap:
-                                    "20px",
-                                  padding:
-                                    "12px 0",
-                                }}
+                                className="dashboard-addon-row"
                               >
                                 <div>
                                   <strong>
@@ -1680,16 +1448,7 @@ export default function Invoices() {
                                   </strong>
 
                                   {addon.description && (
-                                    <p
-                                      style={{
-                                        margin:
-                                          "4px 0 0",
-                                        color:
-                                          "#777",
-                                        fontSize:
-                                          "14px",
-                                      }}
-                                    >
+                                    <p className="dashboard-form-help">
                                       {
                                         addon.description
                                       }
@@ -1697,16 +1456,7 @@ export default function Invoices() {
                                   )}
                                 </div>
 
-                                <div
-                                  style={{
-                                    display:
-                                      "flex",
-                                    alignItems:
-                                      "center",
-                                    gap:
-                                      "16px",
-                                  }}
-                                >
+                                <div className="dashboard-addon-actions">
                                   <span>
                                     R
                                     {Number(
@@ -1718,6 +1468,7 @@ export default function Invoices() {
 
                                   <button
                                     type="button"
+                                    className="dashboard-action-delete"
                                     onClick={() =>
                                       handleRemoveAddon(
                                         form.project_id,
@@ -1734,16 +1485,7 @@ export default function Invoices() {
                         </div>
                       )}
 
-                    <p
-                      style={{
-                        margin:
-                          "12px 0 0",
-                        fontSize:
-                          "13px",
-                        color:
-                          "#777",
-                      }}
-                    >
+                    <p className="dashboard-form-help">
                       Add-ons are assigned
                       to the project and
                       are included
@@ -1756,29 +1498,12 @@ export default function Invoices() {
 
               {/* Discount */}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                }}
-              >
+              <div className="dashboard-form-field">
                 <label htmlFor="discount_percent">
                   Discount
                 </label>
 
-                <div
-                  style={{
-                    display:
-                      "flex",
-                    alignItems:
-                      "center",
-                    gap: "8px",
-                  }}
-                >
+                <div className="dashboard-input-prefix">
                   <input
                     id="discount_percent"
                     name="discount_percent"
@@ -1800,16 +1525,7 @@ export default function Invoices() {
 
               {/* Status */}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                }}
-              >
+              <div className="dashboard-form-field">
                 <label htmlFor="status">
                   Status
                 </label>
@@ -1817,31 +1533,19 @@ export default function Invoices() {
                 <select
                   id="status"
                   name="status"
-                  value={
-                    form.status
-                  }
-                  onChange={
-                    handleChange
-                  }
+                  value={form.status}
+                  onChange={handleChange}
                 >
                   {statuses.map(
                     (status) => (
                       <option
-                        key={
-                          status
-                        }
-                        value={
-                          status
-                        }
+                        key={status}
+                        value={status}
                       >
                         {status
-                          .charAt(
-                            0
-                          )
+                          .charAt(0)
                           .toUpperCase() +
-                          status.slice(
-                            1
-                          )}
+                          status.slice(1)}
                       </option>
                     )
                   )}
@@ -1850,16 +1554,7 @@ export default function Invoices() {
 
               {/* Issue Date */}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                }}
-              >
+              <div className="dashboard-form-field">
                 <label htmlFor="issue_date">
                   Issue Date
                 </label>
@@ -1880,16 +1575,7 @@ export default function Invoices() {
 
               {/* Due Date */}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr",
-                  alignItems:
-                    "center",
-                  gap: "12px",
-                }}
-              >
+              <div className="dashboard-form-field">
                 <label htmlFor="due_date">
                   Due Date
                 </label>
@@ -1911,18 +1597,7 @@ export default function Invoices() {
             {/* Existing Invoice Amount */}
 
             {editingInvoice && (
-              <div
-                style={{
-                  marginTop:
-                    "20px",
-                  padding:
-                    "16px",
-                  borderRadius:
-                    "8px",
-                  background:
-                    "#f5f5f5",
-                }}
-              >
+              <div className="dashboard-info-box">
                 <strong>
                   Current invoice
                   amount:
@@ -1936,25 +1611,8 @@ export default function Invoices() {
 
             {/* Notes */}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "120px 1fr",
-                gap: "12px",
-                marginTop:
-                  "20px",
-                alignItems:
-                  "start",
-              }}
-            >
-              <label
-                htmlFor="notes"
-                style={{
-                  paddingTop:
-                    "10px",
-                }}
-              >
+            <div className="dashboard-form-field dashboard-form-field-full dashboard-form-notes">
+              <label htmlFor="notes">
                 Notes
               </label>
 
@@ -1962,39 +1620,19 @@ export default function Invoices() {
                 id="notes"
                 name="notes"
                 placeholder="Add any notes for this invoice..."
-                value={
-                  form.notes
-                }
-                onChange={
-                  handleChange
-                }
+                value={form.notes}
+                onChange={handleChange}
                 rows={4}
-                style={{
-                  width: "100%",
-                }}
               />
             </div>
 
             {/* Actions */}
 
-            <div
-              style={{
-                display:
-                  "flex",
-                gap: "12px",
-                marginTop:
-                  "24px",
-                paddingTop:
-                  "20px",
-                borderTop:
-                  "1px solid #e5e5e5",
-              }}
-            >
+            <div className="dashboard-form-actions">
               <button
                 type="submit"
-                disabled={
-                  saving
-                }
+                className="dashboard-action-primary"
+                disabled={saving}
               >
                 {saving
                   ? "Saving..."
@@ -2005,12 +1643,9 @@ export default function Invoices() {
 
               <button
                 type="button"
-                onClick={
-                  closeForm
-                }
-                disabled={
-                  saving
-                }
+                className="dashboard-action-secondary"
+                onClick={closeForm}
+                disabled={saving}
               >
                 Cancel
               </button>
@@ -2028,222 +1663,174 @@ export default function Invoices() {
               FINANCIAL MANAGEMENT
             </p>
 
-            <h3>
-              Invoices
-            </h3>
+            <h3>Invoices</h3>
           </div>
 
           <button
             type="button"
             className="dashboard-link"
-            onClick={
-              loadInvoices
-            }
+            onClick={loadInvoices}
           >
             Refresh
           </button>
         </div>
 
         {loading && (
-          <p>
+          <p className="dashboard-muted">
             Loading invoices...
           </p>
         )}
 
         {!loading &&
-          invoices.length ===
-            0 && (
-            <p>
+          invoices.length === 0 && (
+            <p className="dashboard-muted">
               No invoices yet.
             </p>
           )}
 
         {!loading &&
-          invoices.map(
-            (invoice) => {
-              const product =
-                getProjectProduct(
-                  invoice.project_id
-                );
-
-              return (
-                <div
-                  key={
-                    invoice.id
-                  }
-                  style={{
-                    display:
-                      "grid",
-                    gridTemplateColumns:
-                      "1fr auto",
-                    gap: "24px",
-                    padding:
-                      "20px 0",
-                    borderBottom:
-                      "1px solid #e5e5e5",
-                  }}
-                >
-                  <div>
-                    <h2
-                      style={{
-                        margin:
-                          "0 0 10px",
-                      }}
-                    >
-                      {
-                        invoice.invoice_number
-                      }
-                    </h2>
-
-                    <p>
-                      Client:{" "}
-                      {getClientName(
-                        invoice.client_id
-                      )}
-                    </p>
-
-                    <p>
-                      Project:{" "}
-                      {getProjectName(
-                        invoice.project_id
-                      )}
-                    </p>
-
-                    {product && (
-                      <p>
-                        Product:{" "}
-                        {
-                          product.name
-                        }
-
-                        {product.base_price !==
-                          null &&
-                          ` — R${Number(
-                            product.base_price
-                          ).toFixed(
-                            2
-                          )}`}
-                      </p>
-                    )}
-
-                    <p>
-                      Amount: R
-                      {Number(
-                        invoice.amount
-                      ).toFixed(
-                        2
-                      )}
-                    </p>
-
-                    <p>
-                      Discount:{" "}
-                      {
-                        invoice.discount_percent
-                      }
-                      %
-                    </p>
-
-                    <p>
-                      Status:{" "}
-                      {
-                        invoice.status
-                      }
-                    </p>
-
-                    <p>
-                      Issue date:{" "}
-                      {
-                        invoice.issue_date
-                      }
-                    </p>
-
-                    {invoice.due_date && (
-                      <p>
-                        Due date:{" "}
-                        {
-                          invoice.due_date
-                        }
-                      </p>
-                    )}
-
-                    {invoice.paid_at && (
-                      <p>
-                        Paid:{" "}
-                        {
-                          invoice.paid_at
-                        }
-                      </p>
-                    )}
-
-                    {invoice.notes && (
-                      <p>
-                        {
-                          invoice.notes
-                        }
-                      </p>
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      display:
-                        "flex",
-                      gap: "10px",
-                      alignItems:
-                        "flex-start",
-                      flexWrap:
-                        "wrap",
-                      justifyContent:
-                        "flex-end",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openEditForm(
-                          invoice
-                        )
-                      }
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleDelete(
-                          invoice.id
-                        )
-                      }
-                    >
-                      Delete
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleSendInvoice(
-                          invoice
-                        )
-                      }
-                      disabled={
-                        sendingInvoiceId ===
-                        invoice.id
-                      }
-                    >
-                      {sendingInvoiceId ===
-                      invoice.id
-                        ? "Sending..."
-                        : invoice.status ===
-                          "sent"
-                        ? "Resend Invoice"
-                        : "Send Invoice"}
-                    </button>
-                  </div>
-                </div>
+          invoices.map((invoice) => {
+            const product =
+              getProjectProduct(
+                invoice.project_id
               );
-            }
-          )}
+
+            return (
+              <div
+                key={invoice.id}
+                className="dashboard-list-row dashboard-invoice-row"
+              >
+                <div className="dashboard-list-content">
+                  <h2>
+                    {invoice.invoice_number}
+                  </h2>
+
+                  <p>
+                    Client:{" "}
+                    {getClientName(
+                      invoice.client_id
+                    )}
+                  </p>
+
+                  <p>
+                    Project:{" "}
+                    {getProjectName(
+                      invoice.project_id
+                    )}
+                  </p>
+
+                  {product && (
+                    <p>
+                      Product:{" "}
+                      {product.name}
+
+                      {product.base_price !==
+                        null &&
+                        ` — R${Number(
+                          product.base_price
+                        ).toFixed(2)}`}
+                    </p>
+                  )}
+
+                  <p>
+                    Amount: R
+                    {Number(
+                      invoice.amount
+                    ).toFixed(2)}
+                  </p>
+
+                  <p>
+                    Discount:{" "}
+                    {invoice.discount_percent}
+                    %
+                  </p>
+
+                  <div className="dashboard-list-status">
+                    <span
+                      className={getStatusClass(
+                        invoice.status
+                      )}
+                    >
+                      {invoice.status}
+                    </span>
+                  </div>
+
+                  <p>
+                    Issue date:{" "}
+                    {invoice.issue_date}
+                  </p>
+
+                  {invoice.due_date && (
+                    <p>
+                      Due date:{" "}
+                      {invoice.due_date}
+                    </p>
+                  )}
+
+                  {invoice.paid_at && (
+                    <p>
+                      Paid:{" "}
+                      {invoice.paid_at}
+                    </p>
+                  )}
+
+                  {invoice.notes && (
+                    <p>
+                      {invoice.notes}
+                    </p>
+                  )}
+                </div>
+
+                <div className="dashboard-list-actions">
+                  <button
+                    type="button"
+                    className="dashboard-action-edit"
+                    onClick={() =>
+                      openEditForm(
+                        invoice
+                      )
+                    }
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dashboard-action-delete"
+                    onClick={() =>
+                      handleDelete(
+                        invoice.id
+                      )
+                    }
+                  >
+                    Delete
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dashboard-action-primary"
+                    onClick={() =>
+                      handleSendInvoice(
+                        invoice
+                      )
+                    }
+                    disabled={
+                      sendingInvoiceId ===
+                      invoice.id
+                    }
+                  >
+                    {sendingInvoiceId ===
+                    invoice.id
+                      ? "Sending..."
+                      : invoice.status ===
+                        "sent"
+                      ? "Resend Invoice"
+                      : "Send Invoice"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
       </div>
     </div>
   );

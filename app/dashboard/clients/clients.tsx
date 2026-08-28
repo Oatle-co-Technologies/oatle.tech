@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
+
 import { useAuth } from "@/lib/auth-context";
 
 type Client = {
@@ -34,13 +35,15 @@ const API_URL =
 
 export default function ClientsPage() {
   const { userEmail } = useAuth();
+
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] =
     useState<Client | null>(null);
-  const [form, setForm] = useState<ClientForm>(emptyForm);
+  const [form, setForm] =
+    useState<ClientForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
   async function loadClients() {
@@ -196,18 +199,20 @@ export default function ClientsPage() {
     }
   }
 
+  function getStatusClass(status: string) {
+    const normalizedStatus = status
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    return `dashboard-status dashboard-status-${normalizedStatus}`;
+  }
+
   return (
-    <div>
+    <div className="dashboard-page">
       <BackToDashboard />
 
       {/* Header controls */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "24px",
-        }}
-      >
+      <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-link"
@@ -240,14 +245,7 @@ export default function ClientsPage() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div className="dashboard-form-grid">
               <input
                 name="name"
                 placeholder="Name"
@@ -282,14 +280,12 @@ export default function ClientsPage() {
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "20px",
-              }}
-            >
-              <button type="submit" disabled={saving}>
+            <div className="dashboard-form-actions">
+              <button
+                type="submit"
+                className="dashboard-action-primary"
+                disabled={saving}
+              >
                 {saving
                   ? "Saving..."
                   : editingClient
@@ -299,6 +295,7 @@ export default function ClientsPage() {
 
               <button
                 type="button"
+                className="dashboard-action-secondary"
                 onClick={closeForm}
                 disabled={saving}
               >
@@ -311,8 +308,8 @@ export default function ClientsPage() {
 
       {/* Error */}
       {error && (
-        <div className="dashboard-panel">
-          <p>{error}</p>
+        <div className="dashboard-panel dashboard-error-panel">
+          <p className="dashboard-error">{error}</p>
         </div>
       )}
 
@@ -336,41 +333,47 @@ export default function ClientsPage() {
           </button>
         </div>
 
-        {loading && <p>Loading clients...</p>}
+        {loading && (
+          <p className="dashboard-muted">
+            Loading clients...
+          </p>
+        )}
 
         {!loading && clients.length === 0 && (
-          <p>No clients yet.</p>
+          <p className="dashboard-muted">
+            No clients yet.
+          </p>
         )}
 
         {!loading && clients.length > 0 && (
-          <div>
+          <div className="dashboard-list">
             {clients.map((client) => (
               <div
                 key={client.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "20px 0",
-                  borderBottom: "1px solid #e5e5e5",
-                }}
+                className="dashboard-list-row"
               >
-                <div>
+                <div className="dashboard-list-content">
                   <h2>{client.name}</h2>
+
                   <p>{client.company}</p>
                   <p>{client.email}</p>
                   <p>{client.phone}</p>
-                  <p>{client.status}</p>
+
+                  <div className="dashboard-list-status">
+                    <span
+                      className={getStatusClass(
+                        client.status
+                      )}
+                    >
+                      {client.status}
+                    </span>
+                  </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                  }}
-                >
+                <div className="dashboard-list-actions">
                   <button
                     type="button"
+                    className="dashboard-action-edit"
                     onClick={() =>
                       openEditForm(client)
                     }
@@ -380,6 +383,7 @@ export default function ClientsPage() {
 
                   <button
                     type="button"
+                    className="dashboard-action-delete"
                     onClick={() =>
                       handleDelete(client.id)
                     }

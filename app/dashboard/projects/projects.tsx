@@ -76,6 +76,7 @@ const API_URL =
 
 export default function Projects() {
   const { userEmail } = useAuth();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -102,7 +103,10 @@ export default function Projects() {
   const [saving, setSaving] = useState(false);
 
   async function loadProjects() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -139,7 +143,10 @@ export default function Projects() {
   }
 
   async function loadClients() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/clients/`
@@ -165,7 +172,10 @@ export default function Projects() {
   }
 
   async function loadProducts() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/pricing/products`
@@ -195,7 +205,10 @@ export default function Projects() {
   }
 
   async function loadAddons() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/pricing/addons`
@@ -227,7 +240,10 @@ export default function Projects() {
   async function loadProjectAddons(
     projectId: number
   ) {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/projects/${projectId}/addons`
@@ -671,19 +687,34 @@ export default function Projects() {
     );
   }
 
+  function formatStatus(
+    status: string
+  ) {
+    return status
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
+  }
+
+  function getStatusClass(
+    status: string
+  ) {
+    const normalizedStatus =
+      status
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+
+    return `dashboard-status dashboard-status-${normalizedStatus}`;
+  }
+
   return (
-    <div>
+    <div className="dashboard-page">
       <BackToDashboard />
 
       {/* Header controls */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent:
-            "flex-end",
-          marginBottom: "24px",
-        }}
-      >
+
+      <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-link"
@@ -696,6 +727,7 @@ export default function Projects() {
       </div>
 
       {/* Add / Edit form */}
+
       {showForm && (
         <div
           className="dashboard-panel"
@@ -724,14 +756,7 @@ export default function Projects() {
               handleSubmit
             }
           >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div className="dashboard-form-grid">
               <select
                 name="client_id"
                 value={
@@ -847,7 +872,9 @@ export default function Projects() {
                         status
                       }
                     >
-                      {status}
+                      {formatStatus(
+                        status
+                      )}
                     </option>
                   )
                 )}
@@ -875,11 +902,7 @@ export default function Projects() {
                 handleChange
               }
               rows={4}
-              style={{
-                width: "100%",
-                marginTop:
-                  "16px",
-              }}
+              className="dashboard-form-textarea"
             />
 
             <textarea
@@ -892,23 +915,13 @@ export default function Projects() {
                 handleChange
               }
               rows={4}
-              style={{
-                width: "100%",
-                marginTop:
-                  "16px",
-              }}
+              className="dashboard-form-textarea"
             />
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop:
-                  "20px",
-              }}
-            >
+            <div className="dashboard-form-actions">
               <button
                 type="submit"
+                className="dashboard-action-primary"
                 disabled={
                   saving
                 }
@@ -922,6 +935,7 @@ export default function Projects() {
 
               <button
                 type="button"
+                className="dashboard-action-secondary"
                 onClick={
                   closeForm
                 }
@@ -937,19 +951,17 @@ export default function Projects() {
       )}
 
       {/* Error */}
+
       {error && (
-        <div
-          className="dashboard-panel"
-          style={{
-            marginBottom:
-              "24px",
-          }}
-        >
-          <p>{error}</p>
+        <div className="dashboard-panel dashboard-error-panel">
+          <p className="dashboard-error">
+            {error}
+          </p>
         </div>
       )}
 
       {/* Project list */}
+
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <div>
@@ -974,7 +986,7 @@ export default function Projects() {
         </div>
 
         {loading && (
-          <p>
+          <p className="dashboard-muted">
             Loading projects...
           </p>
         )}
@@ -982,7 +994,7 @@ export default function Projects() {
         {!loading &&
           projects.length ===
             0 && (
-            <p>
+            <p className="dashboard-muted">
               No projects yet.
             </p>
           )}
@@ -1026,226 +1038,148 @@ export default function Projects() {
                       key={
                         project.id
                       }
-                      style={{
-                        padding:
-                          "24px 0",
-                        borderBottom:
-                          "1px solid #e5e5e5",
-                      }}
+                      className="dashboard-list-row dashboard-project-row"
                     >
-                      <div
-                        style={{
-                          display:
-                            "grid",
-                          gridTemplateColumns:
-                            "1fr auto",
-                          gap: "24px",
-                          alignItems:
-                            "start",
-                        }}
-                      >
-                        <div>
-                          <h2
-                            style={{
-                              margin:
-                                "0 0 10px",
-                            }}
-                          >
-                            {
-                              project.name
-                            }
-                          </h2>
+                      <div className="dashboard-list-content">
+                        <h2>
+                          {
+                            project.name
+                          }
+                        </h2>
 
-                          <p>
-                            Client:{" "}
-                            {getClientName(
-                              project.client_id
-                            )}
-                          </p>
-
-                          <p>
-                            Product:{" "}
-                            {getProductName(
-                              project.product_id
-                            )}
-                          </p>
-
-                          <p>
-                            Product Price: R
-                            {productPrice.toFixed(
-                              2
-                            )}
-                          </p>
-
-                          <p>
-                            Status:{" "}
-                            {
-                              project.status
-                            }
-                          </p>
-
-                          {project.website && (
-                            <p>
-                              {
-                                project.website
-                              }
-                            </p>
+                        <p>
+                          Client:{" "}
+                          {getClientName(
+                            project.client_id
                           )}
+                        </p>
 
-                          {project.description && (
-                            <p>
-                              {
-                                project.description
-                              }
-                            </p>
+                        <p>
+                          Product:{" "}
+                          {getProductName(
+                            project.product_id
                           )}
+                        </p>
 
-                          {project.target_date && (
-                            <p>
-                              Target date:{" "}
-                              {
-                                project.target_date
-                              }
-                            </p>
+                        <p>
+                          Product Price: R
+                          {productPrice.toFixed(
+                            2
                           )}
+                        </p>
 
-                          {project.notes && (
-                            <p>
-                              {
-                                project.notes
-                              }
-                            </p>
-                          )}
-                        </div>
+                        <div className="dashboard-status-group">
+                          <div className="dashboard-status-item">
+                            <span className="dashboard-status-label">
+                              Status
+                            </span>
 
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            gap: "10px",
-                            paddingTop:
-                              "2px",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openEditForm(
-                                project
-                              )
-                            }
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDelete(
-                                project.id
-                              )
-                            }
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop:
-                            "24px",
-                          padding:
-                            "20px",
-                          border:
-                            "1px solid #e5e5e5",
-                          borderRadius:
-                            "8px",
-                          background:
-                            "#fafafa",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            alignItems:
-                              "center",
-                            gap: "20px",
-                            marginBottom:
-                              "16px",
-                          }}
-                        >
-                          <div>
-                            <p
-                              style={{
-                                fontWeight:
-                                  600,
-                                margin:
-                                  0,
-                              }}
+                            <span
+                              className={getStatusClass(
+                                project.status
+                              )}
                             >
-                              Project Add-ons
-                            </p>
-
-                            <p
-                              style={{
-                                margin:
-                                  "6px 0 0",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
-                              Add-ons assigned
-                              here will
-                              automatically
-                              be included
-                              when an
-                              invoice is
-                              created for
-                              this project.
-                            </p>
+                              {formatStatus(
+                                project.status
+                              )}
+                            </span>
                           </div>
                         </div>
 
+                        {project.website && (
+                          <p>
+                            {project.website}
+                          </p>
+                        )}
+
+                        {project.description && (
+                          <p>
+                            {
+                              project.description
+                            }
+                          </p>
+                        )}
+
+                        {project.target_date && (
+                          <p>
+                            Target date:{" "}
+                            {
+                              project.target_date
+                            }
+                          </p>
+                        )}
+
+                        {project.notes && (
+                          <p>
+                            {
+                              project.notes
+                            }
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="dashboard-list-actions">
+                        <button
+                          type="button"
+                          className="dashboard-action-edit"
+                          onClick={() =>
+                            openEditForm(
+                              project
+                            )
+                          }
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          className="dashboard-action-delete"
+                          onClick={() =>
+                            handleDelete(
+                              project.id
+                            )
+                          }
+                        >
+                          Delete
+                        </button>
+                      </div>
+
+                      {/* Project Add-ons */}
+
+                      <div className="dashboard-inline-panel">
+                        <div className="dashboard-panel-header">
+                          <div>
+                            <p className="dashboard-panel-label">
+                              PROJECT ADD-ONS
+                            </p>
+
+                            <h3>
+                              Assigned Add-ons
+                            </h3>
+                          </div>
+                        </div>
+
+                        <p className="dashboard-muted">
+                          Add-ons assigned
+                          here will
+                          automatically
+                          be included
+                          when an
+                          invoice is
+                          created for
+                          this project.
+                        </p>
+
                         {assignedAddons.length >
                         0 ? (
-                          <div
-                            style={{
-                              display:
-                                "grid",
-                              gap: "10px",
-                              marginBottom:
-                                "16px",
-                            }}
-                          >
+                          <div className="dashboard-nested-list">
                             {assignedAddons.map(
                               (addon) => (
                                 <div
                                   key={
                                     addon.id
                                   }
-                                  style={{
-                                    display:
-                                      "flex",
-                                    justifyContent:
-                                      "space-between",
-                                    alignItems:
-                                      "center",
-                                    gap: "20px",
-                                    padding:
-                                      "12px 14px",
-                                    background:
-                                      "#fff",
-                                    border:
-                                      "1px solid #e5e5e5",
-                                    borderRadius:
-                                      "6px",
-                                  }}
+                                  className="dashboard-nested-row"
                                 >
                                   <div>
                                     <strong>
@@ -1255,16 +1189,7 @@ export default function Projects() {
                                     </strong>
 
                                     {addon.description && (
-                                      <p
-                                        style={{
-                                          margin:
-                                            "4px 0 0",
-                                          fontSize:
-                                            "13px",
-                                          color:
-                                            "#777",
-                                        }}
-                                      >
+                                      <p className="dashboard-muted">
                                         {
                                           addon.description
                                         }
@@ -1272,16 +1197,8 @@ export default function Projects() {
                                     )}
                                   </div>
 
-                                  <div
-                                    style={{
-                                      display:
-                                        "flex",
-                                      alignItems:
-                                        "center",
-                                      gap: "16px",
-                                    }}
-                                  >
-                                    <span>
+                                  <div className="dashboard-list-actions">
+                                    <span className="dashboard-price">
                                       R
                                       {Number(
                                         addon.price ??
@@ -1293,6 +1210,7 @@ export default function Projects() {
 
                                     <button
                                       type="button"
+                                      className="dashboard-action-delete"
                                       onClick={() =>
                                         handleRemoveAddon(
                                           project.id,
@@ -1308,33 +1226,18 @@ export default function Projects() {
                             )}
                           </div>
                         ) : (
-                          <p
-                            style={{
-                              margin:
-                                "0 0 16px",
-                              color:
-                                "#777",
-                            }}
-                          >
-                            No add-ons assigned
-                            to this project
+                          <p className="dashboard-muted">
+                            No add-ons
+                            assigned
+                            to this
+                            project
                             yet.
                           </p>
                         )}
 
                         {availableForProject.length >
                           0 && (
-                          <div
-                            style={{
-                              display:
-                                "grid",
-                              gridTemplateColumns:
-                                "1fr auto",
-                              gap: "10px",
-                              alignItems:
-                                "center",
-                            }}
-                          >
+                          <div className="dashboard-add-row">
                             <select
                               value={
                                 selectedAddon[
@@ -1389,6 +1292,7 @@ export default function Projects() {
 
                             <button
                               type="button"
+                              className="dashboard-action-primary"
                               onClick={() =>
                                 handleAddAddon(
                                   project.id
@@ -1409,16 +1313,7 @@ export default function Projects() {
                           0 &&
                           assignedAddons.length >
                             0 && (
-                            <p
-                              style={{
-                                margin:
-                                  "12px 0 0",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
+                            <p className="dashboard-muted">
                               All available
                               add-ons are
                               already
@@ -1427,22 +1322,7 @@ export default function Projects() {
                             </p>
                           )}
 
-                        <div
-                          style={{
-                            marginTop:
-                              "20px",
-                            paddingTop:
-                              "16px",
-                            borderTop:
-                              "1px solid #ddd",
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            fontWeight:
-                              700,
-                          }}
-                        >
+                        <div className="dashboard-total-row">
                           <span>
                             Project Total
                           </span>

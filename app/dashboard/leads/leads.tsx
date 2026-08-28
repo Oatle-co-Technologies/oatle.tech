@@ -71,6 +71,7 @@ const API_URL =
 
 export default function LeadsPage() {
   const { userEmail } = useAuth();
+
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -659,19 +660,38 @@ export default function LeadsPage() {
     }
   }
 
+  // ----------------------------------------------------------
+  // Status helpers
+  // ----------------------------------------------------------
+
+  function getStatusClass(
+    status: string
+  ) {
+    const normalizedStatus =
+      status
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+
+    return `dashboard-status dashboard-status-${normalizedStatus}`;
+  }
+
+  function formatStatus(
+    status: string
+  ) {
+    return status
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
+  }
+
   return (
-    <div>
+    <div className="dashboard-page">
       <BackToDashboard />
 
       {/* Header controls */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent:
-            "flex-end",
-          marginBottom: "24px",
-        }}
-      >
+
+      <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-link"
@@ -682,6 +702,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Add / Edit form */}
+
       {showForm && (
         <div
           className="dashboard-panel"
@@ -705,17 +726,8 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "16px",
-              }}
-            >
+          <form onSubmit={handleSubmit}>
+            <div className="dashboard-form-grid">
               <input
                 name="name"
                 placeholder="Name"
@@ -858,7 +870,7 @@ export default function LeadsPage() {
                 }
               />
 
-              <label>
+              <label className="dashboard-form-field">
                 Last contacted
 
                 <input
@@ -873,7 +885,7 @@ export default function LeadsPage() {
                 />
               </label>
 
-              <label>
+              <label className="dashboard-form-field">
                 Next follow-up
 
                 <input
@@ -897,19 +909,10 @@ export default function LeadsPage() {
                 handleChange
               }
               rows={4}
-              style={{
-                width: "100%",
-                marginTop: "16px",
-              }}
+              className="dashboard-form-textarea"
             />
 
-            <div
-              style={{
-                display: "flex",
-                gap: "20px",
-                marginTop: "16px",
-              }}
-            >
+            <div className="dashboard-checkbox-group">
               <label>
                 <input
                   type="checkbox"
@@ -939,15 +942,10 @@ export default function LeadsPage() {
               </label>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "20px",
-              }}
-            >
+            <div className="dashboard-form-actions">
               <button
                 type="submit"
+                className="dashboard-action-primary"
                 disabled={saving}
               >
                 {saving
@@ -959,6 +957,7 @@ export default function LeadsPage() {
 
               <button
                 type="button"
+                className="dashboard-action-secondary"
                 onClick={
                   closeForm
                 }
@@ -972,18 +971,17 @@ export default function LeadsPage() {
       )}
 
       {/* Error */}
+
       {error && (
-        <div
-          className="dashboard-panel"
-          style={{
-            marginBottom: "24px",
-          }}
-        >
-          <p>{error}</p>
+        <div className="dashboard-panel dashboard-error-panel">
+          <p className="dashboard-error">
+            {error}
+          </p>
         </div>
       )}
 
       {/* Lead list */}
+
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <div>
@@ -997,403 +995,336 @@ export default function LeadsPage() {
           <button
             type="button"
             className="dashboard-link"
-            onClick={
-              loadLeads
-            }
+            onClick={loadLeads}
           >
             Refresh
           </button>
         </div>
 
         {loading && (
-          <p>Loading leads...</p>
+          <p className="dashboard-muted">
+            Loading leads...
+          </p>
         )}
 
         {!loading &&
           leads.length === 0 && (
-            <p>No leads yet.</p>
+            <p className="dashboard-muted">
+              No leads yet.
+            </p>
           )}
 
         {!loading &&
           leads.length > 0 && (
             <div>
-              {leads.map(
-                (lead) => (
-                  <div
-                    key={
-                      lead.id
-                    }
-                    style={{
-                      padding:
-                        "20px 0",
-                      borderBottom:
-                        "1px solid #e5e5e5",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display:
-                          "flex",
-                        justifyContent:
-                          "space-between",
-                        gap: "20px",
-                      }}
-                    >
-                      <div>
-                        <h2>
-                          {lead.name}
-                        </h2>
+              {leads.map((lead) => (
+                <div
+                  key={lead.id}
+                  className="dashboard-list-row dashboard-lead-row"
+                >
+                  <div className="dashboard-list-content">
+                    <h2>{lead.name}</h2>
 
-                        <p>
-                          {lead.company ||
-                            "No company"}
-                        </p>
+                    <p>
+                      {lead.company ||
+                        "No company"}
+                    </p>
 
-                        <p>
-                          {lead.email}
-                        </p>
+                    <p>
+                      {lead.email}
+                    </p>
 
-                        <p>
-                          {lead.phone ||
-                            "No phone number"}
-                        </p>
+                    <p>
+                      {lead.phone ||
+                        "No phone number"}
+                    </p>
 
-                        <p>
-                          Stage:{" "}
-                          <strong>
-                            {
-                              lead.stage
-                            }
-                          </strong>
-                        </p>
+                    <div className="dashboard-status-group">
+                      <div className="dashboard-status-item">
+                        <span className="dashboard-status-label">
+                          Stage
+                        </span>
 
-                        <p>
-                          Response:{" "}
-                          {lead.response ||
-                            "No response"}
-                        </p>
-
-                        <p>
-                          Contact attempts:{" "}
-                          {
-                            lead.contact_attempts
-                          }
-                        </p>
-
-                        {lead.next_follow_up_at && (
-                          <p>
-                            Next follow-up:{" "}
-                            {new Date(
-                              lead.next_follow_up_at
-                            ).toLocaleString()}
-                          </p>
-                        )}
+                        <span
+                          className={getStatusClass(
+                            lead.stage
+                          )}
+                        >
+                          {formatStatus(
+                            lead.stage
+                          )}
+                        </span>
                       </div>
 
-                      <div
-                        style={{
-                          display:
-                            "flex",
-                          flexWrap:
-                            "wrap",
-                          gap: "10px",
-                          alignContent:
-                            "flex-start",
-                          justifyContent:
-                            "flex-end",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openEditForm(
-                              lead
-                            )
-                          }
-                        >
-                          Edit
-                        </button>
+                      <div className="dashboard-status-item">
+                        <span className="dashboard-status-label">
+                          Response
+                        </span>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openEmailComposer(
-                              lead
-                            )
-                          }
-                        >
-                          Email Follow-Up
-                        </button>
-
-                        {lead.stage !==
-                          "won" &&
-                          lead.stage !==
-                            "dropped" && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  contactAgain(
-                                    lead
-                                  )
-                                }
-                              >
-                                Contact Again
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  markNotNow(
-                                    lead
-                                  )
-                                }
-                              >
-                                Not Now
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  markDropped(
-                                    lead
-                                  )
-                                }
-                              >
-                                Drop
-                              </button>
-                            </>
-                          )}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDelete(
-                              lead.id
-                            )
-                          }
-                        >
-                          Delete
-                        </button>
+                        {lead.response ? (
+                          <span
+                            className={getStatusClass(
+                              lead.response
+                            )}
+                          >
+                            {formatStatus(
+                              lead.response
+                            )}
+                          </span>
+                        ) : (
+                          <span className="dashboard-status dashboard-status-neutral">
+                            No response
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    {/* Email composer */}
-                    {emailLead?.id ===
-                      lead.id && (
-                      <div
-                        className="dashboard-panel"
-                        style={{
-                          marginTop: "20px",
-                          background:
-                            "#fafafa",
-                        }}
-                      >
-                        <div className="dashboard-panel-header">
-                          <div>
-                            <p className="dashboard-panel-label">
-                              CLIENT COMMUNICATION
-                            </p>
+                    <p>
+                      Contact attempts:{" "}
+                      {
+                        lead.contact_attempts
+                      }
+                    </p>
 
-                            <h3>
-                              Email Follow-Up
-                            </h3>
-                          </div>
-                        </div>
+                    {lead.next_follow_up_at && (
+                      <p>
+                        Next follow-up:{" "}
+                        {new Date(
+                          lead.next_follow_up_at
+                        ).toLocaleString()}
+                      </p>
+                    )}
 
-                        <form
-                          onSubmit={
-                            handleSendEmail
-                          }
-                        >
-                          <div
-                            style={{
-                              marginBottom:
-                                "16px",
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin:
-                                  "0 0 6px",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
-                              To
-                            </p>
+                    {lead.follow_up_reason && (
+                      <p>
+                        Follow-up reason:{" "}
+                        {
+                          lead.follow_up_reason
+                        }
+                      </p>
+                    )}
 
-                            <input
-                              type="email"
-                              value={
-                                emailLead.email
-                              }
-                              disabled
-                              style={{
-                                width:
-                                  "100%",
-                                boxSizing:
-                                  "border-box",
-                              }}
-                            />
-                          </div>
+                    {lead.source && (
+                      <p>
+                        Source:{" "}
+                        {lead.source}
+                      </p>
+                    )}
 
-                          <div
-                            style={{
-                              marginBottom:
-                                "16px",
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin:
-                                  "0 0 6px",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
-                              Subject
-                            </p>
-
-                            <input
-                              name="subject"
-                              type="text"
-                              placeholder="Email subject"
-                              value={
-                                emailForm.subject
-                              }
-                              onChange={
-                                handleEmailChange
-                              }
-                              required
-                              disabled={
-                                sendingEmail
-                              }
-                              style={{
-                                width:
-                                  "100%",
-                                boxSizing:
-                                  "border-box",
-                              }}
-                            />
-                          </div>
-
-                          <div
-                            style={{
-                              marginBottom:
-                                "16px",
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin:
-                                  "0 0 6px",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
-                              Message
-                            </p>
-
-                            <textarea
-                              name="message"
-                              placeholder="Write your follow-up email..."
-                              value={
-                                emailForm.message
-                              }
-                              onChange={
-                                handleEmailChange
-                              }
-                              required
-                              disabled={
-                                sendingEmail
-                              }
-                              rows={8}
-                              style={{
-                                width:
-                                  "100%",
-                                boxSizing:
-                                  "border-box",
-                                resize:
-                                  "vertical",
-                              }}
-                            />
-                          </div>
-
-                          {emailError && (
-                            <div
-                              className="dashboard-panel"
-                              style={{
-                                marginBottom:
-                                  "16px",
-                              }}
-                            >
-                              <p>
-                                {
-                                  emailError
-                                }
-                              </p>
-                            </div>
-                          )}
-
-                          {emailSuccess && (
-                            <div
-                              className="dashboard-panel"
-                              style={{
-                                marginBottom:
-                                  "16px",
-                              }}
-                            >
-                              <p>
-                                {
-                                  emailSuccess
-                                }
-                              </p>
-                            </div>
-                          )}
-
-                          <div
-                            style={{
-                              display:
-                                "flex",
-                              gap: "12px",
-                            }}
-                          >
-                            <button
-                              type="submit"
-                              disabled={
-                                sendingEmail
-                              }
-                            >
-                              {sendingEmail
-                                ? "Sending..."
-                                : "Send Email"}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={
-                                closeEmailComposer
-                              }
-                              disabled={
-                                sendingEmail
-                              }
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      </div>
+                    {lead.notes && (
+                      <p>
+                        {lead.notes}
+                      </p>
                     )}
                   </div>
-                )
-              )}
+
+                  <div className="dashboard-list-actions">
+                    <button
+                      type="button"
+                      className="dashboard-action-edit"
+                      onClick={() =>
+                        openEditForm(
+                          lead
+                        )
+                      }
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="dashboard-action-primary"
+                      onClick={() =>
+                        openEmailComposer(
+                          lead
+                        )
+                      }
+                    >
+                      Email Follow-Up
+                    </button>
+
+                    {lead.stage !==
+                      "won" &&
+                      lead.stage !==
+                        "dropped" && (
+                        <>
+                          <button
+                            type="button"
+                            className="dashboard-action-primary"
+                            onClick={() =>
+                              contactAgain(
+                                lead
+                              )
+                            }
+                          >
+                            Contact Again
+                          </button>
+
+                          <button
+                            type="button"
+                            className="dashboard-action-secondary"
+                            onClick={() =>
+                              markNotNow(
+                                lead
+                              )
+                            }
+                          >
+                            Not Now
+                          </button>
+
+                          <button
+                            type="button"
+                            className="dashboard-action-delete"
+                            onClick={() =>
+                              markDropped(
+                                lead
+                              )
+                            }
+                          >
+                            Drop
+                          </button>
+                        </>
+                      )}
+
+                    <button
+                      type="button"
+                      className="dashboard-action-delete"
+                      onClick={() =>
+                        handleDelete(
+                          lead.id
+                        )
+                      }
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  {/* Email composer */}
+
+                  {emailLead?.id ===
+                    lead.id && (
+                    <div className="dashboard-inline-panel">
+                      <div className="dashboard-panel-header">
+                        <div>
+                          <p className="dashboard-panel-label">
+                            CLIENT COMMUNICATION
+                          </p>
+
+                          <h3>
+                            Email Follow-Up
+                          </h3>
+                        </div>
+                      </div>
+
+                      <form
+                        onSubmit={
+                          handleSendEmail
+                        }
+                      >
+                        <div className="dashboard-form-field">
+                          <label htmlFor={`email-to-${lead.id}`}>
+                            To
+                          </label>
+
+                          <input
+                            id={`email-to-${lead.id}`}
+                            type="email"
+                            value={
+                              emailLead.email
+                            }
+                            disabled
+                          />
+                        </div>
+
+                        <div className="dashboard-form-field">
+                          <label htmlFor={`email-subject-${lead.id}`}>
+                            Subject
+                          </label>
+
+                          <input
+                            id={`email-subject-${lead.id}`}
+                            name="subject"
+                            type="text"
+                            placeholder="Email subject"
+                            value={
+                              emailForm.subject
+                            }
+                            onChange={
+                              handleEmailChange
+                            }
+                            required
+                            disabled={
+                              sendingEmail
+                            }
+                          />
+                        </div>
+
+                        <div className="dashboard-form-field">
+                          <label htmlFor={`email-message-${lead.id}`}>
+                            Message
+                          </label>
+
+                          <textarea
+                            id={`email-message-${lead.id}`}
+                            name="message"
+                            placeholder="Write your follow-up email..."
+                            value={
+                              emailForm.message
+                            }
+                            onChange={
+                              handleEmailChange
+                            }
+                            required
+                            disabled={
+                              sendingEmail
+                            }
+                            rows={8}
+                          />
+                        </div>
+
+                        {emailError && (
+                          <div className="dashboard-feedback dashboard-feedback-error">
+                            {emailError}
+                          </div>
+                        )}
+
+                        {emailSuccess && (
+                          <div className="dashboard-feedback dashboard-feedback-success">
+                            {emailSuccess}
+                          </div>
+                        )}
+
+                        <div className="dashboard-form-actions">
+                          <button
+                            type="submit"
+                            className="dashboard-action-primary"
+                            disabled={
+                              sendingEmail
+                            }
+                          >
+                            {sendingEmail
+                              ? "Sending..."
+                              : "Send Email"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="dashboard-action-secondary"
+                            onClick={
+                              closeEmailComposer
+                            }
+                            disabled={
+                              sendingEmail
+                            }
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
       </div>

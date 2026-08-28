@@ -126,6 +126,7 @@ const COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID = 28;
 
 export default function Tasks() {
   const { userEmail } = useAuth();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -148,10 +149,14 @@ export default function Tasks() {
   const [form, setForm] = useState<TaskForm>({
     ...emptyForm,
   });
+
   const [saving, setSaving] = useState(false);
 
   async function loadTasks() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -165,6 +170,7 @@ export default function Tasks() {
       }
 
       const data: Task[] = await response.json();
+
       setTasks(data);
     } catch (err) {
       setError(
@@ -178,7 +184,10 @@ export default function Tasks() {
   }
 
   async function loadProjects() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/projects`);
 
@@ -189,6 +198,7 @@ export default function Tasks() {
       }
 
       const data: Project[] = await response.json();
+
       setProjects(data);
     } catch (err) {
       setError(
@@ -200,7 +210,10 @@ export default function Tasks() {
   }
 
   async function loadTaskOptions() {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     try {
       const [
         productsResponse,
@@ -259,7 +272,10 @@ export default function Tasks() {
     productId: string,
     assigneeId: string = form.assigned_to
   ) {
-    if (!userEmail) { return; }
+    if (!userEmail) {
+      return;
+    }
+
     if (!productId) {
       setAvailableProductServices([]);
       return;
@@ -355,6 +371,7 @@ export default function Tasks() {
     setShowForm(true);
     setError("");
     setSuccess("");
+
     void loadTaskOptions();
   }
 
@@ -401,6 +418,7 @@ export default function Tasks() {
     });
 
     setShowForm(true);
+
     void loadTaskOptions();
 
     if (selectedProductId) {
@@ -559,9 +577,12 @@ export default function Tasks() {
       }
 
       const wasEditing = Boolean(editingTask);
-      const wasAssigned = Boolean(form.assigned_to);
+      const wasAssigned = Boolean(
+        form.assigned_to
+      );
 
       closeForm();
+
       await loadTasks();
 
       setSuccess(
@@ -610,7 +631,9 @@ export default function Tasks() {
 
       await loadTasks();
 
-      setSuccess("Task deleted successfully.");
+      setSuccess(
+        "Task deleted successfully."
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -682,6 +705,48 @@ export default function Tasks() {
     );
   }
 
+  function getStatusClass(status: string) {
+    switch (status) {
+      case "completed":
+        return "dashboard-status dashboard-status-completed";
+
+      case "in_progress":
+        return "dashboard-status dashboard-status-progress";
+
+      case "blocked":
+        return "dashboard-status dashboard-status-blocked";
+
+      case "todo":
+      default:
+        return "dashboard-status dashboard-status-todo";
+    }
+  }
+
+  function getPriorityClass(priority: string) {
+    switch (priority) {
+      case "urgent":
+        return "dashboard-priority dashboard-priority-urgent";
+
+      case "high":
+        return "dashboard-priority dashboard-priority-high";
+
+      case "medium":
+        return "dashboard-priority dashboard-priority-medium";
+
+      case "low":
+      default:
+        return "dashboard-priority dashboard-priority-low";
+    }
+  }
+
+  function formatStatus(status: string) {
+    return status.replace("_", " ");
+  }
+
+  function formatPriority(priority: string) {
+    return priority;
+  }
+
   function refreshTasks() {
     void loadTasks();
     void loadTaskOptions();
@@ -717,16 +782,10 @@ export default function Tasks() {
     <div>
       <BackToDashboard />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "24px",
-        }}
-      >
+      <div className="dashboard-page-actions">
         <button
           type="button"
-          className="dashboard-link"
+          className="dashboard-button dashboard-button-primary"
           onClick={openAddForm}
         >
           + Add Task
@@ -734,23 +793,13 @@ export default function Tasks() {
       </div>
 
       {success && (
-        <div
-          className="dashboard-panel"
-          style={{
-            marginBottom: "24px",
-          }}
-        >
+        <div className="dashboard-panel dashboard-success">
           <p>{success}</p>
         </div>
       )}
 
       {showForm && (
-        <div
-          className="dashboard-panel"
-          style={{
-            marginBottom: "24px",
-          }}
-        >
+        <div className="dashboard-panel dashboard-form-panel">
           <div className="dashboard-panel-header">
             <div>
               <p className="dashboard-panel-label">
@@ -768,14 +817,7 @@ export default function Tasks() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div className="dashboard-form-grid">
               <select
                 name="task_type"
                 value={form.task_type}
@@ -897,17 +939,13 @@ export default function Tasks() {
                 </select>
               )}
 
-              <label>
-                Assignee
+              <label className="dashboard-form-field">
+                <span>Assignee</span>
 
                 <select
                   name="assigned_to"
                   value={form.assigned_to}
                   onChange={handleChange}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                  }}
                 >
                   <option value="">
                     Unassigned
@@ -926,13 +964,7 @@ export default function Tasks() {
                 </select>
 
                 {form.assigned_to && (
-                  <small
-                    style={{
-                      display: "block",
-                      marginTop: "8px",
-                      opacity: 0.7,
-                    }}
-                  >
+                  <small className="dashboard-form-hint">
                     📧 Email notification will
                     be sent automatically.
                   </small>
@@ -983,7 +1015,7 @@ export default function Tasks() {
                       key={status}
                       value={status}
                     >
-                      {status}
+                      {formatStatus(status)}
                     </option>
                   )
                 )}
@@ -1001,7 +1033,7 @@ export default function Tasks() {
                       key={priority}
                       value={priority}
                     >
-                      {priority}
+                      {formatPriority(priority)}
                     </option>
                   )
                 )}
@@ -1021,10 +1053,7 @@ export default function Tasks() {
               value={form.description}
               onChange={handleChange}
               rows={4}
-              style={{
-                width: "100%",
-                marginTop: "16px",
-              }}
+              className="dashboard-form-textarea"
             />
 
             <textarea
@@ -1033,21 +1062,13 @@ export default function Tasks() {
               value={form.notes}
               onChange={handleChange}
               rows={4}
-              style={{
-                width: "100%",
-                marginTop: "16px",
-              }}
+              className="dashboard-form-textarea"
             />
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "20px",
-              }}
-            >
+            <div className="dashboard-form-actions">
               <button
                 type="submit"
+                className="dashboard-button dashboard-button-primary"
                 disabled={saving}
               >
                 {saving
@@ -1059,6 +1080,7 @@ export default function Tasks() {
 
               <button
                 type="button"
+                className="dashboard-button dashboard-button-secondary"
                 onClick={closeForm}
                 disabled={saving}
               >
@@ -1070,7 +1092,7 @@ export default function Tasks() {
       )}
 
       {error && (
-        <div className="dashboard-panel">
+        <div className="dashboard-panel dashboard-error">
           <p>{error}</p>
         </div>
       )}
@@ -1085,13 +1107,7 @@ export default function Tasks() {
             <h3>All Tasks</h3>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
+          <div className="dashboard-panel-actions">
             <select
               aria-label="Filter tasks by assignee"
               value={assigneeFilter}
@@ -1123,7 +1139,7 @@ export default function Tasks() {
 
             <button
               type="button"
-              className="dashboard-link"
+              className="dashboard-button dashboard-button-secondary"
               onClick={refreshTasks}
             >
               Refresh
@@ -1144,31 +1160,15 @@ export default function Tasks() {
         {!loading &&
           visibleTasks.length >
             0 && (
-            <div>
+            <div className="dashboard-list">
               {visibleTasks.map(
                 (task) => (
                   <div
                     key={task.id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "1fr auto",
-                      gap: "24px",
-                      alignItems:
-                        "start",
-                      padding:
-                        "20px 0",
-                      borderBottom:
-                        "1px solid #e5e5e5",
-                    }}
+                    className="dashboard-list-item dashboard-task-item"
                   >
-                    <div>
-                      <h2
-                        style={{
-                          margin:
-                            "0 0 10px",
-                        }}
-                      >
+                    <div className="dashboard-list-content">
+                      <h2 className="dashboard-list-title">
                         {task.name}
                       </h2>
 
@@ -1211,15 +1211,35 @@ export default function Tasks() {
                           "Not set"}
                       </p>
 
-                      <p>
-                        Status:{" "}
-                        {task.status}
-                      </p>
+                      <div className="dashboard-task-meta">
+                        <span className="dashboard-meta-label">
+                          Status
+                        </span>
 
-                      <p>
-                        Priority:{" "}
-                        {task.priority}
-                      </p>
+                        <span
+                          className={getStatusClass(
+                            task.status
+                          )}
+                        >
+                          {formatStatus(
+                            task.status
+                          )}
+                        </span>
+
+                        <span className="dashboard-meta-label">
+                          Priority
+                        </span>
+
+                        <span
+                          className={getPriorityClass(
+                            task.priority
+                          )}
+                        >
+                          {formatPriority(
+                            task.priority
+                          )}
+                        </span>
+                      </div>
 
                       {task.description && (
                         <p>
@@ -1252,17 +1272,10 @@ export default function Tasks() {
                       )}
                     </div>
 
-                    <div
-                      style={{
-                        display:
-                          "flex",
-                        gap: "10px",
-                        paddingTop:
-                          "2px",
-                      }}
-                    >
+                    <div className="dashboard-list-actions">
                       <button
                         type="button"
+                        className="dashboard-button dashboard-button-edit"
                         onClick={() =>
                           openEditForm(
                             task
@@ -1274,6 +1287,7 @@ export default function Tasks() {
 
                       <button
                         type="button"
+                        className="dashboard-button dashboard-button-delete"
                         onClick={() =>
                           handleDelete(
                             task.id
@@ -1291,4 +1305,4 @@ export default function Tasks() {
       </div>
     </div>
   );
-}
+}                                     
