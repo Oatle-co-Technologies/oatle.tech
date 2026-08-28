@@ -2927,3 +2927,30 @@ MOBILE
   .dashboard-activity-indicator {
   background: #d9a21b;
 }
+
+.dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #f7f6f3;
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dashboard-link:hover {
+  background: #ffffff;
+  border-color: #cfcfcf;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.09);
+  transform: translateY(-1px);
+}
