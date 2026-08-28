@@ -16,6 +16,14 @@ const greetingMessages = [
   "Good to have you back. Let's build something great today.",
 ];
 
+type StaffMember = {
+  id: number;
+  name: string;
+  email: string;
+  access_level: string;
+  active: boolean;
+};
+
 type DashboardProject = {
   id: number;
   name: string;
@@ -28,7 +36,7 @@ type DashboardTask = {
   name: string;
   status: string;
   priority: string;
-  due_date: string;
+  due_date: string | null;
   assigned_to: number | null;
 };
 
@@ -37,7 +45,8 @@ type RecentActivity = {
   type: string;
   name: string;
   status: string;
-  created_at: string;
+  created_at: string | null;
+  assigned_to?: number | null;
 };
 
 type DashboardData = {
@@ -83,12 +92,57 @@ function formatLabel(value: string) {
   return value.replace(/_/g, " ");
 }
 
+function getPriorityClass(priority: string) {
+  const normalized = priority
+    .toLowerCase()
+    .trim();
+
+  if (normalized === "urgent") {
+    return "dashboard-priority dashboard-priority-urgent";
+  }
+
+  if (normalized === "high") {
+    return "dashboard-priority dashboard-priority-high";
+  }
+
+  if (normalized === "medium") {
+    return "dashboard-priority dashboard-priority-medium";
+  }
+
+  return "dashboard-priority dashboard-priority-low";
+}
+
+function formatActivityDate(
+  value: string | null
+) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleDateString("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function DashboardPage() {
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
 
   const [userEmail, setUserEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [currentStaffId, setCurrentStaffId] =
+    useState<number | null>(null);
+
+  const [displayName, setDisplayName] =
+    useState("");
+
   const [displayNameInput, setDisplayNameInput] =
     useState("");
 
@@ -101,15 +155,19 @@ export default function DashboardPage() {
   const [greetingMessage, setGreetingMessage] =
     useState(greetingMessages[0]);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
   const [mobileNavOpen, setMobileNavOpen] =
     useState(false);
 
   useEffect(() => {
     const randomIndex = Math.floor(
-      Math.random() * greetingMessages.length
+      Math.random() *
+        greetingMessages.length
     );
 
     setGreetingMessage(
@@ -145,6 +203,47 @@ export default function DashboardPage() {
         } else {
           setShowNameSetup(true);
         }
+
+        /*
+         * Find the logged-in user's Staff record.
+         *
+         * This is only used to visually distinguish
+         * the user's tasks from other staff tasks.
+         */
+        try {
+          const staffResponse =
+            await fetch(
+              `${API_URL}/staff`,
+              {
+                cache: "no-store",
+              }
+            );
+
+          if (staffResponse.ok) {
+            const staff:
+              | StaffMember[]
+              = await staffResponse.json();
+
+            const currentStaff =
+              staff.find(
+                (member) =>
+                  member.email
+                    ?.toLowerCase()
+                    .trim() === email
+              );
+
+            if (currentStaff) {
+              setCurrentStaffId(
+                currentStaff.id
+              );
+            }
+          }
+        } catch (staffError) {
+          console.error(
+            "Failed to load staff information:",
+            staffError
+          );
+        }
       } catch (err) {
         console.error(
           "Failed to load authenticated user:",
@@ -153,7 +252,7 @@ export default function DashboardPage() {
       }
     }
 
-    loadUser();
+    void loadUser();
   }, []);
 
   async function loadDashboard() {
@@ -313,89 +412,65 @@ export default function DashboardPage() {
 
         {/* Display Name Setup */}
         {showNameSetup && (
-          <section
-            className="dashboard-panel"
-            style={{
-              marginBottom: "24px",
-              padding: "32px",
-            }}
-          >
+          <section className="dashboard-panel dashboard-name-setup">
             <p className="dashboard-panel-label">
               WELCOME TO OATLE
             </p>
 
-            <h2
-              style={{
-                marginTop: "8px",
-                marginBottom: "8px",
-              }}
-            >
+            <h2>
               What would you like us to call you?
             </h2>
 
-            <p
-              style={{
-                marginBottom: "24px",
-                color: "#777",
-              }}
-            >
+            <p>
               Choose the name you'd like to use
               inside your Oatle dashboard.
             </p>
 
             <form
               onSubmit={handleSaveDisplayName}
+              className="dashboard-name-form"
             >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "center",
-                  maxWidth: "600px",
-                }}
-              >
-                <input
-                  type="text"
-                  value={displayNameInput}
-                  onChange={(event) =>
-                    setDisplayNameInput(
-                      event.target.value
-                    )
-                  }
-                  placeholder="Display name"
-                  autoFocus
-                  required
-                  style={{
-                    flex: 1,
-                  }}
-                />
+              <input
+                type="text"
+                value={displayNameInput}
+                onChange={(event) =>
+                  setDisplayNameInput(
+                    event.target.value
+                  )
+                }
+                placeholder="Display name"
+                autoFocus
+                required
+              />
 
-                <button
-                  type="submit"
-                  disabled={savingName}
-                >
-                  {savingName
-                    ? "Saving..."
-                    : "Continue"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="dashboard-action-button"
+                disabled={savingName}
+              >
+                {savingName
+                  ? "Saving..."
+                  : "Continue"}
+              </button>
             </form>
           </section>
         )}
 
         {/* Error */}
         {error && (
-          <div
-            className="dashboard-panel"
-            style={{
-              marginBottom: "24px",
-            }}
-          >
+          <div className="dashboard-panel dashboard-error">
+            <strong>
+              Something went wrong
+            </strong>
+
             <p>{error}</p>
 
             <button
               type="button"
-              onClick={() => void loadDashboard()}
+              className="dashboard-action-button"
+              onClick={() =>
+                void loadDashboard()
+              }
             >
               Try Again
             </button>
@@ -404,12 +479,7 @@ export default function DashboardPage() {
 
         {/* Loading */}
         {loading && (
-          <div
-            className="dashboard-panel"
-            style={{
-              marginBottom: "24px",
-            }}
-          >
+          <div className="dashboard-panel">
             <p>Loading dashboard...</p>
           </div>
         )}
@@ -459,7 +529,9 @@ export default function DashboardPage() {
                 <p>Projects</p>
 
                 <h2>
-                  {dashboard.projects_in_progress}
+                  {
+                    dashboard.projects_in_progress
+                  }
                 </h2>
 
                 <span>In progress</span>
@@ -468,6 +540,7 @@ export default function DashboardPage() {
 
             {/* Projects + Lead Pipeline */}
             <section className="dashboard-grid">
+              {/* Projects */}
               <div className="dashboard-panel dashboard-projects">
                 <div className="dashboard-panel-header">
                   <div>
@@ -480,9 +553,9 @@ export default function DashboardPage() {
 
                   <Link
                     href="/dashboard/projects"
-                    className="dashboard-link"
+                    className="dashboard-action-button"
                   >
-                    View all
+                    View All
                   </Link>
                 </div>
 
@@ -496,39 +569,19 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div>
+                  <div className="dashboard-list">
                     {dashboard.projects.map(
                       (project) => (
                         <div
                           key={project.id}
-                          style={{
-                            display: "flex",
-                            justifyContent:
-                              "space-between",
-                            alignItems:
-                              "center",
-                            gap: "20px",
-                            padding:
-                              "14px 0",
-                            borderBottom:
-                              "1px solid #e5e5e5",
-                          }}
+                          className="dashboard-list-row dashboard-project-row"
                         >
                           <div>
                             <strong>
                               {project.name}
                             </strong>
 
-                            <p
-                              style={{
-                                margin:
-                                  "5px 0 0",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
+                            <p>
                               {formatLabel(
                                 project.status
                               )}
@@ -536,16 +589,11 @@ export default function DashboardPage() {
                           </div>
 
                           {project.target_date && (
-                            <span
-                              style={{
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
-                              }}
-                            >
+                            <span className="dashboard-list-meta">
                               Due{" "}
-                              {project.target_date}
+                              {
+                                project.target_date
+                              }
                             </span>
                           )}
                         </div>
@@ -555,6 +603,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
+              {/* Lead Pipeline */}
               <div className="dashboard-panel">
                 <div className="dashboard-panel-header">
                   <div>
@@ -569,9 +618,9 @@ export default function DashboardPage() {
 
                   <Link
                     href="/dashboard/leads"
-                    className="dashboard-link"
+                    className="dashboard-action-button"
                   >
-                    View all
+                    View All
                   </Link>
                 </div>
 
@@ -633,6 +682,7 @@ export default function DashboardPage() {
 
             {/* Tasks + Recent Activity */}
             <section className="dashboard-grid">
+              {/* Tasks */}
               <div className="dashboard-panel">
                 <div className="dashboard-panel-header">
                   <div>
@@ -645,9 +695,9 @@ export default function DashboardPage() {
 
                   <Link
                     href="/dashboard/tasks"
-                    className="dashboard-link"
+                    className="dashboard-action-button"
                   >
-                    View all
+                    View All
                   </Link>
                 </div>
 
@@ -662,62 +712,87 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div>
+                  <div className="dashboard-task-list">
                     {dashboard.tasks_due_today.map(
-                      (task) => (
-                        <div
-                          key={task.id}
-                          style={{
-                            display: "flex",
-                            justifyContent:
-                              "space-between",
-                            alignItems:
-                              "center",
-                            gap: "20px",
-                            padding:
-                              "14px 0",
-                            borderBottom:
-                              "1px solid #e5e5e5",
-                          }}
-                        >
-                          <div>
-                            <strong>
-                              {task.name}
-                            </strong>
+                      (task) => {
+                        const isOwner =
+                          currentStaffId !==
+                            null &&
+                          task.assigned_to ===
+                            currentStaffId;
 
-                            <p
+                        return (
+                          <div
+                            key={task.id}
+                            className={`dashboard-task-card ${
+                              isOwner
+                                ? "dashboard-task-card-owner"
+                                : "dashboard-task-card-staff"
+                            }`}
+                          >
+                            <div
                               style={{
-                                margin:
-                                  "5px 0 0",
-                                fontSize:
-                                  "13px",
-                                color:
-                                  "#777",
+                                display: "flex",
+                                alignItems:
+                                  "center",
+                                justifyContent:
+                                  "space-between",
+                                gap: "16px",
                               }}
                             >
+                              <strong>
+                                {task.name}
+                              </strong>
+
+                              <span
+                                className={getPriorityClass(
+                                  task.priority
+                                )}
+                              >
+                                {formatLabel(
+                                  task.priority
+                                )}
+                              </span>
+                            </div>
+
+                            <p>
                               {formatLabel(
                                 task.status
                               )}
                             </p>
-                          </div>
 
-                          <span
-                            style={{
-                              fontSize:
-                                "13px",
-                              fontWeight:
-                                600,
-                            }}
-                          >
-                            {task.priority}
-                          </span>
-                        </div>
-                      )
+                            <div className="dashboard-task-meta">
+                              <span>
+                                <strong>
+                                  Assigned:
+                                </strong>{" "}
+                                {isOwner
+                                  ? "You"
+                                  : task.assigned_to
+                                    ? "Staff"
+                                    : "Unassigned"}
+                              </span>
+
+                              {task.due_date && (
+                                <span>
+                                  <strong>
+                                    Due:
+                                  </strong>{" "}
+                                  {
+                                    task.due_date
+                                  }
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
                     )}
                   </div>
                 )}
               </div>
 
+              {/* Recent Activity */}
               <div className="dashboard-panel">
                 <div className="dashboard-panel-header">
                   <div>
@@ -742,42 +817,76 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div>
+                  <div className="dashboard-list">
                     {dashboard.recent_activity.map(
-                      (activity) => (
-                        <div
-                          key={`${activity.type}-${activity.id}`}
-                          style={{
-                            padding:
-                              "14px 0",
-                            borderBottom:
-                              "1px solid #e5e5e5",
-                          }}
-                        >
-                          <strong>
-                            {activity.name}
-                          </strong>
+                      (activity) => {
+                        /*
+                         * The dashboard backend currently
+                         * returns task activity. When an
+                         * assigned_to value is available,
+                         * use it to match the same pink/gold
+                         * staff distinction used by Tasks.
+                         *
+                         * If older backend data doesn't include
+                         * assigned_to, the activity remains
+                         * neutral rather than falsely claiming
+                         * ownership.
+                         */
+                        const isOwner =
+                          currentStaffId !==
+                            null &&
+                          activity.assigned_to ===
+                            currentStaffId;
 
-                          <p
-                            style={{
-                              margin:
-                                "5px 0 0",
-                              fontSize:
-                                "13px",
-                              color:
-                                "#777",
-                            }}
+                        const activityClass =
+                          activity.assigned_to ==
+                            null ||
+                          activity.assigned_to ===
+                            undefined
+                            ? "dashboard-activity"
+                            : isOwner
+                              ? "dashboard-activity dashboard-activity-task"
+                              : "dashboard-activity dashboard-activity-other";
+
+                        return (
+                          <div
+                            key={`${activity.type}-${activity.id}`}
+                            className={`dashboard-list-row ${activityClass}`}
                           >
-                            {formatLabel(
-                              activity.type
-                            )}{" "}
-                            ·{" "}
-                            {formatLabel(
-                              activity.status
+                            {activity.assigned_to !=
+                              null && (
+                              <span
+                                className="dashboard-activity-indicator"
+                                aria-hidden="true"
+                              />
                             )}
-                          </p>
-                        </div>
-                      )
+
+                            <div>
+                              <strong>
+                                {activity.name}
+                              </strong>
+
+                              <p>
+                                {formatLabel(
+                                  activity.type
+                                )}{" "}
+                                ·{" "}
+                                {formatLabel(
+                                  activity.status
+                                )}
+                              </p>
+
+                              {activity.created_at && (
+                                <p>
+                                  {formatActivityDate(
+                                    activity.created_at
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
                     )}
                   </div>
                 )}
