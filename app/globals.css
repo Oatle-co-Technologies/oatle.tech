@@ -2956,9 +2956,10 @@ MOBILE
 }
 /* ============================================================
    NEW DASHBOARD COMPONENT CLASSES
-   Added for Tasks / shared component styling
-   Existing styles remain untouched.
+   Shared component styling
+   Existing JSX class names are preserved.
    ============================================================ */
+
 
 /* ------------------------------------------------------------
    PAGE ACTIONS
@@ -2973,9 +2974,15 @@ MOBILE
 
 /* ------------------------------------------------------------
    BUTTON SYSTEM
+   Supports existing dashboard-action-* classes
+   and newer dashboard-button-* classes.
    ------------------------------------------------------------ */
 
-.dashboard-button {
+.dashboard-button,
+.dashboard-action-primary,
+.dashboard-action-secondary,
+.dashboard-action-edit,
+.dashboard-action-delete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3003,16 +3010,28 @@ MOBILE
     transform 0.2s ease;
 }
 
-.dashboard-button:hover:not(:disabled) {
+.dashboard-button:hover:not(:disabled),
+.dashboard-action-primary:hover:not(:disabled),
+.dashboard-action-secondary:hover:not(:disabled),
+.dashboard-action-edit:hover:not(:disabled),
+.dashboard-action-delete:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.dashboard-button:focus-visible {
+.dashboard-button:focus-visible,
+.dashboard-action-primary:focus-visible,
+.dashboard-action-secondary:focus-visible,
+.dashboard-action-edit:focus-visible,
+.dashboard-action-delete:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
 
-.dashboard-button:disabled {
+.dashboard-button:disabled,
+.dashboard-action-primary:disabled,
+.dashboard-action-secondary:disabled,
+.dashboard-action-edit:disabled,
+.dashboard-action-delete:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
@@ -3023,13 +3042,15 @@ MOBILE
    PRIMARY BUTTON
    ------------------------------------------------------------ */
 
-.dashboard-button-primary {
+.dashboard-button-primary,
+.dashboard-action-primary {
   background: #000;
   border-color: #000;
   color: #fff;
 }
 
-.dashboard-button-primary:hover:not(:disabled) {
+.dashboard-button-primary:hover:not(:disabled),
+.dashboard-action-primary:hover:not(:disabled) {
   background: #222;
   border-color: #222;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -3040,13 +3061,15 @@ MOBILE
    SECONDARY BUTTON
    ------------------------------------------------------------ */
 
-.dashboard-button-secondary {
+.dashboard-button-secondary,
+.dashboard-action-secondary {
   background: #fff;
   border-color: #d9d9d9;
   color: #222;
 }
 
-.dashboard-button-secondary:hover:not(:disabled) {
+.dashboard-button-secondary:hover:not(:disabled),
+.dashboard-action-secondary:hover:not(:disabled) {
   background: #f7f7f7;
   border-color: #bdbdbd;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
@@ -3055,15 +3078,18 @@ MOBILE
 
 /* ------------------------------------------------------------
    EDIT BUTTON
+   Green
    ------------------------------------------------------------ */
 
-.dashboard-button-edit {
+.dashboard-button-edit,
+.dashboard-action-edit {
   background: #e9f7ee;
   border-color: #b9e2c7;
   color: #187a3d;
 }
 
-.dashboard-button-edit:hover:not(:disabled) {
+.dashboard-button-edit:hover:not(:disabled),
+.dashboard-action-edit:hover:not(:disabled) {
   background: #d9f1e2;
   border-color: #91d2a7;
   box-shadow: 0 3px 10px rgba(24, 122, 61, 0.12);
@@ -3072,15 +3098,18 @@ MOBILE
 
 /* ------------------------------------------------------------
    DELETE BUTTON
+   Red
    ------------------------------------------------------------ */
 
-.dashboard-button-delete {
+.dashboard-button-delete,
+.dashboard-action-delete {
   background: #fdeaea;
   border-color: #f2b8b8;
   color: #c62828;
 }
 
-.dashboard-button-delete:hover:not(:disabled) {
+.dashboard-button-delete:hover:not(:disabled),
+.dashboard-action-delete:hover:not(:disabled) {
   background: #fbdada;
   border-color: #e99a9a;
   box-shadow: 0 3px 10px rgba(198, 40, 40, 0.12);
@@ -3104,7 +3133,6 @@ MOBILE
   display: grid;
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
-
   gap: 16px;
 }
 
@@ -3129,7 +3157,6 @@ MOBILE
 
 .dashboard-form-hint {
   display: block;
-
   margin-top: 2px;
 
   font-size: 12px;
@@ -3145,9 +3172,7 @@ MOBILE
 
 .dashboard-form-textarea {
   width: 100%;
-
   margin-top: 16px;
-
   resize: vertical;
 }
 
@@ -3160,7 +3185,6 @@ MOBILE
   display: flex;
   align-items: center;
   gap: 12px;
-
   margin-top: 20px;
 }
 
@@ -3186,12 +3210,10 @@ MOBILE
 
 .dashboard-list-item {
   display: grid;
-
   grid-template-columns:
     minmax(0, 1fr) auto;
 
   gap: 24px;
-
   align-items: flex-start;
 
   padding: 20px 0;
@@ -3225,7 +3247,6 @@ MOBILE
   display: flex;
   align-items: center;
   gap: 10px;
-
   padding-top: 2px;
 }
 
@@ -3251,7 +3272,6 @@ MOBILE
   flex-wrap: wrap;
 
   gap: 8px;
-
   margin-top: 14px;
 }
 
@@ -3370,13 +3390,11 @@ MOBILE
 
 .dashboard-success {
   margin-bottom: 24px;
-
   border-left: 4px solid #2e8b57;
 }
 
 .dashboard-success p {
   margin: 0;
-
   color: #19733a;
   font-weight: 600;
 }
@@ -3388,13 +3406,11 @@ MOBILE
 
 .dashboard-error {
   margin-bottom: 24px;
-
   border-left: 4px solid #d32f2f;
 }
 
 .dashboard-error p {
   margin: 0;
-
   color: #d32f2f;
   font-weight: 600;
 }
