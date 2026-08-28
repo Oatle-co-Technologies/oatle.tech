@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
 import { authClient } from "@/lib/auth/client";
 
 type StaffInfo = {
@@ -31,39 +37,29 @@ export function AuthProvider({
   const [userEmail, setUserEmail] = useState("");
   const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const userEmailRef = useRef(userEmail);
-
-  useEffect(() => {
-    userEmailRef.current = userEmail;
-  }, [userEmail]);
 
   useEffect(() => {
     async function loadSession() {
       try {
         const result = await authClient.getSession();
+
         const email =
           result.data?.user?.email?.toLowerCase().trim() || "";
 
         setUserEmail(email);
 
         if (!email) {
+          setStaff(null);
           setLoading(false);
           return;
         }
 
         const response = await fetch(
-          "/api/backend/auth/me",
-          {
-            headers: {
-              "X-User-Email": email,
-            },
-          }
+          "/api/backend/auth/me"
         );
 
         if (response.ok) {
-          const data: StaffInfo =
-            await response.json();
-
+          const data: StaffInfo = await response.json();
           setStaff(data);
         } else {
           setStaff(null);
@@ -76,48 +72,6 @@ export function AuthProvider({
     }
 
     void loadSession();
-  }, []);
-
-  useEffect(() => {
-    const originalFetch = window.fetch;
-
-    window.fetch = async (
-      input: RequestInfo | URL,
-      init: RequestInit = {}
-    ) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-
-      if (url.includes("/api/backend/")) {
-        const existingHeader = (
-          init.headers as
-            | Record<string, string>
-            | undefined
-        )?.["X-User-Email"];
-
-        if (!existingHeader) {
-          init = {
-            ...init,
-            headers: {
-              ...(init.headers as
-                | Record<string, string>
-                | undefined),
-              "X-User-Email": userEmailRef.current,
-            },
-          };
-        }
-      }
-
-      return originalFetch(input, init);
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
   }, []);
 
   return (
