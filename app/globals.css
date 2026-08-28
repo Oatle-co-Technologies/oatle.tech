@@ -2513,3 +2513,226 @@ MOBILE
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================
+   OVERVIEW INTERACTION + SEMANTIC UI
+   ========================================================= */
+
+.dashboard-error {
+  border-left: 3px solid #c62828;
+}
+
+.dashboard-error p {
+  color: #c62828;
+  font-weight: 600;
+}
+
+/* Interactive links */
+
+.dashboard-link {
+  color: #111;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.dashboard-link:hover {
+  color: #d4a017;
+  text-decoration: none;
+}
+
+.dashboard-link:focus-visible {
+  outline: 2px solid #d4a017;
+  outline-offset: 4px;
+}
+
+/* Generic clickable dashboard rows */
+
+.dashboard-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e5e5;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    padding 160ms ease;
+}
+
+.dashboard-list-row:hover {
+  padding-left: 12px;
+  padding-right: 12px;
+  background: #faf8f3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-list-row:focus-visible {
+  outline: 2px solid #d4a017;
+  outline-offset: 2px;
+}
+
+/* Projects */
+
+.dashboard-project-row {
+  justify-content: space-between;
+}
+
+.dashboard-project-row strong,
+.dashboard-task-row strong,
+.dashboard-activity strong {
+  display: block;
+  color: #111;
+}
+
+.dashboard-project-row p,
+.dashboard-task-row p,
+.dashboard-activity p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #777;
+  text-transform: capitalize;
+}
+
+.dashboard-list-meta {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #777;
+}
+
+/* Tasks */
+
+.dashboard-task-row {
+  align-items: center;
+}
+
+.dashboard-task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * Person indicator:
+ * Pink = owner
+ * Gold = another staff member
+ */
+
+.dashboard-person-indicator,
+.dashboard-activity-indicator {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 36px;
+  border-radius: 999px;
+}
+
+.dashboard-person-owner,
+.dashboard-activity-task
+  .dashboard-activity-indicator {
+  background: #d98ca8;
+}
+
+.dashboard-person-staff,
+.dashboard-activity-other
+  .dashboard-activity-indicator {
+  background: #d4a017;
+}
+
+/* Priority labels */
+
+.dashboard-priority {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  background: #f1f1f1;
+  color: #555;
+}
+
+.dashboard-priority-high {
+  background: #fbe9e9;
+  color: #b42318;
+}
+
+.dashboard-priority-medium {
+  background: #fff4d6;
+  color: #8a6500;
+}
+
+.dashboard-priority-low {
+  background: #f1f1f1;
+  color: #666;
+}
+
+/* Recent Activity */
+
+.dashboard-activity {
+  align-items: center;
+}
+
+.dashboard-activity div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Make all dashboard buttons visibly interactive */
+
+.dashboard button {
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.dashboard button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard button:focus-visible {
+  outline: 2px solid #d4a017;
+  outline-offset: 3px;
+}
+
+.dashboard button:disabled {
+  cursor: not-allowed;
+}
+
+/* Responsive */
+
+@media (max-width: 700px) {
+  .dashboard-list-row {
+    gap: 12px;
+  }
+
+  .dashboard-project-row,
+  .dashboard-task-row {
+    align-items: flex-start;
+  }
+
+  .dashboard-list-meta {
+    white-space: nowrap;
+  }
+
+  .dashboard-priority {
+    min-width: 64px;
+  }
+}
