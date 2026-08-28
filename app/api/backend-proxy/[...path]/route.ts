@@ -55,10 +55,18 @@ async function proxyToBackend(
     cache: "no-store",
   });
 
+  const responseHeaders = new Headers(response.headers);
+
+  // fetch() transparently decompresses the backend response. Do not forward
+  // the original encoding or length metadata with the decoded response body.
+  responseHeaders.delete("content-encoding");
+  responseHeaders.delete("content-length");
+  responseHeaders.delete("transfer-encoding");
+
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers: response.headers,
+    headers: responseHeaders,
   });
 }
 
