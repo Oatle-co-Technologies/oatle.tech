@@ -1,14 +1,21 @@
 from datetime import datetime, date
 
 from fastapi import APIRouter, Depends
+
 from sqlalchemy import func
+
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
+
 from backend.models.client import Client
+
 from backend.models.lead import Lead
+
 from backend.models.project import Project
+
 from backend.models.task import Task
+
 from backend.models.invoice import Invoice
 
 
@@ -30,7 +37,9 @@ def get_db():
 def get_dashboard_summary(
     db: Session = Depends(get_db),
 ):
+
     today = date.today()
+
     now = datetime.utcnow()
 
     month_start = datetime(
@@ -40,12 +49,15 @@ def get_dashboard_summary(
     )
 
     if now.month == 12:
+
         next_month = datetime(
             now.year + 1,
             1,
             1,
         )
+
     else:
+
         next_month = datetime(
             now.year,
             now.month + 1,
@@ -65,11 +77,17 @@ def get_dashboard_summary(
 
     # ---------------------------------------------------------
     # REVENUE THIS MONTH
+    #
     # Only paid invoices whose paid_at falls in this month.
     # ---------------------------------------------------------
 
     revenue = (
-        db.query(func.coalesce(func.sum(Invoice.amount), 0))
+        db.query(
+            func.coalesce(
+                func.sum(Invoice.amount),
+                0,
+            )
+        )
         .filter(
             Invoice.status == "paid",
             Invoice.paid_at >= month_start,
@@ -218,7 +236,9 @@ def get_dashboard_summary(
     # RECENT ACTIVITY
     #
     # For now this is based on recently created tasks.
-    # We are not inventing an activity table that doesn't exist.
+    #
+    # assigned_to is included so the frontend can visually
+    # distinguish tasks belonging to different staff members.
     # ---------------------------------------------------------
 
     recent_tasks = (
@@ -234,6 +254,7 @@ def get_dashboard_summary(
             "type": "task",
             "name": task.name,
             "status": task.status,
+            "assigned_to": task.assigned_to,
             "created_at": (
                 task.created_at.isoformat()
                 if task.created_at
@@ -252,14 +273,18 @@ def get_dashboard_summary(
         "open_leads": open_leads,
         "projects_in_progress": active_project_count,
         "revenue": float(revenue),
+
         "lead_pipeline": {
             "new": new_leads,
             "contacted": contacted_leads,
             "proposal": proposal_leads,
             "won": won_leads,
         },
+
         "projects": projects_data,
+
         "tasks_due_today": tasks_data,
+
         "recent_activity": recent_activity,
     }
 

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { authClient } from "@/lib/auth/client";
+import { useAuth } from "@/lib/auth-context";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
@@ -15,14 +16,6 @@ const greetingMessages = [
   "Ready when you are. Let's make today count.",
   "Good to have you back. Let's build something great today.",
 ];
-
-type StaffMember = {
-  id: number;
-  name: string;
-  email: string;
-  access_level: string;
-  active: boolean;
-};
 
 type DashboardProject = {
   id: number;
@@ -36,7 +29,7 @@ type DashboardTask = {
   name: string;
   status: string;
   priority: string;
-  due_date: string | null;
+  due_date: string;
   assigned_to: number | null;
 };
 
@@ -45,8 +38,8 @@ type RecentActivity = {
   type: string;
   name: string;
   status: string;
+  assigned_to: number | null;
   created_at: string | null;
-  assigned_to?: number | null;
 };
 
 type DashboardData = {
@@ -54,14 +47,18 @@ type DashboardData = {
   active_clients: number;
   open_leads: number;
   projects_in_progress: number;
+
   lead_pipeline: {
     new: number;
     contacted: number;
     proposal: number;
     won: number;
   };
+
   projects: DashboardProject[];
+
   tasks_due_today: DashboardTask[];
+
   recent_activity: RecentActivity[];
 };
 
@@ -88,28 +85,19 @@ const navigationItems = [
   },
 ];
 
+const adminNavigationItems = [
+  {
+    href: "/dashboard/staff",
+    label: "Staff",
+  },
+  {
+    href: "/dashboard/invoices",
+    label: "Invoices",
+  },
+];
+
 function formatLabel(value: string) {
   return value.replace(/_/g, " ");
-}
-
-function getPriorityClass(priority: string) {
-  const normalized = priority
-    .toLowerCase()
-    .trim();
-
-  if (normalized === "urgent") {
-    return "dashboard-priority dashboard-priority-urgent";
-  }
-
-  if (normalized === "high") {
-    return "dashboard-priority dashboard-priority-high";
-  }
-
-  if (normalized === "medium") {
-    return "dashboard-priority dashboard-priority-medium";
-  }
-
-  return "dashboard-priority dashboard-priority-low";
 }
 
 function formatActivityDate(
@@ -126,19 +114,22 @@ function formatActivityDate(
   }
 
   return date.toLocaleDateString("en-ZA", {
-    day: "numeric",
+    day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const {
+    staff,
+    loading: authLoading,
+  } = useAuth();
+
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
-
-  const [userEmail, setUserEmail] = useState("");
-  const [currentStaffId, setCurrentStaffId] =
-    useState<number | null>(null);
 
   const [displayName, setDisplayName] =
     useState("");
@@ -155,14 +146,29 @@ export default function DashboardPage() {
   const [greetingMessage, setGreetingMessage] =
     useState(greetingMessages[0]);
 
-  const [loading, setLoading] =
+  const [dashboardLoading, setDashboardLoading] =
     useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   const [mobileNavOpen, setMobileNavOpen] =
     useState(false);
+
+  const isAdmin =
+    staff?.access_level === "admin";
+
+  const userEmail =
+    staff?.email || "";
+
+  /*
+   * The current logged-in staff record gives us
+   * the database staff ID.
+   *
+   * Recent Activity uses assigned_to to determine
+   * which staff member owns each task.
+   */
+  const currentStaffId =
+    staff?.id ?? null;
 
   useEffect(() => {
     const randomIndex = Math.floor(
@@ -176,88 +182,26 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    async function loadUser() {
-      try {
-        const result =
-          await authClient.getSession();
-
-        const email =
-          result.data?.user?.email
-            ?.toLowerCase()
-            .trim() ?? "";
-
-        setUserEmail(email);
-
-        if (!email) {
-          return;
-        }
-
-        const savedName =
-          window.localStorage.getItem(
-            `oatle-display-name:${email}`
-          );
-
-        if (savedName) {
-          setDisplayName(savedName);
-          setShowNameSetup(false);
-        } else {
-          setShowNameSetup(true);
-        }
-
-        /*
-         * Find the logged-in user's Staff record.
-         *
-         * This is only used to visually distinguish
-         * the user's tasks from other staff tasks.
-         */
-        try {
-          const staffResponse =
-            await fetch(
-              `${API_URL}/staff`,
-              {
-                cache: "no-store",
-              }
-            );
-
-          if (staffResponse.ok) {
-            const staff:
-              | StaffMember[]
-              = await staffResponse.json();
-
-            const currentStaff =
-              staff.find(
-                (member) =>
-                  member.email
-                    ?.toLowerCase()
-                    .trim() === email
-              );
-
-            if (currentStaff) {
-              setCurrentStaffId(
-                currentStaff.id
-              );
-            }
-          }
-        } catch (staffError) {
-          console.error(
-            "Failed to load staff information:",
-            staffError
-          );
-        }
-      } catch (err) {
-        console.error(
-          "Failed to load authenticated user:",
-          err
-        );
-      }
+    if (!userEmail) {
+      return;
     }
 
-    void loadUser();
-  }, []);
+    const savedName =
+      window.localStorage.getItem(
+        `oatle-display-name:${userEmail}`
+      );
+
+    if (savedName) {
+      setDisplayName(savedName);
+      setShowNameSetup(false);
+    } else {
+      setShowNameSetup(true);
+    }
+  }, [userEmail]);
 
   async function loadDashboard() {
     try {
-      setLoading(true);
+      setDashboardLoading(true);
       setError("");
 
       const response = await fetch(
@@ -284,13 +228,17 @@ export default function DashboardPage() {
           : "Failed to load dashboard"
       );
     } finally {
-      setLoading(false);
+      setDashboardLoading(false);
     }
   }
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     void loadDashboard();
-  }, []);
+  }, [authLoading]);
 
   function handleSaveDisplayName(
     event: React.FormEvent<HTMLFormElement>
@@ -324,6 +272,33 @@ export default function DashboardPage() {
     setMobileNavOpen(false);
   }
 
+  /*
+   * Determine which colour belongs to a task.
+   *
+   * Pink = current user's work.
+   * Gold = another staff member's work.
+   * Neutral = unassigned.
+   *
+   * We deliberately use the actual staff ID rather
+   * than guessing from a person's name or role.
+   */
+  function getTaskOwnerClass(
+    assignedTo: number | null
+  ) {
+    if (assignedTo === null) {
+      return "dashboard-task-owner-unassigned";
+    }
+
+    if (
+      currentStaffId !== null &&
+      assignedTo === currentStaffId
+    ) {
+      return "dashboard-task-owner-me";
+    }
+
+    return "dashboard-task-owner-staff";
+  }
+
   return (
     <div className="dashboard">
       {/* Mobile Header */}
@@ -343,7 +318,9 @@ export default function DashboardPage() {
           aria-expanded={mobileNavOpen}
           aria-controls="dashboard-mobile-nav"
         >
-          {mobileNavOpen ? "Close" : "Menu"}
+          {mobileNavOpen
+            ? "Close"
+            : "Menu"}
         </button>
       </div>
 
@@ -363,20 +340,36 @@ export default function DashboardPage() {
           id="dashboard-mobile-nav"
           className="dashboard-nav"
         >
-          {navigationItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`dashboard-nav-item ${
-                item.href === "/dashboard"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={closeMobileNav}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navigationItems.map(
+            (item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`dashboard-nav-item ${
+                  item.href ===
+                  "/dashboard"
+                    ? "active"
+                    : ""
+                }`}
+                onClick={closeMobileNav}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
+
+          {adminNavigationItems.map(
+            (item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="dashboard-nav-item"
+                onClick={closeMobileNav}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="dashboard-sidebar-bottom">
@@ -412,45 +405,68 @@ export default function DashboardPage() {
 
         {/* Display Name Setup */}
         {showNameSetup && (
-          <section className="dashboard-panel dashboard-name-setup">
+          <section
+            className="dashboard-panel"
+            style={{
+              marginBottom: "24px",
+              padding: "32px",
+            }}
+          >
             <p className="dashboard-panel-label">
               WELCOME TO OATLE
             </p>
 
-            <h2>
-              What would you like us to call you?
+            <h2
+              style={{
+                marginTop: "8px",
+                marginBottom: "8px",
+              }}
+            >
+              What would you like us
+              to call you?
             </h2>
 
-            <p>
-              Choose the name you'd like to use
-              inside your Oatle dashboard.
+            <p
+              style={{
+                marginBottom: "20px",
+                color: "#777",
+              }}
+            >
+              This name is only used for
+              your dashboard greeting.
             </p>
 
             <form
-              onSubmit={handleSaveDisplayName}
-              className="dashboard-name-form"
+              onSubmit={
+                handleSaveDisplayName
+              }
+              style={{
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
             >
               <input
                 type="text"
-                value={displayNameInput}
+                value={
+                  displayNameInput
+                }
                 onChange={(event) =>
                   setDisplayNameInput(
                     event.target.value
                   )
                 }
-                placeholder="Display name"
-                autoFocus
+                placeholder="Your name"
                 required
               />
 
               <button
                 type="submit"
-                className="dashboard-action-button"
                 disabled={savingName}
               >
                 {savingName
                   ? "Saving..."
-                  : "Continue"}
+                  : "Save Name"}
               </button>
             </form>
           </section>
@@ -458,16 +474,24 @@ export default function DashboardPage() {
 
         {/* Error */}
         {error && (
-          <div className="dashboard-panel dashboard-error">
-            <strong>
-              Something went wrong
-            </strong>
-
-            <p>{error}</p>
+          <div
+            className="dashboard-panel"
+            style={{
+              marginBottom: "24px",
+            }}
+          >
+            <p
+              style={{
+                color: "#c62828",
+                fontWeight: 600,
+                marginBottom: "12px",
+              }}
+            >
+              {error}
+            </p>
 
             <button
               type="button"
-              className="dashboard-action-button"
               onClick={() =>
                 void loadDashboard()
               }
@@ -478,423 +502,596 @@ export default function DashboardPage() {
         )}
 
         {/* Loading */}
-        {loading && (
-          <div className="dashboard-panel">
-            <p>Loading dashboard...</p>
+        {dashboardLoading && (
+          <div
+            className="dashboard-panel"
+            style={{
+              marginBottom: "24px",
+            }}
+          >
+            <p>
+              Loading dashboard...
+            </p>
           </div>
         )}
 
-        {!loading && dashboard && (
-          <>
-            {/* Stats */}
-            <section className="dashboard-stats">
-              <div className="dashboard-card">
-                <p>Revenue</p>
+        {/* Dashboard */}
+        {!dashboardLoading &&
+          dashboard && (
+            <>
+              {/* Stats */}
+              <section className="dashboard-stats">
+                <div className="dashboard-card">
+                  <p>Revenue</p>
 
-                <h2>
-                  R
-                  {Number(
-                    dashboard.revenue
-                  ).toLocaleString("en-ZA")}
-                </h2>
-
-                <span>This month</span>
-              </div>
-
-              <div className="dashboard-card">
-                <p>Active Clients</p>
-
-                <h2>
-                  {dashboard.active_clients}
-                </h2>
-
-                <span>
-                  Currently active
-                </span>
-              </div>
-
-              <div className="dashboard-card">
-                <p>Open Leads</p>
-
-                <h2>
-                  {dashboard.open_leads}
-                </h2>
-
-                <span>
-                  Needs attention
-                </span>
-              </div>
-
-              <div className="dashboard-card">
-                <p>Projects</p>
-
-                <h2>
-                  {
-                    dashboard.projects_in_progress
-                  }
-                </h2>
-
-                <span>In progress</span>
-              </div>
-            </section>
-
-            {/* Projects + Lead Pipeline */}
-            <section className="dashboard-grid">
-              {/* Projects */}
-              <div className="dashboard-panel dashboard-projects">
-                <div className="dashboard-panel-header">
-                  <div>
-                    <p className="dashboard-panel-label">
-                      WORK
-                    </p>
-
-                    <h3>Projects</h3>
-                  </div>
-
-                  <Link
-                    href="/dashboard/projects"
-                    className="dashboard-action-button"
-                  >
-                    View All
-                  </Link>
-                </div>
-
-                {dashboard.projects.length ===
-                0 ? (
-                  <div className="dashboard-empty">
-                    <span>01</span>
-
-                    <p>
-                      No projects yet.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="dashboard-list">
-                    {dashboard.projects.map(
-                      (project) => (
-                        <div
-                          key={project.id}
-                          className="dashboard-list-row dashboard-project-row"
-                        >
-                          <div>
-                            <strong>
-                              {project.name}
-                            </strong>
-
-                            <p>
-                              {formatLabel(
-                                project.status
-                              )}
-                            </p>
-                          </div>
-
-                          {project.target_date && (
-                            <span className="dashboard-list-meta">
-                              Due{" "}
-                              {
-                                project.target_date
-                              }
-                            </span>
-                          )}
-                        </div>
-                      )
+                  <h2>
+                    R
+                    {Number(
+                      dashboard.revenue
+                    ).toLocaleString(
+                      "en-ZA"
                     )}
-                  </div>
-                )}
-              </div>
+                  </h2>
 
-              {/* Lead Pipeline */}
-              <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                  <div>
-                    <p className="dashboard-panel-label">
-                      SALES
-                    </p>
-
-                    <h3>
-                      Lead Pipeline
-                    </h3>
-                  </div>
-
-                  <Link
-                    href="/dashboard/leads"
-                    className="dashboard-action-button"
-                  >
-                    View All
-                  </Link>
+                  <span>
+                    This month
+                  </span>
                 </div>
 
-                <div className="lead-pipeline">
-                  <div>
-                    <span>New</span>
+                <div className="dashboard-card">
+                  <p>
+                    Active Clients
+                  </p>
 
-                    <strong>
-                      {
-                        dashboard
-                          .lead_pipeline
-                          .new
-                      }
-                    </strong>
-                  </div>
+                  <h2>
+                    {
+                      dashboard.active_clients
+                    }
+                  </h2>
 
-                  <div>
-                    <span>
-                      Contacted
-                    </span>
-
-                    <strong>
-                      {
-                        dashboard
-                          .lead_pipeline
-                          .contacted
-                      }
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>
-                      Proposal
-                    </span>
-
-                    <strong>
-                      {
-                        dashboard
-                          .lead_pipeline
-                          .proposal
-                      }
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Won</span>
-
-                    <strong>
-                      {
-                        dashboard
-                          .lead_pipeline
-                          .won
-                      }
-                    </strong>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Tasks + Recent Activity */}
-            <section className="dashboard-grid">
-              {/* Tasks */}
-              <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                  <div>
-                    <p className="dashboard-panel-label">
-                      TODAY
-                    </p>
-
-                    <h3>Tasks</h3>
-                  </div>
-
-                  <Link
-                    href="/dashboard/tasks"
-                    className="dashboard-action-button"
-                  >
-                    View All
-                  </Link>
+                  <span>
+                    Currently active
+                  </span>
                 </div>
 
-                {dashboard
-                  .tasks_due_today.length ===
-                0 ? (
-                  <div className="dashboard-empty">
-                    <span>02</span>
+                <div className="dashboard-card">
+                  <p>
+                    Open Leads
+                  </p>
 
-                    <p>
-                      No tasks due today.
-                    </p>
+                  <h2>
+                    {
+                      dashboard.open_leads
+                    }
+                  </h2>
+
+                  <span>
+                    Needs attention
+                  </span>
+                </div>
+
+                <div className="dashboard-card">
+                  <p>Projects</p>
+
+                  <h2>
+                    {
+                      dashboard.projects_in_progress
+                    }
+                  </h2>
+
+                  <span>
+                    In progress
+                  </span>
+                </div>
+              </section>
+
+              {/* Projects + Lead Pipeline */}
+              <section className="dashboard-grid">
+                <div className="dashboard-panel dashboard-projects">
+                  <div className="dashboard-panel-header">
+                    <div>
+                      <p className="dashboard-panel-label">
+                        WORK
+                      </p>
+
+                      <h3>
+                        Projects
+                      </h3>
+                    </div>
+
+                    <Link
+                      href="/dashboard/projects"
+                      className="dashboard-link"
+                    >
+                      View all
+                    </Link>
                   </div>
-                ) : (
-                  <div className="dashboard-task-list">
-                    {dashboard.tasks_due_today.map(
-                      (task) => {
-                        const isOwner =
-                          currentStaffId !==
-                            null &&
-                          task.assigned_to ===
-                            currentStaffId;
 
-                        return (
+                  {dashboard.projects
+                    .length === 0 ? (
+                    <div className="dashboard-empty">
+                      <span>01</span>
+
+                      <p>
+                        No projects yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {dashboard.projects.map(
+                        (project) => (
                           <div
-                            key={task.id}
-                            className={`dashboard-task-card ${
-                              isOwner
-                                ? "dashboard-task-card-owner"
-                                : "dashboard-task-card-staff"
-                            }`}
+                            key={
+                              project.id
+                            }
+                            style={{
+                              display:
+                                "flex",
+                              justifyContent:
+                                "space-between",
+                              alignItems:
+                                "center",
+                              gap: "20px",
+                              padding:
+                                "14px 0",
+                              borderBottom:
+                                "1px solid #e5e5e5",
+                            }}
+                          >
+                            <div>
+                              <strong>
+                                {
+                                  project.name
+                                }
+                              </strong>
+
+                              <p
+                                style={{
+                                  margin:
+                                    "5px 0 0",
+                                  fontSize:
+                                    "13px",
+                                  color:
+                                    "#777",
+                                }}
+                              >
+                                {formatLabel(
+                                  project.status
+                                )}
+                              </p>
+                            </div>
+
+                            {project.target_date && (
+                              <span
+                                style={{
+                                  fontSize:
+                                    "13px",
+                                  color:
+                                    "#777",
+                                }}
+                              >
+                                Due{" "}
+                                {
+                                  project.target_date
+                                }
+                              </span>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="dashboard-panel">
+                  <div className="dashboard-panel-header">
+                    <div>
+                      <p className="dashboard-panel-label">
+                        SALES
+                      </p>
+
+                      <h3>
+                        Lead Pipeline
+                      </h3>
+                    </div>
+
+                    <Link
+                      href="/dashboard/leads"
+                      className="dashboard-link"
+                    >
+                      View all
+                    </Link>
+                  </div>
+
+                  <div className="lead-pipeline">
+                    <div>
+                      <span>
+                        New
+                      </span>
+
+                      <strong>
+                        {
+                          dashboard
+                            .lead_pipeline
+                            .new
+                        }
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Contacted
+                      </span>
+
+                      <strong>
+                        {
+                          dashboard
+                            .lead_pipeline
+                            .contacted
+                        }
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Proposal
+                      </span>
+
+                      <strong>
+                        {
+                          dashboard
+                            .lead_pipeline
+                            .proposal
+                        }
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Won
+                      </span>
+
+                      <strong>
+                        {
+                          dashboard
+                            .lead_pipeline
+                            .won
+                        }
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Tasks + Recent Activity */}
+              <section className="dashboard-grid">
+                {/* Today's Tasks */}
+                <div className="dashboard-panel">
+                  <div className="dashboard-panel-header">
+                    <div>
+                      <p className="dashboard-panel-label">
+                        TODAY
+                      </p>
+
+                      <h3>
+                        Tasks
+                      </h3>
+                    </div>
+
+                    <Link
+                      href="/dashboard/tasks"
+                      className="dashboard-link"
+                    >
+                      View all
+                    </Link>
+                  </div>
+
+                  {dashboard
+                    .tasks_due_today
+                    .length === 0 ? (
+                    <div className="dashboard-empty">
+                      <span>02</span>
+
+                      <p>
+                        No tasks due
+                        today.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {dashboard.tasks_due_today.map(
+                        (task) => (
+                          <div
+                            key={
+                              task.id
+                            }
+                            className={`dashboard-task-row ${getTaskOwnerClass(
+                              task.assigned_to
+                            )}`}
+                            style={{
+                              display:
+                                "flex",
+                              justifyContent:
+                                "space-between",
+                              alignItems:
+                                "center",
+                              gap: "20px",
+                              padding:
+                                "14px 0",
+                              borderBottom:
+                                "1px solid #e5e5e5",
+                            }}
                           >
                             <div
                               style={{
-                                display: "flex",
+                                display:
+                                  "flex",
                                 alignItems:
-                                  "center",
-                                justifyContent:
-                                  "space-between",
+                                  "stretch",
                                 gap: "16px",
                               }}
                             >
-                              <strong>
-                                {task.name}
-                              </strong>
-
                               <span
-                                className={getPriorityClass(
-                                  task.priority
-                                )}
-                              >
-                                {formatLabel(
-                                  task.priority
-                                )}
-                              </span>
-                            </div>
-
-                            <p>
-                              {formatLabel(
-                                task.status
-                              )}
-                            </p>
-
-                            <div className="dashboard-task-meta">
-                              <span>
-                                <strong>
-                                  Assigned:
-                                </strong>{" "}
-                                {isOwner
-                                  ? "You"
-                                  : task.assigned_to
-                                    ? "Staff"
-                                    : "Unassigned"}
-                              </span>
-
-                              {task.due_date && (
-                                <span>
-                                  <strong>
-                                    Due:
-                                  </strong>{" "}
-                                  {
-                                    task.due_date
-                                  }
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Recent Activity */}
-              <div className="dashboard-panel">
-                <div className="dashboard-panel-header">
-                  <div>
-                    <p className="dashboard-panel-label">
-                      ACTIVITY
-                    </p>
-
-                    <h3>
-                      Recent Activity
-                    </h3>
-                  </div>
-                </div>
-
-                {dashboard
-                  .recent_activity.length ===
-                0 ? (
-                  <div className="dashboard-empty">
-                    <span>03</span>
-
-                    <p>
-                      No recent activity.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="dashboard-list">
-                    {dashboard.recent_activity.map(
-                      (activity) => {
-                        /*
-                         * The dashboard backend currently
-                         * returns task activity. When an
-                         * assigned_to value is available,
-                         * use it to match the same pink/gold
-                         * staff distinction used by Tasks.
-                         *
-                         * If older backend data doesn't include
-                         * assigned_to, the activity remains
-                         * neutral rather than falsely claiming
-                         * ownership.
-                         */
-                        const isOwner =
-                          currentStaffId !==
-                            null &&
-                          activity.assigned_to ===
-                            currentStaffId;
-
-                        const activityClass =
-                          activity.assigned_to ==
-                            null ||
-                          activity.assigned_to ===
-                            undefined
-                            ? "dashboard-activity"
-                            : isOwner
-                              ? "dashboard-activity dashboard-activity-task"
-                              : "dashboard-activity dashboard-activity-other";
-
-                        return (
-                          <div
-                            key={`${activity.type}-${activity.id}`}
-                            className={`dashboard-list-row ${activityClass}`}
-                          >
-                            {activity.assigned_to !=
-                              null && (
-                              <span
-                                className="dashboard-activity-indicator"
+                                className="dashboard-task-owner-indicator"
                                 aria-hidden="true"
                               />
-                            )}
 
-                            <div>
-                              <strong>
-                                {activity.name}
-                              </strong>
+                              <div>
+                                <strong>
+                                  {
+                                    task.name
+                                  }
+                                </strong>
 
-                              <p>
-                                {formatLabel(
-                                  activity.type
-                                )}{" "}
-                                ·{" "}
-                                {formatLabel(
-                                  activity.status
-                                )}
-                              </p>
-
-                              {activity.created_at && (
-                                <p>
-                                  {formatActivityDate(
-                                    activity.created_at
+                                <p
+                                  style={{
+                                    margin:
+                                      "5px 0 0",
+                                    fontSize:
+                                      "13px",
+                                    color:
+                                      "#777",
+                                  }}
+                                >
+                                  {formatLabel(
+                                    task.status
                                   )}
                                 </p>
-                              )}
+                              </div>
                             </div>
+
+                            <span
+                              className={`dashboard-task-priority dashboard-task-priority-${task.priority.toLowerCase()}`}
+                            >
+                              {formatLabel(
+                                task.priority
+                              )}
+                            </span>
                           </div>
-                        );
-                      }
-                    )}
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Activity */}
+                <div className="dashboard-panel">
+                  <div className="dashboard-panel-header">
+                    <div>
+                      <p className="dashboard-panel-label">
+                        ACTIVITY
+                      </p>
+
+                      <h3>
+                        Recent Activity
+                      </h3>
+                    </div>
                   </div>
-                )}
-              </div>
-            </section>
-          </>
-        )}
+
+                  {dashboard
+                    .recent_activity
+                    .length === 0 ? (
+                    <div className="dashboard-empty">
+                      <span>03</span>
+
+                      <p>
+                        No recent
+                        activity.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {dashboard.recent_activity.map(
+                        (activity) => {
+                          const ownerClass =
+                            getTaskOwnerClass(
+                              activity.assigned_to
+                            );
+
+                          return (
+                            <div
+                              key={`${activity.type}-${activity.id}`}
+                              className={`dashboard-activity-row ${ownerClass}`}
+                              style={{
+                                display:
+                                  "flex",
+                                gap: "16px",
+                                padding:
+                                  "14px 0",
+                                borderBottom:
+                                  "1px solid #e5e5e5",
+                              }}
+                            >
+                              <span
+                                className="dashboard-activity-owner-indicator"
+                                aria-hidden="true"
+                              />
+
+                              <div>
+                                <strong
+                                  style={{
+                                    display:
+                                      "block",
+                                    marginBottom:
+                                      "6px",
+                                  }}
+                                >
+                                  {
+                                    activity.name
+                                  }
+                                </strong>
+
+                                <p
+                                  style={{
+                                    margin:
+                                      "0 0 6px",
+                                    fontSize:
+                                      "13px",
+                                    color:
+                                      "#777",
+                                  }}
+                                >
+                                  {formatLabel(
+                                    activity.type
+                                  )}{" "}
+                                  ·{" "}
+                                  {formatLabel(
+                                    activity.status
+                                  )}
+                                </p>
+
+                                {activity.created_at && (
+                                  <p
+                                    style={{
+                                      margin:
+                                        "0",
+                                      fontSize:
+                                        "13px",
+                                      color:
+                                        "#777",
+                                    }}
+                                  >
+                                    {formatActivityDate(
+                                      activity.created_at
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
       </main>
+
+      <style jsx>{`
+        .dashboard-link {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 14px;
+          border: 1px solid #d9d9d9;
+          border-radius: 999px;
+          background: #ffffff;
+          color: #222222;
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+          transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease,
+            box-shadow 0.15s ease;
+        }
+
+        .dashboard-link:hover {
+          background: #f7f5f1;
+          border-color: #cfcfcf;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09);
+        }
+
+        .dashboard-task-owner-indicator,
+        .dashboard-activity-owner-indicator {
+          flex: 0 0 6px;
+          width: 6px;
+          min-height: 32px;
+          border-radius: 999px;
+          background: #d9d9d9;
+        }
+
+        .dashboard-task-owner-me
+          .dashboard-task-owner-indicator,
+        .dashboard-task-owner-me
+          .dashboard-activity-owner-indicator {
+          background: #d98aaa;
+        }
+
+        .dashboard-task-owner-staff
+          .dashboard-task-owner-indicator,
+        .dashboard-task-owner-staff
+          .dashboard-activity-owner-indicator {
+          background: #d9a21b;
+        }
+
+        .dashboard-task-owner-unassigned
+          .dashboard-task-owner-indicator,
+        .dashboard-task-owner-unassigned
+          .dashboard-activity-owner-indicator {
+          background: #d9d9d9;
+        }
+
+        .dashboard-task-priority {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 62px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: capitalize;
+        }
+
+        .dashboard-task-priority-high {
+          background: #f8dfe8;
+          color: #8f3154;
+        }
+
+        .dashboard-task-priority-medium {
+          background: #fff1cc;
+          color: #8a6400;
+        }
+
+        .dashboard-task-priority-low {
+          background: #eeeeee;
+          color: #555555;
+        }
+
+        .dashboard-task-row,
+        .dashboard-activity-row {
+          position: relative;
+        }
+
+        @media (max-width: 700px) {
+          .dashboard-link {
+            padding: 7px 11px;
+            font-size: 12px;
+          }
+
+          .dashboard-task-row {
+            align-items: flex-start;
+          }
+
+          .dashboard-task-priority {
+            flex-shrink: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }

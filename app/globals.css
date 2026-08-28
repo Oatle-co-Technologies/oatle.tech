@@ -2904,3 +2904,26 @@ MOBILE
     gap: 8px;
   }
 }
+.dashboard-activity {
+  position: relative;
+  display: flex;
+  gap: 16px;
+}
+
+.dashboard-activity-indicator {
+  flex: 0 0 6px;
+  width: 6px;
+  min-height: 32px;
+  border-radius: 999px;
+  background: #d9d9d9;
+}
+
+.dashboard-activity-owner
+  .dashboard-activity-indicator {
+  background: #d98aaa;
+}
+
+.dashboard-activity-staff
+  .dashboard-activity-indicator {
+  background: #d9a21b;
+}
