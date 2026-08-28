@@ -77,9 +77,6 @@ const navigationItems = [
     href: "/dashboard/tasks",
     label: "Tasks",
   },
-];
-
-const adminNavigationItems = [
   {
     href: "/dashboard/staff",
     label: "Staff",
@@ -119,8 +116,6 @@ export default function DashboardPage() {
 
   const [mobileNavOpen, setMobileNavOpen] =
     useState(false);
-
-  const isAdmin = false;
 
   function handleSaveDisplayName(
     event: React.FormEvent<HTMLFormElement>
@@ -296,18 +291,6 @@ export default function DashboardPage() {
               {item.label}
             </Link>
           ))}
-
-          {isAdmin &&
-            adminNavigationItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="dashboard-nav-item"
-                onClick={closeMobileNav}
-              >
-                {item.label}
-              </Link>
-            ))}
         </nav>
 
         <div className="dashboard-sidebar-bottom">
@@ -444,21 +427,18 @@ export default function DashboardPage() {
         {!dashboardLoading && dashboard && (
           <>
             <section className="dashboard-stats">
-              {isAdmin &&
-                dashboard.revenue !== undefined && (
-                  <div className="dashboard-card">
-                    <p>Revenue</p>
+              <div className="dashboard-card">
+                <p>Revenue</p>
 
-                    <h2>
-                      R
-                      {Number(
-                        dashboard.revenue
-                      ).toLocaleString("en-ZA")}
-                    </h2>
+                <h2>
+                  R
+                  {Number(
+                    dashboard.revenue ?? 0
+                  ).toLocaleString("en-ZA")}
+                </h2>
 
-                    <span>This month</span>
-                  </div>
-                )}
+                <span>This month</span>
+              </div>
 
               <div className="dashboard-card">
                 <p>Active Clients</p>
