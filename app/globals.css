@@ -2954,3 +2954,475 @@ MOBILE
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.09);
   transform: translateY(-1px);
 }
+/* ============================================================
+   NEW DASHBOARD COMPONENT CLASSES
+   Added for Tasks / shared component styling
+   Existing styles remain untouched.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   PAGE ACTIONS
+   ------------------------------------------------------------ */
+
+.dashboard-page-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+
+/* ------------------------------------------------------------
+   BUTTON SYSTEM
+   ------------------------------------------------------------ */
+
+.dashboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  padding: 9px 16px;
+
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  line-height: 1;
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dashboard-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.dashboard-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.dashboard-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* ------------------------------------------------------------
+   PRIMARY BUTTON
+   ------------------------------------------------------------ */
+
+.dashboard-button-primary {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.dashboard-button-primary:hover:not(:disabled) {
+  background: #222;
+  border-color: #222;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+
+/* ------------------------------------------------------------
+   SECONDARY BUTTON
+   ------------------------------------------------------------ */
+
+.dashboard-button-secondary {
+  background: #fff;
+  border-color: #d9d9d9;
+  color: #222;
+}
+
+.dashboard-button-secondary:hover:not(:disabled) {
+  background: #f7f7f7;
+  border-color: #bdbdbd;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+
+/* ------------------------------------------------------------
+   EDIT BUTTON
+   ------------------------------------------------------------ */
+
+.dashboard-button-edit {
+  background: #e9f7ee;
+  border-color: #b9e2c7;
+  color: #187a3d;
+}
+
+.dashboard-button-edit:hover:not(:disabled) {
+  background: #d9f1e2;
+  border-color: #91d2a7;
+  box-shadow: 0 3px 10px rgba(24, 122, 61, 0.12);
+}
+
+
+/* ------------------------------------------------------------
+   DELETE BUTTON
+   ------------------------------------------------------------ */
+
+.dashboard-button-delete {
+  background: #fdeaea;
+  border-color: #f2b8b8;
+  color: #c62828;
+}
+
+.dashboard-button-delete:hover:not(:disabled) {
+  background: #fbdada;
+  border-color: #e99a9a;
+  box-shadow: 0 3px 10px rgba(198, 40, 40, 0.12);
+}
+
+
+/* ------------------------------------------------------------
+   FORM PANEL
+   ------------------------------------------------------------ */
+
+.dashboard-form-panel {
+  width: 100%;
+}
+
+
+/* ------------------------------------------------------------
+   FORM GRID
+   ------------------------------------------------------------ */
+
+.dashboard-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/* ------------------------------------------------------------
+   FORM FIELD
+   ------------------------------------------------------------ */
+
+.dashboard-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* ------------------------------------------------------------
+   FORM HINT
+   ------------------------------------------------------------ */
+
+.dashboard-form-hint {
+  display: block;
+
+  margin-top: 2px;
+
+  font-size: 12px;
+  font-weight: 400;
+
+  color: #777;
+}
+
+
+/* ------------------------------------------------------------
+   FORM TEXTAREA
+   ------------------------------------------------------------ */
+
+.dashboard-form-textarea {
+  width: 100%;
+
+  margin-top: 16px;
+
+  resize: vertical;
+}
+
+
+/* ------------------------------------------------------------
+   FORM ACTIONS
+   ------------------------------------------------------------ */
+
+.dashboard-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+
+/* ------------------------------------------------------------
+   PANEL ACTIONS
+   ------------------------------------------------------------ */
+
+.dashboard-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+/* ------------------------------------------------------------
+   LIST SYSTEM
+   ------------------------------------------------------------ */
+
+.dashboard-list {
+  width: 100%;
+}
+
+.dashboard-list-item {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr) auto;
+
+  gap: 24px;
+
+  align-items: flex-start;
+
+  padding: 20px 0;
+
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.dashboard-list-item:last-child {
+  border-bottom: none;
+}
+
+
+/* ------------------------------------------------------------
+   LIST CONTENT
+   ------------------------------------------------------------ */
+
+.dashboard-list-content {
+  min-width: 0;
+}
+
+.dashboard-list-title {
+  margin: 0 0 10px;
+}
+
+
+/* ------------------------------------------------------------
+   LIST ACTIONS
+   ------------------------------------------------------------ */
+
+.dashboard-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding-top: 2px;
+}
+
+
+/* ------------------------------------------------------------
+   TASK ITEM
+   ------------------------------------------------------------ */
+
+.dashboard-task-item {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+/* ------------------------------------------------------------
+   TASK META
+   ------------------------------------------------------------ */
+
+.dashboard-task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 14px;
+}
+
+.dashboard-meta-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #777;
+}
+
+
+/* ------------------------------------------------------------
+   STATUS LABEL
+   ------------------------------------------------------------ */
+
+.dashboard-status {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+
+  padding: 5px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+
+/* ------------------------------------------------------------
+   TASK STATUS COLORS
+   ------------------------------------------------------------ */
+
+.dashboard-status-completed {
+  background: #e8f7ed;
+  border: 1px solid #b8e1c5;
+  color: #19733a;
+}
+
+.dashboard-status-progress {
+  background: #fff4d9;
+  border: 1px solid #f0d48a;
+  color: #946500;
+}
+
+.dashboard-status-blocked {
+  background: #fde9e9;
+  border: 1px solid #efb4b4;
+  color: #c62828;
+}
+
+.dashboard-status-todo {
+  background: #eef2f7;
+  border: 1px solid #d4dce7;
+  color: #526173;
+}
+
+
+/* ------------------------------------------------------------
+   PRIORITY LABEL
+   ------------------------------------------------------------ */
+
+.dashboard-priority {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+
+  padding: 5px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+
+/* ------------------------------------------------------------
+   PRIORITY COLORS
+   ------------------------------------------------------------ */
+
+.dashboard-priority-low {
+  background: #eef2f7;
+  border: 1px solid #d4dce7;
+  color: #526173;
+}
+
+.dashboard-priority-medium {
+  background: #fff4d9;
+  border: 1px solid #f0d48a;
+  color: #946500;
+}
+
+.dashboard-priority-high {
+  background: #fde9e9;
+  border: 1px solid #efb4b4;
+  color: #c62828;
+}
+
+.dashboard-priority-urgent {
+  background: #f8dcdc;
+  border: 1px solid #df8f8f;
+  color: #a71919;
+}
+
+
+/* ------------------------------------------------------------
+   SUCCESS MESSAGE
+   ------------------------------------------------------------ */
+
+.dashboard-success {
+  margin-bottom: 24px;
+
+  border-left: 4px solid #2e8b57;
+}
+
+.dashboard-success p {
+  margin: 0;
+
+  color: #19733a;
+  font-weight: 600;
+}
+
+
+/* ------------------------------------------------------------
+   ERROR MESSAGE
+   ------------------------------------------------------------ */
+
+.dashboard-error {
+  margin-bottom: 24px;
+
+  border-left: 4px solid #d32f2f;
+}
+
+.dashboard-error p {
+  margin: 0;
+
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+
+/* ------------------------------------------------------------
+   RESPONSIVE TASK / LIST LAYOUT
+   ------------------------------------------------------------ */
+
+@media (max-width: 768px) {
+  .dashboard-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-list-item {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .dashboard-list-actions {
+    padding-top: 0;
+  }
+
+  .dashboard-panel-actions {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-task-meta {
+    align-items: flex-start;
+  }
+}
