@@ -14,7 +14,7 @@ from backend.models.pricing import Product, AddOn, Service
 from backend.models.project_addon import ProjectAddOn
 from backend.models.product_service import ProductService
 from backend.models.staff import Staff
-
+from backend.models.appointment import Appointment
 # API routers
 from backend.api.clients import router as clients_router
 from backend.api.leads import router as leads_router
@@ -31,6 +31,7 @@ from backend.api.product_product_services import (
 )
 from backend.api.dashboard import router as dashboard_router
 from backend.api.auth import router as auth_router
+from backend.api.appointments import router as appointments_router
 
 app = FastAPI()
 
@@ -59,6 +60,7 @@ app.include_router(staff_router)
 app.include_router(product_product_services_router)
 app.include_router(dashboard_router)
 app.include_router(auth_router)
+app.include_router(appointments_router)
 
 
 @app.get("/")
