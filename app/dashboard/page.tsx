@@ -76,8 +76,8 @@ const navigationItems = [
     label: "Leads",
   },
   {
-    href: "/dashboard/projects",
-    label: "Projects",
+    href: "/dashboard/appointments",
+    label: "Appointments",
   },
   {
     href: "/dashboard/tasks",
@@ -93,6 +93,10 @@ const adminNavigationItems = [
   {
     href: "/dashboard/invoices",
     label: "Invoices",
+  },
+  {
+    href: "/dashboard/Projects",
+    label: "Projects",
   },
 ];
 
