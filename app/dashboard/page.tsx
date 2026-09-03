@@ -83,6 +83,11 @@ const navigationItems = [
     href: "/dashboard/tasks",
     label: "Tasks",
   },
+
+  {
+    href: "/dashboard/Projects",
+    label: "Projects",
+  },
 ];
 
 const adminNavigationItems = [
@@ -93,10 +98,6 @@ const adminNavigationItems = [
   {
     href: "/dashboard/invoices",
     label: "Invoices",
-  },
-  {
-    href: "/dashboard/Projects",
-    label: "Projects",
   },
 ];
 
