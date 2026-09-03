@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import type { FormEvent } from "react";
 
 import { useAuth } from "@/lib/auth-context";
 
@@ -191,12 +195,12 @@ export default function DashboardPage() {
       return;
     }
 
-    const savedName =
+    const savedName: string | null =
       window.localStorage.getItem(
         `oatle-display-name:${userEmail}`
       );
 
-    if (savedName) {
+    if (typeof savedName === "string" && savedName.length > 0) {
       setDisplayName(savedName);
       setShowNameSetup(false);
     } else {
@@ -204,7 +208,7 @@ export default function DashboardPage() {
     }
   }, [userEmail]);
 
-  async function loadDashboard() {
+  const loadDashboard = useCallback(async () => {
     try {
       setDashboardLoading(true);
       setError("");
@@ -225,7 +229,22 @@ export default function DashboardPage() {
       const data: DashboardData =
         await response.json();
 
-      setDashboard(data);
+      setDashboard({
+        ...data,
+        projects: Array.isArray(data.projects)
+          ? data.projects
+          : [],
+        tasks_due_today: Array.isArray(
+          data.tasks_due_today
+        )
+          ? data.tasks_due_today
+          : [],
+        recent_activity: Array.isArray(
+          data.recent_activity
+        )
+          ? data.recent_activity
+          : [],
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -235,7 +254,7 @@ export default function DashboardPage() {
     } finally {
       setDashboardLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (authLoading) {
@@ -243,10 +262,10 @@ export default function DashboardPage() {
     }
 
     void loadDashboard();
-  }, [authLoading]);
+  }, [authLoading, loadDashboard]);
 
   function handleSaveDisplayName(
-    event: React.FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
