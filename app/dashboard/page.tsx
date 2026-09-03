@@ -84,7 +84,7 @@ const navigationItems = [
     label: "Tasks",
   },
   {
-    href: "/dashboard/Projects",
+    href: "/dashboard/projects",
     label: "Projects",
   },
 
