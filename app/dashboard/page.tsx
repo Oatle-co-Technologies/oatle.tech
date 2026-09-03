@@ -83,8 +83,8 @@ const navigationItems = [
     href: "/dashboard/tasks",
     label: "Tasks",
   },
-  {
-    href: "/dashboard/projects",
+  {rojects
+    href: "/dashboard/",
     label: "Projects",
   },
 
