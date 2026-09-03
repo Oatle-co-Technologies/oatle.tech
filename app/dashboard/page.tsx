@@ -1,12 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/lib/auth-context";
 
@@ -80,18 +76,17 @@ const navigationItems = [
     label: "Leads",
   },
   {
-    href: "/dashboard/appointments",
-    label: "Appointments",
-  },
-  {
     href: "/dashboard/tasks",
     label: "Tasks",
+  },
+  {
+    href: "/dashboard/appointments",
+    label: "Appointments",
   },
   {
     href: "/dashboard/projects",
     label: "Projects",
   },
-
 ];
 
 const adminNavigationItems = [
@@ -109,9 +104,7 @@ function formatLabel(value: string) {
   return value.replace(/_/g, " ");
 }
 
-function formatActivityDate(
-  value: string | null
-) {
+function formatActivityDate(value: string | null) {
   if (!value) {
     return "";
   }
@@ -195,12 +188,12 @@ export default function DashboardPage() {
       return;
     }
 
-    const savedName: string | null =
+    const savedName =
       window.localStorage.getItem(
         `oatle-display-name:${userEmail}`
       );
 
-    if (typeof savedName === "string" && savedName.length > 0) {
+    if (savedName) {
       setDisplayName(savedName);
       setShowNameSetup(false);
     } else {
@@ -208,7 +201,7 @@ export default function DashboardPage() {
     }
   }, [userEmail]);
 
-  const loadDashboard = useCallback(async () => {
+  async function loadDashboard() {
     try {
       setDashboardLoading(true);
       setError("");
@@ -229,22 +222,7 @@ export default function DashboardPage() {
       const data: DashboardData =
         await response.json();
 
-      setDashboard({
-        ...data,
-        projects: Array.isArray(data.projects)
-          ? data.projects
-          : [],
-        tasks_due_today: Array.isArray(
-          data.tasks_due_today
-        )
-          ? data.tasks_due_today
-          : [],
-        recent_activity: Array.isArray(
-          data.recent_activity
-        )
-          ? data.recent_activity
-          : [],
-      });
+      setDashboard(data);
     } catch (err) {
       setError(
         err instanceof Error
@@ -254,7 +232,7 @@ export default function DashboardPage() {
     } finally {
       setDashboardLoading(false);
     }
-  }, []);
+  }
 
   useEffect(() => {
     if (authLoading) {
@@ -262,10 +240,10 @@ export default function DashboardPage() {
     }
 
     void loadDashboard();
-  }, [authLoading, loadDashboard]);
+  }, [authLoading]);
 
   function handleSaveDisplayName(
-    event: FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
