@@ -1,8 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
+import { authClient } from "@/lib/auth/client";
+
 export default function UnauthorizedPage() {
+  useEffect(() => {
+    void authClient.signOut();
+  }, []);
+
   return (
     <main className="dashboard-main">
       <header className="dashboard-header">
@@ -29,14 +36,14 @@ export default function UnauthorizedPage() {
         </p>
 
         <Link
-          href="/dashboard"
+          href="/"
           className="dashboard-link"
           style={{
             display: "inline-block",
             marginTop: "16px",
           }}
         >
-          ← Back to Dashboard
+          ← Back to website
         </Link>
       </div>
     </main>
