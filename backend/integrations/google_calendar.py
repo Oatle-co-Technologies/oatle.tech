@@ -138,6 +138,61 @@ def get_free_busy(
     return response["calendars"][calendar_id]["busy"]
 
 
+def find_available_slots(
+    requested_start: datetime,
+    duration: timedelta,
+    limit: int = 2,
+):
+    local_start = _calendar_datetime(requested_start)
+    first_day = local_start.replace(
+        hour=9,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    search_end = first_day + timedelta(days=7)
+    busy_periods = get_free_busy(first_day, search_end)
+    busy_ranges = [
+        (
+            datetime.fromisoformat(period["start"]),
+            datetime.fromisoformat(period["end"]),
+        )
+        for period in busy_periods
+    ]
+
+    suggestions = []
+    candidate_day = local_start.date()
+
+    while candidate_day <= search_end.date() and len(suggestions) < limit:
+        if candidate_day.weekday() < 5:
+            candidate = datetime.combine(
+                candidate_day,
+                datetime.min.time(),
+                tzinfo=ZoneInfo(CALENDAR_TIMEZONE),
+            ).replace(hour=9)
+            day_end = candidate.replace(hour=17)
+
+            while (
+                candidate + duration <= day_end
+                and len(suggestions) < limit
+            ):
+                candidate_end = candidate + duration
+                overlaps = any(
+                    candidate < busy_end
+                    and candidate_end > busy_start
+                    for busy_start, busy_end in busy_ranges
+                )
+
+                if not overlaps and candidate >= local_start:
+                    suggestions.append(candidate)
+
+                candidate += timedelta(minutes=30)
+
+        candidate_day += timedelta(days=1)
+
+    return suggestions
+
+
 def create_calendar_event(
     summary: str,
     description: str | None,

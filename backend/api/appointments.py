@@ -10,6 +10,8 @@ from backend.models.staff import Staff
 from backend.integrations.google_calendar import (
     create_calendar_event,
     delete_calendar_event,
+    find_available_slots,
+    get_free_busy,
     list_calendar_events,
     update_calendar_event,
 )
@@ -75,6 +77,36 @@ def create_appointment(
         raise HTTPException(
             status_code=400,
             detail="End time must be after start time",
+        )
+
+    try:
+        busy_periods = get_free_busy(
+            start_time=appointment.start_time,
+            end_time=appointment.end_time,
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not check Google Calendar availability: {error}",
+        ) from error
+
+    if busy_periods:
+        suggestions = find_available_slots(
+            requested_start=appointment.start_time,
+            duration=appointment.end_time - appointment.start_time,
+        )
+        suggestion_text = ", ".join(
+            slot.strftime("%a %d %b at %H:%M")
+            for slot in suggestions
+        )
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "That time is already busy. "
+                "Suggested available times: "
+                f"{suggestion_text or 'Please contact us for availability'}."
+            ),
         )
 
     conflicting_appointment = (
