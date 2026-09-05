@@ -14,6 +14,9 @@ async function proxyToBackend(
 ) {
   const tokenResult = await auth.token();
   const token = tokenResult.data?.token;
+  const sessionResult = await auth.getSession();
+  const sessionEmail =
+    sessionResult.data?.user?.email?.toLowerCase().trim();
 
   if (!token) {
     return Response.json(
@@ -33,6 +36,10 @@ async function proxyToBackend(
 
   headers.set("authorization", `Bearer ${token}`);
   headers.set("x-oatle-backend-path", `/${path.join("/")}`);
+
+  if (sessionEmail) {
+    headers.set("x-oatle-auth-email", sessionEmail);
+  }
 
   if (contentType) {
     headers.set("content-type", contentType);

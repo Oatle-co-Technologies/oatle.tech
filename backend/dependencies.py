@@ -94,7 +94,11 @@ def get_current_staff(
         )
 
     auth_user_id = payload.get("sub")
-    token_email = str(payload.get("email", "")).lower().strip()
+    token_email = (
+        request.headers.get("x-oatle-auth-email")
+        or payload.get("email", "")
+    )
+    token_email = str(token_email).lower().strip()
 
     auth_user_uuid = None
     if auth_user_id:
