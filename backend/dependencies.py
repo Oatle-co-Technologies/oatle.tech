@@ -9,6 +9,15 @@ from sqlalchemy.orm import Session
 from backend.database.connection import SessionLocal
 from backend.models.staff import Staff
 
+ALLOWED_STAFF_EMAILS = {
+    "info@oatle-technologies.co.za",
+    "communications@oatle-technologies.co.za",
+}
+ALLOWED_ACCESS_LEVELS = {
+    "admin",
+    "member",
+}
+
 
 def get_db():
     db = SessionLocal()
@@ -85,26 +94,30 @@ def get_current_staff(
         )
 
     auth_user_id = payload.get("sub")
+    token_email = str(payload.get("email", "")).lower().strip()
 
-    if not auth_user_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication identity is missing",
+    auth_user_uuid = None
+    if auth_user_id:
+        try:
+            auth_user_uuid = UUID(str(auth_user_id))
+        except ValueError:
+            pass
+
+    staff = None
+
+    if auth_user_uuid:
+        staff = (
+            db.query(Staff)
+            .filter(Staff.auth_user_id == auth_user_uuid)
+            .first()
         )
 
-    try:
-        auth_user_uuid = UUID(str(auth_user_id))
-    except ValueError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication identity",
+    if not staff and token_email in ALLOWED_STAFF_EMAILS:
+        staff = (
+            db.query(Staff)
+            .filter(Staff.email.ilike(token_email))
+            .first()
         )
-
-    staff = (
-        db.query(Staff)
-        .filter(Staff.auth_user_id == auth_user_uuid)
-        .first()
-    )
 
     if not staff:
         raise HTTPException(
@@ -112,7 +125,10 @@ def get_current_staff(
             detail="You are not authorized to access this dashboard",
         )
 
-    if not staff.active:
+    if (
+        not staff.active
+        or staff.access_level not in ALLOWED_ACCESS_LEVELS
+    ):
         raise HTTPException(
             status_code=403,
             detail="You are not authorized to access this dashboard",
