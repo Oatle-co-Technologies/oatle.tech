@@ -1,7 +1,6 @@
 import json
 import os
-
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from google.oauth2 import service_account
@@ -175,19 +174,12 @@ def create_calendar_event(
     if location:
         event["location"] = location
 
-    if attendee_email:
-        event["attendees"] = [
-            {
-                "email": attendee_email
-            }
-        ]
-
     created_event = (
         service.events()
         .insert(
             calendarId=calendar_id,
             body=event,
-            sendUpdates="all",
+            sendUpdates="none",
         )
         .execute()
     )
@@ -218,11 +210,6 @@ def update_calendar_event(
             "dateTime": _calendar_datetime(end_time).isoformat(),
             "timeZone": CALENDAR_TIMEZONE,
         },
-        "attendees": (
-            [{"email": attendee_email}]
-            if attendee_email
-            else []
-        ),
     }
 
     if location:
@@ -234,7 +221,7 @@ def update_calendar_event(
             calendarId=calendar_id,
             eventId=event_id,
             body=event,
-            sendUpdates="all",
+            sendUpdates="none",
         )
         .execute()
     )
@@ -249,3 +236,24 @@ def delete_calendar_event(event_id: str):
         eventId=event_id,
         sendUpdates="all",
     ).execute()
+
+
+def list_calendar_events():
+    service = build_calendar_service()
+    calendar_id = get_calendar_id()
+    now = datetime.now(timezone.utc)
+
+    response = (
+        service.events()
+        .list(
+            calendarId=calendar_id,
+            timeMin=now.isoformat(),
+            timeMax=(now + timedelta(days=365)).isoformat(),
+            singleEvents=True,
+            orderBy="startTime",
+            maxResults=250,
+        )
+        .execute()
+    )
+
+    return response.get("items", [])

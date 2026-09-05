@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -6,6 +8,7 @@ from backend.models.appointment import Appointment
 from backend.integrations.google_calendar import (
     create_calendar_event,
     delete_calendar_event,
+    list_calendar_events,
     update_calendar_event,
 )
 from backend.schemas.appointment import (
@@ -103,6 +106,58 @@ def create_appointment(
 def get_appointments(
     db: Session = Depends(get_db),
 ):
+    try:
+        calendar_events = list_calendar_events()
+
+        for event in calendar_events:
+            event_id = event.get("id")
+            start = event.get("start", {}).get("dateTime")
+            end = event.get("end", {}).get("dateTime")
+
+            if not event_id or not start or not end:
+                continue
+
+            appointment = (
+                db.query(Appointment)
+                .filter(Appointment.google_event_id == event_id)
+                .first()
+            )
+
+            attendee = next(
+                iter(event.get("attendees", [])),
+                {},
+            )
+
+            if not appointment:
+                appointment = Appointment(
+                    participant_name=(
+                        attendee.get("displayName")
+                        or event.get("organizer", {}).get("displayName")
+                        or "Google Calendar event"
+                    ),
+                    participant_email=(
+                        attendee.get("email")
+                        or event.get("organizer", {}).get("email")
+                        or "calendar@google.com"
+                    ),
+                    title=event.get("summary") or "Google Calendar event",
+                    appointment_type="google_calendar",
+                    start_time=datetime.fromisoformat(start),
+                    end_time=datetime.fromisoformat(end),
+                    location=event.get("location"),
+                    notes=event.get("description"),
+                    google_event_id=event_id,
+                )
+                db.add(appointment)
+
+        db.commit()
+    except Exception as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not sync Google Calendar events: {error}",
+        ) from error
+
     return (
         db.query(Appointment)
         .order_by(Appointment.start_time.asc())
