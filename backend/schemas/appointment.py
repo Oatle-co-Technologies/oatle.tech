@@ -38,6 +38,7 @@ class AppointmentUpdate(BaseModel):
 class AppointmentResponse(AppointmentCreate):
     id: int
     status: str
+    google_event_id: str | None = None
     created_at: datetime
     updated_at: datetime
 

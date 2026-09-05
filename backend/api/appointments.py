@@ -3,6 +3,11 @@ from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
 from backend.models.appointment import Appointment
+from backend.integrations.google_calendar import (
+    create_calendar_event,
+    delete_calendar_event,
+    update_calendar_event,
+)
 from backend.schemas.appointment import (
     AppointmentCreate,
     AppointmentResponse,
@@ -62,6 +67,23 @@ def create_appointment(
         location=appointment.location,
         notes=appointment.notes,
     )
+
+    try:
+        calendar_event = create_calendar_event(
+            summary=appointment.title,
+            description=appointment.notes,
+            start_time=appointment.start_time,
+            end_time=appointment.end_time,
+            attendee_email=appointment.participant_email,
+            location=appointment.location,
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not create Google Calendar event: {error}",
+        ) from error
+
+    new_appointment.google_event_id = calendar_event.get("id")
 
     db.add(new_appointment)
     db.commit()
@@ -170,6 +192,34 @@ def update_appointment(
             detail="The selected time is already booked",
         )
 
+    try:
+        if appointment.google_event_id:
+            update_calendar_event(
+                event_id=appointment.google_event_id,
+                summary=appointment.title,
+                description=appointment.notes,
+                start_time=appointment.start_time,
+                end_time=appointment.end_time,
+                attendee_email=appointment.participant_email,
+                location=appointment.location,
+            )
+        else:
+            calendar_event = create_calendar_event(
+                summary=appointment.title,
+                description=appointment.notes,
+                start_time=appointment.start_time,
+                end_time=appointment.end_time,
+                attendee_email=appointment.participant_email,
+                location=appointment.location,
+            )
+            appointment.google_event_id = calendar_event.get("id")
+    except Exception as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not sync Google Calendar event: {error}",
+        ) from error
+
     db.commit()
     db.refresh(appointment)
 
@@ -196,6 +246,15 @@ def delete_appointment(
             status_code=404,
             detail="Appointment not found",
         )
+
+    if appointment.google_event_id:
+        try:
+            delete_calendar_event(appointment.google_event_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Could not delete Google Calendar event: {error}",
+            ) from error
 
     db.delete(appointment)
     db.commit()

@@ -77,6 +77,12 @@ class Appointment(Base):
         nullable=True,
     )
 
+    google_event_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        unique=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,

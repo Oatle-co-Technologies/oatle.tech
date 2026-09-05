@@ -1,7 +1,8 @@
-import os
 import json
+import os
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -10,6 +11,14 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar.freebusy",
     "https://www.googleapis.com/auth/calendar.events",
 ]
+CALENDAR_TIMEZONE = "Africa/Johannesburg"
+
+
+def _calendar_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=ZoneInfo(CALENDAR_TIMEZONE))
+
+    return value.astimezone(ZoneInfo(CALENDAR_TIMEZONE))
 
 
 def get_calendar_credentials():
@@ -154,12 +163,12 @@ def create_calendar_event(
         "summary": summary,
         "description": description or "",
         "start": {
-            "dateTime": start_time.isoformat(),
-            "timeZone": "Africa/Johannesburg",
+            "dateTime": _calendar_datetime(start_time).isoformat(),
+            "timeZone": CALENDAR_TIMEZONE,
         },
         "end": {
-            "dateTime": end_time.isoformat(),
-            "timeZone": "Africa/Johannesburg",
+            "dateTime": _calendar_datetime(end_time).isoformat(),
+            "timeZone": CALENDAR_TIMEZONE,
         },
     }
 
@@ -184,3 +193,59 @@ def create_calendar_event(
     )
 
     return created_event
+
+
+def update_calendar_event(
+    event_id: str,
+    summary: str,
+    description: str | None,
+    start_time: datetime,
+    end_time: datetime,
+    attendee_email: str | None = None,
+    location: str | None = None,
+):
+    service = build_calendar_service()
+    calendar_id = get_calendar_id()
+
+    event = {
+        "summary": summary,
+        "description": description or "",
+        "start": {
+            "dateTime": _calendar_datetime(start_time).isoformat(),
+            "timeZone": CALENDAR_TIMEZONE,
+        },
+        "end": {
+            "dateTime": _calendar_datetime(end_time).isoformat(),
+            "timeZone": CALENDAR_TIMEZONE,
+        },
+        "attendees": (
+            [{"email": attendee_email}]
+            if attendee_email
+            else []
+        ),
+    }
+
+    if location:
+        event["location"] = location
+
+    return (
+        service.events()
+        .update(
+            calendarId=calendar_id,
+            eventId=event_id,
+            body=event,
+            sendUpdates="all",
+        )
+        .execute()
+    )
+
+
+def delete_calendar_event(event_id: str):
+    service = build_calendar_service()
+    calendar_id = get_calendar_id()
+
+    service.events().delete(
+        calendarId=calendar_id,
+        eventId=event_id,
+        sendUpdates="all",
+    ).execute()
