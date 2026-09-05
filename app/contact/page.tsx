@@ -3,6 +3,9 @@
 import { FormEvent, useState } from "react";
 import emailjs from "@emailjs/browser";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
 
@@ -17,6 +20,8 @@ export default function ContactPage() {
     email: "",
     phone: "",
     service: "New Website",
+    preferred_date: "",
+    preferred_time: "",
     message: "",
   });
 
@@ -30,10 +35,20 @@ export default function ContactPage() {
     const email = formData.email.trim().toLowerCase();
     const phone = formData.phone.trim();
     const service = formData.service;
+    const preferredDate = formData.preferred_date;
+    const preferredTime = formData.preferred_time;
     const message = formData.message.trim();
 
     // Required fields
-    if (!name || !business || !email || !phone || !message) {
+    if (
+      !name ||
+      !business ||
+      !email ||
+      !phone ||
+      !preferredDate ||
+      !preferredTime ||
+      !message
+    ) {
       setStatus({
         type: "error",
         message: "Please complete all required fields.",
@@ -111,6 +126,44 @@ export default function ContactPage() {
     setLoading(true);
 
     try {
+      const start = new Date(
+        `${preferredDate}T${preferredTime}`
+      );
+      const end = new Date(
+        start.getTime() + 45 * 60 * 1000
+      );
+
+      const appointmentResponse = await fetch(
+        `${API_URL}/appointments/discovery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            participant_name: name,
+            participant_email: email,
+            title: `Discovery call - ${business}`,
+            appointment_type: "discovery_call",
+            start_time: start.toISOString(),
+            end_time: end.toISOString(),
+            location: "Online discovery call",
+            notes: `${service}\n\n${message}\n\nPhone: ${phone}`,
+          }),
+        }
+      );
+
+      if (!appointmentResponse.ok) {
+        const data = await appointmentResponse
+          .json()
+          .catch(() => null);
+
+        throw new Error(
+          data?.detail ||
+            "We could not reserve that discovery-call time."
+        );
+      }
+
       await emailjs.send(
         "service_4mg8nys",
         "template_rs3cuww",
@@ -121,6 +174,8 @@ export default function ContactPage() {
           email,
           phone,
           service,
+            preferred_date: preferredDate,
+            preferred_time: preferredTime,
           message,
         },
         "G21rP3jrxQohCHe1l"
@@ -138,6 +193,8 @@ export default function ContactPage() {
         email: "",
         phone: "",
         service: "New Website",
+        preferred_date: "",
+        preferred_time: "",
         message: "",
       });
     } catch (error) {
@@ -291,6 +348,48 @@ export default function ContactPage() {
                 <option>Online Store / E-commerce</option>
                 <option>Not Sure Yet</option>
               </select>
+            </div>
+
+            <div className="contact-form-row">
+              <div>
+                <label htmlFor="preferred_date">
+                  Preferred Date
+                </label>
+
+                <input
+                  id="preferred_date"
+                  name="preferred_date"
+                  type="date"
+                  required
+                  value={formData.preferred_date}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      preferred_date: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label htmlFor="preferred_time">
+                  Preferred Time
+                </label>
+
+                <input
+                  id="preferred_time"
+                  name="preferred_time"
+                  type="time"
+                  required
+                  value={formData.preferred_time}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      preferred_time: e.target.value,
+                    })
+                  }
+                />
+              </div>
             </div>
 
             <div>

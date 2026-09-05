@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
 from backend.models.appointment import Appointment
+from backend.models.staff import Staff
 from backend.integrations.google_calendar import (
     create_calendar_event,
     delete_calendar_event,
@@ -22,6 +24,39 @@ router = APIRouter(
     prefix="/appointments",
     tags=["Appointments"],
 )
+
+
+@router.post(
+    "/discovery",
+    response_model=AppointmentResponse,
+)
+def create_discovery_booking(
+    appointment: AppointmentCreate,
+    db: Session = Depends(get_db),
+):
+    organizer_email = os.getenv(
+        "DISCOVERY_ORGANIZER_EMAIL",
+        "info@oatle-technologies.co.za",
+    ).lower().strip()
+
+    organizer = (
+        db.query(Staff)
+        .filter(Staff.email.ilike(organizer_email))
+        .first()
+    )
+
+    if not organizer or not organizer.active:
+        raise HTTPException(
+            status_code=500,
+            detail="Discovery call organizer is not configured",
+        )
+
+    return create_appointment(
+        appointment.model_copy(
+            update={"organizer_staff_id": organizer.id}
+        ),
+        db,
+    )
 
 
 # ============================================================

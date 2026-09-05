@@ -12,20 +12,30 @@ async function proxyToBackend(
   request: Request,
   { params }: RouteContext
 ) {
-  const tokenResult = await auth.token();
-  const token = tokenResult.data?.token;
-  const sessionResult = await auth.getSession();
-  const sessionData = sessionResult.data as {
-    user?: { email?: string | null };
-    session?: { user?: { email?: string | null } };
-  } | null;
-  const sessionEmail =
-    (
-      sessionData?.user?.email ||
-      sessionData?.session?.user?.email
-    )?.toLowerCase().trim();
+  const { path } = await params;
+  const backendPath = `/${path.join("/")}`;
+  const isPublicDiscoveryBooking =
+    backendPath === "/appointments/discovery";
 
-  if (!token) {
+  let token: string | undefined;
+  let sessionEmail: string | undefined;
+
+  if (!isPublicDiscoveryBooking) {
+    const tokenResult = await auth.token();
+    token = tokenResult.data?.token;
+    const sessionResult = await auth.getSession();
+    const sessionData = sessionResult.data as {
+      user?: { email?: string | null };
+      session?: { user?: { email?: string | null } };
+    } | null;
+    sessionEmail =
+      (
+        sessionData?.user?.email ||
+        sessionData?.session?.user?.email
+      )?.toLowerCase().trim();
+  }
+
+  if (!isPublicDiscoveryBooking && !token) {
     return Response.json(
       {
         detail: "Authentication required",
@@ -36,13 +46,15 @@ async function proxyToBackend(
     );
   }
 
-  const { path } = await params;
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
   const accept = request.headers.get("accept");
 
-  headers.set("authorization", `Bearer ${token}`);
-  headers.set("x-oatle-backend-path", `/${path.join("/")}`);
+  if (token) {
+    headers.set("authorization", `Bearer ${token}`);
+  }
+
+  headers.set("x-oatle-backend-path", backendPath);
 
   if (sessionEmail) {
     headers.set("x-oatle-auth-email", sessionEmail);
