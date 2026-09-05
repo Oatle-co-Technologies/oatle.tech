@@ -21,12 +21,14 @@ type AuthContextValue = {
   userEmail: string;
   staff: StaffInfo | null;
   loading: boolean;
+  authorizationError: string;
 };
 
 const AuthContext = createContext<AuthContextValue>({
   userEmail: "",
   staff: null,
   loading: true,
+  authorizationError: "",
 });
 
 export function AuthProvider({
@@ -37,6 +39,7 @@ export function AuthProvider({
   const [userEmail, setUserEmail] = useState("");
   const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authorizationError, setAuthorizationError] = useState("");
 
   useEffect(() => {
     async function loadSession() {
@@ -63,9 +66,14 @@ export function AuthProvider({
           setStaff(data);
         } else {
           const data = await response.json().catch(() => null);
+          const detail =
+            typeof data?.detail === "string"
+              ? data.detail
+              : `Authorization request failed (${response.status})`;
+          setAuthorizationError(detail);
           console.error(
             "Dashboard authorization failed:",
-            data?.detail || response.status
+            detail
           );
           setStaff(null);
         }
@@ -85,6 +93,7 @@ export function AuthProvider({
         userEmail,
         staff,
         loading,
+        authorizationError,
       }}
     >
       {children}

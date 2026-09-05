@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 
-import { authClient } from "@/lib/auth/client";
+import { useAuth } from "@/lib/auth-context";
 
 export default function UnauthorizedPage() {
-  useEffect(() => {
-    void authClient.signOut();
-  }, []);
+  const { authorizationError } = useAuth();
 
   return (
     <main className="dashboard-main">
@@ -34,6 +31,12 @@ export default function UnauthorizedPage() {
           If you believe this is an error, please contact your
           administrator.
         </p>
+
+        {authorizationError && (
+          <p style={{ marginTop: "16px", color: "#c62828" }}>
+            Authorization detail: {authorizationError}
+          </p>
+        )}
 
         <Link
           href="/"
