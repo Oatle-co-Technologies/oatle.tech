@@ -101,6 +101,12 @@ def get_current_staff(
     token_email = str(token_email).lower().strip()
     email_is_allowed = token_email in ALLOWED_STAFF_EMAILS
 
+    if not email_is_allowed:
+        raise HTTPException(
+            status_code=403,
+            detail="This email address is not allowed to access the dashboard",
+        )
+
     auth_user_uuid = None
     if auth_user_id:
         try:
@@ -117,7 +123,7 @@ def get_current_staff(
             .first()
         )
 
-    if not staff and email_is_allowed:
+    if not staff:
         staff = (
             db.query(Staff)
             .filter(Staff.email.ilike(token_email))
