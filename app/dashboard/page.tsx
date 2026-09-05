@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+const SOUTH_AFRICA_TIME_ZONE = "Africa/Johannesburg";
 
 const greetingMessages = [
   "I hope you're having a great day. Let's get to work.",
@@ -119,6 +120,7 @@ function formatActivityDate(value: string | null) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: SOUTH_AFRICA_TIME_ZONE,
   });
 }
 

@@ -68,6 +68,7 @@ const emptyEmailForm: EmailForm = {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+const SOUTH_AFRICA_TIME_ZONE = "Africa/Johannesburg";
 
 export default function LeadsPage() {
   const { userEmail } = useAuth();
@@ -1091,7 +1092,11 @@ export default function LeadsPage() {
                         Next follow-up:{" "}
                         {new Date(
                           lead.next_follow_up_at
-                        ).toLocaleString()}
+                        ).toLocaleString("en-ZA", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                          timeZone: SOUTH_AFRICA_TIME_ZONE,
+                        })}
                       </p>
                     )}
 

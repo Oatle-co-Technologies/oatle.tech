@@ -5,6 +5,7 @@ import emailjs from "@emailjs/browser";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+const SOUTH_AFRICA_OFFSET = "+02:00";
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -127,7 +128,7 @@ export default function ContactPage() {
 
     try {
       const start = new Date(
-        `${preferredDate}T${preferredTime}`
+        `${preferredDate}T${preferredTime}:00${SOUTH_AFRICA_OFFSET}`
       );
       const end = new Date(
         start.getTime() + 45 * 60 * 1000

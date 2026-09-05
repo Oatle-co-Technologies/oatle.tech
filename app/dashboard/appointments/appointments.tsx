@@ -46,6 +46,7 @@ const emptyForm: AppointmentForm = {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
+const SOUTH_AFRICA_TIME_ZONE = "Africa/Johannesburg";
 
 export default function AppointmentsPage() {
   const { staff, userEmail } = useAuth();
@@ -120,8 +121,12 @@ export default function AppointmentsPage() {
       title: appointment.title,
       appointment_type:
         appointment.appointment_type,
-      start_time: appointment.start_time.slice(0, 16),
-      end_time: appointment.end_time.slice(0, 16),
+      start_time: formatForDateTimeInput(
+        appointment.start_time
+      ),
+      end_time: formatForDateTimeInput(
+        appointment.end_time
+      ),
       location:
         appointment.location || "",
       notes:
@@ -275,6 +280,7 @@ export default function AppointmentsPage() {
         day: "numeric",
         month: "short",
         year: "numeric",
+        timeZone: SOUTH_AFRICA_TIME_ZONE,
       }
     );
   }
@@ -285,8 +291,28 @@ export default function AppointmentsPage() {
       {
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
+        timeZone: SOUTH_AFRICA_TIME_ZONE,
       }
     );
+  }
+
+  function formatForDateTimeInput(date: string) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: SOUTH_AFRICA_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(date));
+
+    const values = Object.fromEntries(
+      parts.map((part) => [part.type, part.value])
+    );
+
+    return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
   }
 
   function isUpcoming(

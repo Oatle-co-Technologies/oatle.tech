@@ -120,8 +120,8 @@ def get_free_busy(
     calendar_id = get_calendar_id()
 
     body = {
-        "timeMin": start_time.isoformat(),
-        "timeMax": end_time.isoformat(),
+        "timeMin": _calendar_datetime(start_time).isoformat(),
+        "timeMax": _calendar_datetime(end_time).isoformat(),
         "items": [
             {
                 "id": calendar_id
