@@ -3399,6 +3399,243 @@ MOBILE
   font-weight: 600;
 }
 
+/* Dashboard mobile layout */
+.dashboard-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-panel,
+.dashboard-card,
+.dashboard-list-row,
+.dashboard-list-content,
+.dashboard-page-actions {
+  min-width: 0;
+}
+
+.dashboard-list-content {
+  overflow-wrap: anywhere;
+}
+
+.dashboard-list-content h2,
+.dashboard-list-content h3,
+.dashboard-list-content p,
+.dashboard-error,
+.dashboard-success,
+.dashboard-panel {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.dashboard-panel textarea {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-list-actions {
+  flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+  .dashboard-mobile-header {
+    min-height: 64px;
+    padding: 14px 16px;
+  }
+
+  .dashboard-mobile-header .dashboard-logo {
+    max-width: calc(100% - 92px);
+    overflow: hidden;
+    font-size: 15px;
+    letter-spacing: 0.1em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-mobile-menu-button {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .dashboard-main {
+    padding: 20px 14px 32px;
+  }
+
+  .dashboard-header {
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: clamp(28px, 9vw, 36px);
+    line-height: 1.08;
+  }
+
+  .dashboard-subtitle {
+    max-width: 42ch;
+    font-size: 14px;
+  }
+
+  .dashboard-page-actions {
+    justify-content: stretch;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-page-actions > * {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .dashboard-panel,
+  .dashboard-card {
+    border-radius: 10px;
+  }
+
+  .dashboard-panel {
+    padding: 16px;
+  }
+
+  .dashboard-panel-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .dashboard-panel-header > button,
+  .dashboard-panel-header > .dashboard-link {
+    align-self: flex-start;
+    min-height: 40px;
+  }
+
+  .dashboard-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dashboard-form-grid input,
+  .dashboard-form-grid select,
+  .dashboard-form-grid textarea,
+  .dashboard-panel input,
+  .dashboard-panel select,
+  .dashboard-panel textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .dashboard-form-actions,
+  .dashboard-panel-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-form-actions > *,
+  .dashboard-panel-actions > * {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .dashboard-list-row,
+  .dashboard-list-item {
+    align-items: stretch;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px 0;
+  }
+
+  .dashboard-list-row:hover {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .dashboard-list-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .dashboard-list-actions > button,
+  .dashboard-list-actions > a {
+    min-height: 42px;
+    width: 100%;
+  }
+
+  .dashboard-task-meta {
+    align-items: flex-start;
+  }
+
+  .dashboard-task-meta,
+  .dashboard-list-meta {
+    white-space: normal;
+  }
+
+  .dashboard-stats {
+    gap: 12px;
+  }
+
+  .dashboard-card {
+    padding: 18px;
+  }
+
+  .dashboard-card h2 {
+    font-size: 28px;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 420px) {
+  .dashboard-main {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .dashboard-panel {
+    padding: 14px;
+  }
+
+  .dashboard-list-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-list-content,
+  .dashboard-panel,
+  .dashboard-card {
+    font-size: 14px;
+  }
+
+  .dashboard-list-content h2,
+  .dashboard-panel h2,
+  .dashboard-panel h3 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .dashboard-list-content p,
+  .dashboard-panel p,
+  .dashboard-card p,
+  .dashboard-panel label,
+  .dashboard-panel input,
+  .dashboard-panel select,
+  .dashboard-panel textarea {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .dashboard-panel input,
+  .dashboard-panel select,
+  .dashboard-panel textarea {
+    min-height: 42px;
+    padding: 10px;
+  }
+
+  .dashboard-panel textarea {
+    min-height: 110px;
+  }
+}
+
 
 /* ------------------------------------------------------------
    ERROR MESSAGE
