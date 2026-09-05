@@ -62,6 +62,11 @@ export function AuthProvider({
           const data: StaffInfo = await response.json();
           setStaff(data);
         } else {
+          const data = await response.json().catch(() => null);
+          console.error(
+            "Dashboard authorization failed:",
+            data?.detail || response.status
+          );
           setStaff(null);
         }
       } catch {

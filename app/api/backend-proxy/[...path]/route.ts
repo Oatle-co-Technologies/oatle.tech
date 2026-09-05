@@ -15,8 +15,15 @@ async function proxyToBackend(
   const tokenResult = await auth.token();
   const token = tokenResult.data?.token;
   const sessionResult = await auth.getSession();
+  const sessionData = sessionResult.data as {
+    user?: { email?: string | null };
+    session?: { user?: { email?: string | null } };
+  } | null;
   const sessionEmail =
-    sessionResult.data?.user?.email?.toLowerCase().trim();
+    (
+      sessionData?.user?.email ||
+      sessionData?.session?.user?.email
+    )?.toLowerCase().trim();
 
   if (!token) {
     return Response.json(
