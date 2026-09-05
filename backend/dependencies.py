@@ -99,13 +99,6 @@ def get_current_staff(
         or payload.get("email", "")
     )
     token_email = str(token_email).lower().strip()
-    email_is_allowed = token_email in ALLOWED_STAFF_EMAILS
-
-    if not email_is_allowed:
-        raise HTTPException(
-            status_code=403,
-            detail="This email address is not allowed to access the dashboard",
-        )
 
     auth_user_uuid = None
     if auth_user_id:
@@ -123,7 +116,7 @@ def get_current_staff(
             .first()
         )
 
-    if not staff:
+    if not staff and token_email in ALLOWED_STAFF_EMAILS:
         staff = (
             db.query(Staff)
             .filter(Staff.email.ilike(token_email))
@@ -137,8 +130,16 @@ def get_current_staff(
                 "No active staff record matched the verified account. "
                 f"Subject present: {bool(auth_user_id)}; "
                 f"Identity email present: {bool(token_email)}; "
-                f"Approved email: {email_is_allowed}"
+                "Approved email: false"
             ),
+        )
+
+    staff_email = staff.email.lower().strip()
+
+    if staff_email not in ALLOWED_STAFF_EMAILS:
+        raise HTTPException(
+            status_code=403,
+            detail="This staff email is not allowed to access the dashboard",
         )
 
     if (
