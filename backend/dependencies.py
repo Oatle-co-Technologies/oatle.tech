@@ -126,7 +126,10 @@ def get_current_staff(
     if not staff:
         raise HTTPException(
             status_code=403,
-            detail="You are not authorized to access this dashboard",
+            detail=(
+                "No active staff record matched the verified account. "
+                f"Identity email present: {bool(token_email)}"
+            ),
         )
 
     if (
@@ -135,7 +138,10 @@ def get_current_staff(
     ):
         raise HTTPException(
             status_code=403,
-            detail="You are not authorized to access this dashboard",
+            detail=(
+                "Staff record found, but it is inactive or has an "
+                "unsupported access level"
+            ),
         )
 
     return staff
