@@ -362,18 +362,19 @@ export default function DashboardPage() {
             )
           )}
 
-          {adminNavigationItems.map(
-            (item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="dashboard-nav-item"
-                onClick={closeMobileNav}
-              >
-                {item.label}
-              </Link>
-            )
-          )}
+          {isAdmin &&
+            adminNavigationItems.map(
+              (item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="dashboard-nav-item"
+                  onClick={closeMobileNav}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
         </nav>
 
         <div className="dashboard-sidebar-bottom">
