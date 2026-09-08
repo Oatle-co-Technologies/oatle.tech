@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
+from backend.dependencies import get_admin_staff
 from backend.database.connection import get_db
 from backend.models.staff import Staff
 from backend.schemas.staff import StaffCreate, StaffResponse
@@ -17,6 +18,7 @@ router = APIRouter(
 def create_staff(
     staff: StaffCreate,
     db: Session = Depends(get_db),
+    _admin: Staff = Depends(get_admin_staff),
 ):
     existing_email = (
         db.query(Staff)
@@ -53,6 +55,7 @@ def create_staff(
 )
 def get_staff(
     db: Session = Depends(get_db),
+    _admin: Staff = Depends(get_admin_staff),
 ):
     return (
         db.query(Staff)
@@ -68,6 +71,7 @@ def get_staff(
 def get_staff_member(
     staff_id: int,
     db: Session = Depends(get_db),
+    _admin: Staff = Depends(get_admin_staff),
 ):
     staff = (
         db.query(Staff)
@@ -92,6 +96,7 @@ def update_staff(
     staff_id: int,
     staff_data: StaffCreate,
     db: Session = Depends(get_db),
+    _admin: Staff = Depends(get_admin_staff),
 ):
     staff = (
         db.query(Staff)
@@ -138,6 +143,7 @@ def update_staff(
 def delete_staff(
     staff_id: int,
     db: Session = Depends(get_db),
+    _admin: Staff = Depends(get_admin_staff),
 ):
     staff = (
         db.query(Staff)

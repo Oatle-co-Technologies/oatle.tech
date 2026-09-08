@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
+from backend.dependencies import get_admin_staff
 from backend.database.connection import get_db
 from backend.models.invoice import Invoice
 from backend.models.project import Project
@@ -116,6 +117,7 @@ def calculate_project_amount(
 )
 def get_invoices(
     db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
 ):
     return (
         db.query(Invoice)
@@ -131,6 +133,7 @@ def get_invoices(
 def create_invoice(
     invoice: InvoiceCreate,
     db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
 ):
     if invoice.project_id is None:
         raise HTTPException(
@@ -188,6 +191,7 @@ def create_invoice(
 def get_invoice(
     invoice_id: int,
     db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
 ):
     invoice = (
         db.query(Invoice)
@@ -212,6 +216,7 @@ def update_invoice(
     invoice_id: int,
     invoice_data: InvoiceUpdate,
     db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
 ):
     invoice = (
         db.query(Invoice)
@@ -275,6 +280,7 @@ def update_invoice(
 def delete_invoice(
     invoice_id: int,
     db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
 ):
     invoice = (
         db.query(Invoice)
