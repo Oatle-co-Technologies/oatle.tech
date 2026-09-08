@@ -45,9 +45,16 @@ export function AuthProvider({
     async function loadSession() {
       try {
         const result = await authClient.getSession();
+        const sessionData = result.data as {
+          user?: { email?: string | null };
+          session?: { user?: { email?: string | null } };
+        } | null;
 
         const email =
-          result.data?.user?.email?.toLowerCase().trim() || "";
+          (
+            sessionData?.user?.email ||
+            sessionData?.session?.user?.email
+          )?.toLowerCase().trim() || "";
 
         setUserEmail(email);
 
