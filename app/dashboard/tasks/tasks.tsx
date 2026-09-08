@@ -141,6 +141,7 @@ export default function Tasks() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [taskOptionsError, setTaskOptionsError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [showForm, setShowForm] = useState(false);
@@ -276,8 +277,9 @@ export default function Tasks() {
           (item) => item.active
         )
       );
+      setTaskOptionsError("");
     } catch (err) {
-      setError(
+      setTaskOptionsError(
         err instanceof Error
           ? err.message
           : "Failed to load task options"
@@ -394,6 +396,7 @@ export default function Tasks() {
     setAvailableProductServices([]);
     setShowForm(true);
     setError("");
+    setTaskOptionsError("");
     setSuccess("");
 
     void loadTaskOptions();
@@ -402,6 +405,7 @@ export default function Tasks() {
   function openEditForm(task: Task) {
     setEditingTask(task);
     setError("");
+    setTaskOptionsError("");
     setSuccess("");
 
     const selectedProductId =
@@ -839,6 +843,12 @@ export default function Tasks() {
               </h3>
             </div>
           </div>
+
+          {taskOptionsError && (
+            <p className="dashboard-form-error">
+              {taskOptionsError}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="dashboard-form-grid">
