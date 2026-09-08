@@ -49,6 +49,8 @@ type Invoice = {
   project_id: number | null;
   discount_percent: number;
   amount: number;
+  amount_paid: number;
+  amount_due: number;
   status: string;
   issue_date: string;
   due_date: string | null;
@@ -61,6 +63,7 @@ type InvoiceForm = {
   client_id: string;
   project_id: string;
   quoted_amount: string;
+  amount_paid: string;
   discount_percent: string;
   status: string;
   issue_date: string;
@@ -72,6 +75,8 @@ const emptyForm: InvoiceForm = {
   client_id: "",
   project_id: "",
   quoted_amount: "",
+
+  amount_paid: "0",
   discount_percent: "0",
   status: "draft",
   issue_date: "",
@@ -445,6 +450,10 @@ export default function Invoices() {
 
       quoted_amount: "",
 
+      amount_paid: String(
+        invoice.amount_paid ?? 0
+      ),
+
       discount_percent: String(
         invoice.discount_percent ?? 0
       ),
@@ -495,6 +504,10 @@ export default function Invoices() {
           form.quoted_amount.trim() !== ""
             ? Number(form.quoted_amount)
             : null,
+
+        amount_paid: Number(
+          form.amount_paid || 0
+        ),
 
         discount_percent:
           Number(
@@ -776,6 +789,9 @@ export default function Invoices() {
       const amountDue =
         Number(invoice.amount);
 
+      const outstandingAmount =
+        Number(invoice.amount_due ?? invoice.amount) ;
+
       const addonsText =
         addons.length > 0
           ? addons
@@ -823,7 +839,16 @@ export default function Invoices() {
           discountAmount.toFixed(2),
 
         amount:
+          outstandingAmount.toFixed(2),
+
+        amount_total:
           amountDue.toFixed(2),
+
+        amount_paid:
+          Number(invoice.amount_paid ?? 0).toFixed(2),
+
+        amount_due:
+          outstandingAmount.toFixed(2),
 
         issue_date:
           invoice.issue_date,
@@ -857,6 +882,9 @@ export default function Invoices() {
           "quoted"
             ? productPrice
             : null,
+
+        amount_paid:
+          invoice.amount_paid ?? 0,
 
         discount_percent:
           invoice.discount_percent ??
@@ -1596,15 +1624,54 @@ export default function Invoices() {
 
             {/* Existing Invoice Amount */}
 
+            <div className="dashboard-form-field dashboard-form-field-full">
+              <label htmlFor="amount_paid">
+                Amount Paid
+              </label>
+
+              <div>
+                <div className="dashboard-input-prefix">
+                  <span>R</span>
+
+                  <input
+                    id="amount_paid"
+                    name="amount_paid"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.amount_paid}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <p className="dashboard-form-help">
+                  Enter the total amount the client has paid so far.
+                </p>
+              </div>
+            </div>
+
             {editingInvoice && (
               <div className="dashboard-info-box">
                 <strong>
-                  Current invoice
-                  amount:
+                  Invoice total:
                 </strong>{" "}
                 R
                 {Number(
                   editingInvoice.amount
+                ).toFixed(2)}
+                <br />
+                <strong>Amount paid:</strong>{" "}
+                R
+                {Number(
+                  editingInvoice.amount_paid ?? 0
+                ).toFixed(2)}
+                <br />
+                <strong>Amount remaining:</strong>{" "}
+                R
+                {Number(
+                  editingInvoice.amount_due ??
+                    editingInvoice.amount
                 ).toFixed(2)}
               </div>
             )}
@@ -1733,9 +1800,24 @@ export default function Invoices() {
                   )}
 
                   <p>
-                    Amount: R
+                    Total: R
                     {Number(
                       invoice.amount
+                    ).toFixed(2)}
+                  </p>
+
+                  <p>
+                    Paid: R
+                    {Number(
+                      invoice.amount_paid ?? 0
+                    ).toFixed(2)}
+                  </p>
+
+                  <p>
+                    Remaining: R
+                    {Number(
+                      invoice.amount_due ??
+                        invoice.amount
                     ).toFixed(2)}
                   </p>
 

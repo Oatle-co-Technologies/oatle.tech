@@ -7,6 +7,7 @@ class InvoiceCreate(BaseModel):
     client_id: int
     project_id: int | None = None
     quoted_amount: float | None = None
+    amount_paid: float = 0
     discount_percent: float = 0
     status: str = "draft"
     issue_date: date
@@ -18,6 +19,7 @@ class InvoiceUpdate(BaseModel):
     client_id: int
     project_id: int | None = None
     quoted_amount: float | None = None
+    amount_paid: float = 0
     discount_percent: float = 0
     status: str
     issue_date: date
@@ -32,6 +34,8 @@ class InvoiceResponse(BaseModel):
     project_id: int | None
     discount_percent: float
     amount: float
+    amount_paid: float
+    amount_due: float
     status: str
     issue_date: date
     due_date: date | None

@@ -55,6 +55,12 @@ class Invoice(Base):
         nullable=False,
     )
 
+    amount_paid = Column(
+        Float,
+        nullable=False,
+        default=0,
+    )
+
     status = Column(
         String,
         nullable=False,
@@ -89,3 +95,10 @@ class Invoice(Base):
     client = relationship("Client")
 
     project = relationship("Project")
+
+    @property
+    def amount_due(self) -> float:
+        return max(
+            float(self.amount) - float(self.amount_paid),
+            0,
+        )

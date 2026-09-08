@@ -160,15 +160,29 @@ def create_invoice(
         db=db,
     )
 
+    if invoice.amount_paid < 0 or invoice.amount_paid > amount:
+        raise HTTPException(
+            status_code=400,
+            detail="Amount paid must be between zero and the invoice total",
+        )
+
+    status = invoice.status
+    paid_at = None
+    if invoice.amount_paid == amount:
+        status = "paid"
+        paid_at = datetime.utcnow()
+
     new_invoice = Invoice(
         client_id=invoice.client_id,
         project_id=invoice.project_id,
         discount_percent=invoice.discount_percent,
         amount=amount,
-        status=invoice.status,
+        amount_paid=invoice.amount_paid,
+        status=status,
         issue_date=invoice.issue_date,
         due_date=invoice.due_date,
         notes=invoice.notes,
+        paid_at=paid_at,
     )
 
     db.add(new_invoice)
@@ -255,16 +269,39 @@ def update_invoice(
         db=db,
     )
 
+    if (
+        invoice_data.amount_paid < 0
+        or invoice_data.amount_paid > amount
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Amount paid must be between zero and the invoice total",
+        )
+
+    if (
+        invoice_data.status == "paid"
+        and invoice_data.amount_paid < amount
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="An invoice must be fully paid before it can be marked paid",
+        )
+
     invoice.client_id = invoice_data.client_id
     invoice.project_id = invoice_data.project_id
     invoice.discount_percent = invoice_data.discount_percent
     invoice.amount = amount
-    invoice.status = invoice_data.status
+    invoice.amount_paid = invoice_data.amount_paid
+    invoice.status = (
+        "paid"
+        if invoice_data.amount_paid == amount
+        else invoice_data.status
+    )
     invoice.issue_date = invoice_data.issue_date
     invoice.due_date = invoice_data.due_date
     invoice.notes = invoice_data.notes
 
-    if invoice_data.status == "paid":
+    if invoice.status == "paid":
         if invoice.paid_at is None:
             invoice.paid_at = datetime.utcnow()
     else:
