@@ -125,7 +125,8 @@ const COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID = 19;
 const COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID = 28;
 
 export default function Tasks() {
-  const { userEmail } = useAuth();
+  const { userEmail, staff: currentStaff } = useAuth();
+  const isAdmin = currentStaff?.access_level === "admin";
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -223,14 +224,16 @@ export default function Tasks() {
       ] = await Promise.all([
         fetch(`${API_URL}/pricing/products`),
         fetch(`${API_URL}/pricing/services`),
-        fetch(`${API_URL}/staff`),
+        isAdmin
+          ? fetch(`${API_URL}/staff`)
+          : Promise.resolve(null),
         fetch(`${API_URL}/product-services`),
       ]);
 
       if (
         !productsResponse.ok ||
         !servicesResponse.ok ||
-        !staffResponse.ok ||
+        (staffResponse && !staffResponse.ok) ||
         !productServicesResponse.ok
       ) {
         throw new Error("Failed to load task options");
@@ -241,23 +244,37 @@ export default function Tasks() {
         servicesData,
         staffData,
         productServicesData,
-      ]: [
-        Product[],
-        Service[],
-        StaffMember[],
-        ProductService[],
       ] = await Promise.all([
         productsResponse.json(),
         servicesResponse.json(),
-        staffResponse.json(),
+        staffResponse
+          ? staffResponse.json()
+          : Promise.resolve(
+              currentStaff
+                ? [
+                    {
+                      id: currentStaff.id,
+                      name: currentStaff.name,
+                      job_title: null,
+                      active: currentStaff.active,
+                    },
+                  ]
+                : []
+            ),
         productServicesResponse.json(),
       ]);
 
       setProducts(productsData);
       setServices(servicesData);
-      setStaff(staffData.filter((item) => item.active));
+      setStaff(
+        (staffData as StaffMember[]).filter(
+          (item) => item.active
+        )
+      );
       setProductServices(
-        productServicesData.filter((item) => item.active)
+        (productServicesData as ProductService[]).filter(
+          (item) => item.active
+        )
       );
     } catch (err) {
       setError(
@@ -366,7 +383,14 @@ export default function Tasks() {
 
   function openAddForm() {
     setEditingTask(null);
-    setForm({ ...emptyForm });
+    setForm({
+      ...emptyForm,
+      assigned_to: isAdmin
+        ? ""
+        : currentStaff
+        ? String(currentStaff.id)
+        : "",
+    });
     setAvailableProductServices([]);
     setShowForm(true);
     setError("");
@@ -946,6 +970,7 @@ export default function Tasks() {
                   name="assigned_to"
                   value={form.assigned_to}
                   onChange={handleChange}
+                  disabled={!isAdmin}
                 >
                   <option value="">
                     Unassigned
@@ -1132,9 +1157,11 @@ export default function Tasks() {
                 )
               )}
 
-              <option value="unassigned">
-                Unassigned
-              </option>
+              {isAdmin && (
+                <option value="unassigned">
+                  Unassigned
+                </option>
+              )}
             </select>
 
             <button

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_current_staff
 from backend.models.product_service import ProductService
 from backend.models.pricing import Service
 from backend.models.staff import Staff
@@ -128,7 +129,15 @@ def validate_task_type(
 def create_task(
     task: TaskCreate,
     db: Session = Depends(get_db),
+    current_staff: Staff = Depends(get_current_staff),
 ):
+    if current_staff.access_level != "admin":
+        if task.assigned_to != current_staff.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Staff members may only create tasks assigned to themselves",
+            )
+
     validate_assignee(
         task.assigned_to,
         db,
@@ -194,12 +203,14 @@ def create_task(
 )
 def get_tasks(
     db: Session = Depends(get_db),
+    current_staff: Staff = Depends(get_current_staff),
 ):
-    return (
-        db.query(Task)
-        .order_by(Task.created_at.desc())
-        .all()
-    )
+    query = db.query(Task)
+
+    if current_staff.access_level != "admin":
+        query = query.filter(Task.assigned_to == current_staff.id)
+
+    return query.order_by(Task.created_at.desc()).all()
 
 
 # ============================================================
@@ -213,6 +224,7 @@ def get_tasks(
 def get_task(
     task_id: int,
     db: Session = Depends(get_db),
+    current_staff: Staff = Depends(get_current_staff),
 ):
     task = (
         db.query(Task)
@@ -221,6 +233,15 @@ def get_task(
     )
 
     if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+    if (
+        current_staff.access_level != "admin"
+        and task.assigned_to != current_staff.id
+    ):
         raise HTTPException(
             status_code=404,
             detail="Task not found",
@@ -241,6 +262,7 @@ def update_task(
     task_id: int,
     task: TaskCreate,
     db: Session = Depends(get_db),
+    current_staff: Staff = Depends(get_current_staff),
 ):
     existing_task = (
         db.query(Task)
@@ -253,6 +275,19 @@ def update_task(
             status_code=404,
             detail="Task not found",
         )
+
+    if current_staff.access_level != "admin":
+        if existing_task.assigned_to != current_staff.id:
+            raise HTTPException(
+                status_code=404,
+                detail="Task not found",
+            )
+
+        if task.assigned_to != current_staff.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Staff members may only keep tasks assigned to themselves",
+            )
 
     validate_assignee(
         task.assigned_to,
@@ -299,6 +334,7 @@ def update_task(
 def delete_task(
     task_id: int,
     db: Session = Depends(get_db),
+    current_staff: Staff = Depends(get_current_staff),
 ):
     task = (
         db.query(Task)
@@ -307,6 +343,15 @@ def delete_task(
     )
 
     if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+    if (
+        current_staff.access_level != "admin"
+        and task.assigned_to != current_staff.id
+    ):
         raise HTTPException(
             status_code=404,
             detail="Task not found",

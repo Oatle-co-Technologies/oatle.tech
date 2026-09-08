@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
+from backend.dependencies import get_current_staff
 
 from backend.models.client import Client
 
@@ -15,6 +16,7 @@ from backend.models.lead import Lead
 from backend.models.project import Project
 
 from backend.models.task import Task
+from backend.models.staff import Staff
 
 from backend.models.invoice import Invoice
 
@@ -36,6 +38,7 @@ def get_db():
 @router.get("/summary")
 def get_dashboard_summary(
     db: Session = Depends(get_db),
+    current_staff: Staff = Depends(get_current_staff),
 ):
 
     today = date.today()
@@ -202,12 +205,21 @@ def get_dashboard_summary(
     # TODAY'S TASKS
     # ---------------------------------------------------------
 
-    today_tasks = (
+    today_tasks_query = (
         db.query(Task)
         .filter(
             Task.due_date == today,
             Task.status != "completed",
         )
+    )
+
+    if current_staff.access_level != "admin":
+        today_tasks_query = today_tasks_query.filter(
+            Task.assigned_to == current_staff.id
+        )
+
+    today_tasks = (
+        today_tasks_query
         .order_by(
             Task.priority.desc(),
             Task.created_at.asc(),
@@ -241,8 +253,15 @@ def get_dashboard_summary(
     # distinguish tasks belonging to different staff members.
     # ---------------------------------------------------------
 
+    recent_tasks_query = db.query(Task)
+
+    if current_staff.access_level != "admin":
+        recent_tasks_query = recent_tasks_query.filter(
+            Task.assigned_to == current_staff.id
+        )
+
     recent_tasks = (
-        db.query(Task)
+        recent_tasks_query
         .order_by(Task.created_at.desc())
         .limit(5)
         .all()
