@@ -381,7 +381,7 @@ export default function Tasks() {
       void loadProjects();
       void loadTaskOptions();
     });
-  }, [userEmail]);
+  }, [userEmail, isAdmin, currentStaff?.id]);
 
   function openAddForm() {
     setEditingTask(null);
