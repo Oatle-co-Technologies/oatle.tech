@@ -644,8 +644,8 @@ def send_lead_follow_up_email(
                                             height="28"
                                             style="
                                                 display:block;
-                                                width:28px;
-                                                height:28px;
+                                                width:16px;
+                                                height:16px;
                                                 border:0;
                                                 outline:none;
                                                 text-decoration:none;
@@ -681,8 +681,8 @@ def send_lead_follow_up_email(
                                             height="28"
                                             style="
                                                 display:block;
-                                                width:28px;
-                                                height:28px;
+                                                width:16px;
+                                                height:16px;
                                                 border:0;
                                                 outline:none;
                                                 text-decoration:none;
@@ -718,8 +718,8 @@ def send_lead_follow_up_email(
                                             height="28"
                                             style="
                                                 display:block;
-                                                width:28px;
-                                                height:28px;
+                                                width:16px;
+                                                height:16px;
                                                 border:0;
                                                 outline:none;
                                                 text-decoration:none;
@@ -751,8 +751,8 @@ def send_lead_follow_up_email(
                                             height="28"
                                             style="
                                                 display:block;
-                                                width:28px;
-                                                height:28px;
+                                                width:16px;
+                                                height:16px;
                                                 border:0;
                                                 outline:none;
                                                 text-decoration:none;
