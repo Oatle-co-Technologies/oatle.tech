@@ -497,6 +497,7 @@ export default function LeadsPage() {
     setEmailForm({
       subject: `Following up with ${lead.name}`,
       message: "",
+      attachments: [],
     });
 
     setEmailError("");

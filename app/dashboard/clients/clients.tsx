@@ -261,6 +261,7 @@ export default function ClientsPage() {
     setEmailForm({
       subject: `Following up with ${client.name}`,
       message: "",
+      attachments: [],
     });
 
     setEmailError("");
