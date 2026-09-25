@@ -25,12 +25,6 @@ BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 # ------------------------------------------------------------
 # Default sender
 # ------------------------------------------------------------
-#
-# Kept for compatibility with the existing setup.
-#
-# If the specialised sender variables below are not present,
-# this sender will be used as the fallback.
-#
 
 BREVO_SENDER_EMAIL = os.getenv(
     "BREVO_SENDER_EMAIL",
@@ -46,15 +40,6 @@ BREVO_SENDER_NAME = os.getenv(
 # ------------------------------------------------------------
 # Task notification sender
 # ------------------------------------------------------------
-#
-# This allows task notifications to continue using the
-# notifications sender if configured.
-#
-# Example:
-#
-# BREVO_TASK_SENDER_EMAIL=notifications@oatle-technologies.co.za
-# BREVO_TASK_SENDER_NAME=Oatle Technologies
-#
 
 BREVO_TASK_SENDER_EMAIL = os.getenv(
     "BREVO_TASK_SENDER_EMAIL",
@@ -70,15 +55,6 @@ BREVO_TASK_SENDER_NAME = os.getenv(
 # ------------------------------------------------------------
 # Lead communication sender
 # ------------------------------------------------------------
-#
-# Lead follow-up emails are intentionally sent from the
-# communications address.
-#
-# Example:
-#
-# BREVO_LEAD_SENDER_EMAIL=communications@oatle-technologies.co.za
-# BREVO_LEAD_SENDER_NAME=Oatle Technologies
-#
 
 BREVO_LEAD_SENDER_EMAIL = os.getenv(
     "BREVO_LEAD_SENDER_EMAIL",
@@ -89,6 +65,33 @@ BREVO_LEAD_SENDER_NAME = os.getenv(
     "BREVO_LEAD_SENDER_NAME",
     BREVO_SENDER_NAME,
 )
+
+
+# ============================================================
+# OATLE EMAIL BRANDING
+# ============================================================
+
+# IMPORTANT:
+# Replace this with the PUBLIC HTTPS URL of your actual
+# Oatle Technologies logo image.
+#
+# Example:
+# https://www.yourdomain.co.za/images/oatle-logo.png
+
+OATLE_LOGO_URL = "YOUR_PUBLIC_OATLE_LOGO_URL"
+
+
+FACEBOOK_URL = "https://www.facebook.com/oatle.tech"
+
+INSTAGRAM_URL = "https://www.instagram.com/oatle.tech/"
+
+TIKTOK_URL = "https://www.tiktok.com/@vinoliacode?lang=en-GB"
+
+WHATSAPP_NUMBER = "2779532581"
+
+WHATSAPP_URL = f"https://wa.me/{WHATSAPP_NUMBER}"
+
+OATLE_REPLY_EMAIL = "info@oatle-technologies.co.za"
 
 
 # ============================================================
@@ -307,6 +310,7 @@ def send_task_assignment_email(
         )
 
         if response is not None:
+
             logger.error(
                 "Brevo status: %s",
                 response.status_code,
@@ -331,14 +335,11 @@ def send_lead_follow_up_email(
     message: str,
 ):
     """
-    Send a follow-up email to a lead from the
+    Send a follow-up email to a lead or client from the
     Oatle Technologies communications address.
 
-    The communication specialist provides the subject
-    and message from the dashboard.
-
-    This email is sent through Brevo using the verified
-    communications@oatle-technologies.co.za sender.
+    Replies are directed to:
+    info@oatle-technologies.co.za
     """
 
     if not BREVO_API_KEY:
@@ -387,94 +388,493 @@ def send_lead_follow_up_email(
         .replace("\r", "<br>")
     )
 
+    # ========================================================
+    # OATLE BRANDED EMAIL
+    # ========================================================
+
     html_content = f"""
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="x-apple-disable-message-reformatting"
+    >
+
     <title>{safe_subject}</title>
+
 </head>
 
-<body style="
-    margin: 0;
-    padding: 0;
-    background-color: #f7f7f7;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #222222;
-">
 
-    <div style="
-        max-width: 600px;
-        margin: 40px auto;
-        background: #ffffff;
-        border: 1px solid #e5e5e5;
-        padding: 40px;
-    ">
+<body
+    style="
+        margin:0;
+        padding:0;
+        background:#f4f4f2;
+        font-family:Arial, Helvetica, sans-serif;
+        color:#171717;
+    "
+>
 
-        <h1 style="
-            margin-top: 0;
-            margin-bottom: 30px;
-            font-size: 26px;
-            color: #222222;
-        ">
-            Oatle Technologies
-        </h1>
 
-        <p style="
-            font-size: 16px;
-            line-height: 1.6;
-        ">
-            Hi {safe_name},
-        </p>
+<table
+    role="presentation"
+    width="100%"
+    cellspacing="0"
+    cellpadding="0"
+    border="0"
+    style="
+        width:100%;
+        margin:0;
+        padding:0;
+        background:#f4f4f2;
+    "
+>
 
-        <div style="
-            margin: 30px 0;
-            padding: 24px;
-            background: #fafafa;
-            border-left: 4px solid #d4af37;
-            font-size: 16px;
-            line-height: 1.7;
-        ">
-            {html_message}
-        </div>
+    <tr>
 
-        <p style="
-            margin-top: 35px;
-            font-size: 14px;
-            color: #777777;
-            line-height: 1.6;
-        ">
-            Kind regards,<br>
-            <strong>Oatle Technologies</strong><br>
-            Grow. Multiply. Succeed.
-        </p>
+        <td
+            align="center"
+            style="
+                padding:24px 12px;
+            "
+        >
 
-    </div>
+
+            <!-- EMAIL CONTAINER -->
+
+            <table
+                role="presentation"
+                width="100%"
+                cellspacing="0"
+                cellpadding="0"
+                border="0"
+                style="
+                    width:100%;
+                    max-width:620px;
+                    background:#ffffff;
+                    border:1px solid #e5e5e5;
+                "
+            >
+
+
+                <!-- LOGO -->
+
+                <tr>
+
+                    <td
+                        style="
+                            padding:24px 28px 12px 28px;
+                        "
+                    >
+
+                        <a
+                            href="https://www.technologies.co.za"
+                            target="_blank"
+                            style="
+                                text-decoration:none;
+                            "
+                        >
+
+                            <img
+                                src="{OATLE_LOGO_URL}"
+                                alt="Oatle Technologies"
+                                width="170"
+                                style="
+                                    display:block;
+                                    width:170px;
+                                    max-width:100%;
+                                    height:auto;
+                                    border:0;
+                                "
+                            >
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- MESSAGE -->
+
+                <tr>
+
+                    <td
+                        style="
+                            padding:18px 28px 24px 28px;
+                        "
+                    >
+
+                        <div
+                            style="
+                                font-size:16px;
+                                line-height:1.65;
+                                color:#222222;
+                            "
+                        >
+
+                            <p
+                                style="
+                                    margin:0 0 20px 0;
+                                "
+                            >
+                                Hi {safe_name},
+                            </p>
+
+                            <div>
+                                {html_message}
+                            </div>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- SIGNATURE -->
+
+                <tr>
+
+                    <td
+                        style="
+                            padding:0 28px 18px 28px;
+                        "
+                    >
+
+                        <!-- GOLD ACCENT -->
+
+                        <table
+                            role="presentation"
+                            cellspacing="0"
+                            cellpadding="0"
+                            border="0"
+                        >
+
+                            <tr>
+
+                                <td
+                                    style="
+                                        width:55px;
+                                        height:3px;
+                                        background:#d4af37;
+                                        font-size:0;
+                                        line-height:0;
+                                    "
+                                >
+                                    &nbsp;
+                                </td>
+
+                            </tr>
+
+                        </table>
+
+
+                        <p
+                            style="
+                                margin:18px 0 3px 0;
+                                font-size:14px;
+                                line-height:1.5;
+                                color:#555555;
+                            "
+                        >
+                            Kind regards,
+                        </p>
+
+
+                        <p
+                            style="
+                                margin:0;
+                                font-size:17px;
+                                line-height:1.4;
+                                font-weight:700;
+                                color:#171717;
+                            "
+                        >
+                            Oatle Technologies
+                        </p>
+
+
+                        <p
+                            style="
+                                margin:3px 0 0 0;
+                                font-size:13px;
+                                line-height:1.5;
+                                color:#777777;
+                            "
+                        >
+                            Grow. Multiply. Succeed.
+                        </p>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- SOCIAL ICONS -->
+
+                <tr>
+
+                    <td
+                        style="
+                            padding:4px 28px 10px 28px;
+                        "
+                    >
+
+                        <table
+                            role="presentation"
+                            cellspacing="0"
+                            cellpadding="0"
+                            border="0"
+                        >
+
+                            <tr>
+
+
+                                <!-- FACEBOOK -->
+
+                                <td
+                                    style="
+                                        padding-right:10px;
+                                    "
+                                >
+
+                                    <a
+                                        href="{FACEBOOK_URL}"
+                                        target="_blank"
+                                        style="
+                                            text-decoration:none;
+                                        "
+                                    >
+
+                                        <img
+                                            src="https://cdn.simpleicons.org/facebook/1877F2"
+                                            alt="Facebook"
+                                            width="28"
+                                            height="28"
+                                            style="
+                                                display:block;
+                                                width:28px;
+                                                height:28px;
+                                                border:0;
+                                            "
+                                        >
+
+                                    </a>
+
+                                </td>
+
+
+                                <!-- INSTAGRAM -->
+
+                                <td
+                                    style="
+                                        padding-right:10px;
+                                    "
+                                >
+
+                                    <a
+                                        href="{INSTAGRAM_URL}"
+                                        target="_blank"
+                                        style="
+                                            text-decoration:none;
+                                        "
+                                    >
+
+                                        <img
+                                            src="https://cdn.simpleicons.org/instagram/E4405F"
+                                            alt="Instagram"
+                                            width="28"
+                                            height="28"
+                                            style="
+                                                display:block;
+                                                width:28px;
+                                                height:28px;
+                                                border:0;
+                                            "
+                                        >
+
+                                    </a>
+
+                                </td>
+
+
+                                <!-- TIKTOK -->
+
+                                <td
+                                    style="
+                                        padding-right:10px;
+                                    "
+                                >
+
+                                    <a
+                                        href="{TIKTOK_URL}"
+                                        target="_blank"
+                                        style="
+                                            text-decoration:none;
+                                        "
+                                    >
+
+                                        <img
+                                            src="https://cdn.simpleicons.org/tiktok/000000"
+                                            alt="TikTok"
+                                            width="28"
+                                            height="28"
+                                            style="
+                                                display:block;
+                                                width:28px;
+                                                height:28px;
+                                                border:0;
+                                            "
+                                        >
+
+                                    </a>
+
+                                </td>
+
+
+                                <!-- WHATSAPP -->
+
+                                <td>
+
+                                    <a
+                                        href="{WHATSAPP_URL}"
+                                        target="_blank"
+                                        style="
+                                            text-decoration:none;
+                                        "
+                                    >
+
+                                        <img
+                                            src="https://cdn.simpleicons.org/whatsapp/25D366"
+                                            alt="WhatsApp"
+                                            width="28"
+                                            height="28"
+                                            style="
+                                                display:block;
+                                                width:28px;
+                                                height:28px;
+                                                border:0;
+                                            "
+                                        >
+
+                                    </a>
+
+                                </td>
+
+
+                            </tr>
+
+                        </table>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- EMAIL CONTACT -->
+
+                <tr>
+
+                    <td
+                        style="
+                            padding:0 28px 24px 28px;
+                        "
+                    >
+
+                        <a
+                            href="mailto:info@oatle-technologies.co.za"
+                            style="
+                                font-size:12px;
+                                line-height:1.5;
+                                color:#777777;
+                                text-decoration:none;
+                            "
+                        >
+                            info@oatle-technologies.co.za
+                        </a>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- FOOTER -->
+
+                <tr>
+
+                    <td
+                        style="
+                            padding:12px 28px;
+                            background:#fafafa;
+                            border-top:1px solid #eeeeee;
+                        "
+                    >
+
+                        <p
+                            style="
+                                margin:0;
+                                font-size:10px;
+                                line-height:1.5;
+                                color:#999999;
+                            "
+                        >
+                            Oatle Technologies
+                        </p>
+
+                    </td>
+
+                </tr>
+
+
+            </table>
+
+        </td>
+
+    </tr>
+
+</table>
+
 
 </body>
 </html>
 """
 
-    # --------------------------------------------------------
-    # Brevo transactional email payload.
-    #
-    # We intentionally use htmlContent only.
-    # Brevo documents htmlContent and textContent as
-    # alternative body types for a request.
-    # --------------------------------------------------------
+    # ========================================================
+    # BREVO TRANSACTIONAL EMAIL PAYLOAD
+    # ========================================================
 
     payload = {
         "sender": {
             "name": BREVO_LEAD_SENDER_NAME,
             "email": BREVO_LEAD_SENDER_EMAIL,
         },
+
+        # Replies go to the Oatle info address.
+        # The visible/sending address remains unchanged.
+        "replyTo": {
+            "name": "Oatle Technologies",
+            "email": OATLE_REPLY_EMAIL,
+        },
+
         "to": [
             {
                 "email": recipient_email,
                 "name": recipient_name,
             }
         ],
+
         "subject": subject,
+
         "htmlContent": html_content,
     }
 
@@ -524,10 +924,6 @@ def send_lead_follow_up_email(
             recipient_email,
             exc,
         )
-
-        # This is deliberately verbose while we are testing.
-        # If Brevo rejects the request, the actual Brevo
-        # response will appear in the backend logs.
 
         if response is not None:
 
