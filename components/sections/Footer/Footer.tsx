@@ -109,7 +109,7 @@ export default function Footer() {
                                                 fill="currentColor"
                                                 aria-hidden="true"
                                             >
-                                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.026-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V8.999h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.287zM5.337 7.433a2.062 2.062 0 1 1 0-4.123 2.062 2.062 0 0 1 0 4.123zM3.555 20.452h3.564V8.999H3.555v11.453z" />
+                                                <path d="M5.2 7.4H2.1V21h3.1V7.4ZM3.65 2A1.8 1.8 0 1 0 3.65 5.6 1.8 1.8 0 0 0 3.65 2ZM21.9 13.2c0-4.1-2.2-6-5.2-6-2.4 0-3.5 1.3-4.1 2.2V7.4H9.5V21h3.1v-6.7c0-1.8.3-3.6 2.6-3.6 2.2 0 2.2 2.1 2.2 3.7V21h3.1v-7.8Z" />
                                             </svg>
                                         ) : (
                                             <img
@@ -126,8 +126,8 @@ export default function Footer() {
                                 ))}
                             </div>
 
-                            <Link href="mailto:oatle.technologies@gmail.com">
-                                oatle.technologies@gmail.com
+                            <Link href="mailto:info@oatle-technologies.co.za">
+                                info@oatle-technologies.co.za
                             </Link>
                         </div>
                     </div>
