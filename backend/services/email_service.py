@@ -71,17 +71,6 @@ BREVO_LEAD_SENDER_NAME = os.getenv(
 # OATLE EMAIL BRANDING
 # ============================================================
 
-# IMPORTANT:
-# Replace this with the PUBLIC HTTPS URL of your actual
-# Oatle Technologies logo image.
-#
-# Example:
-# https://www.yourdomain.co.za/images/oatle-logo.png
-
-# ============================================================
-# OATLE EMAIL BRANDING
-# ============================================================
-
 OATLE_LOGO_URL = "https://www.oatle-technologies.co.za/oatle-logo.png"
 
 FACEBOOK_URL = "https://www.facebook.com/oatle.tech"
@@ -90,11 +79,13 @@ INSTAGRAM_URL = "https://www.instagram.com/oatle.tech/"
 
 TIKTOK_URL = "https://www.tiktok.com/@vinoliacode?lang=en-GB"
 
-WHATSAPP_NUMBER = "27795732581"
+WHATSAPP_NUMBER = "27797532581"
 
 WHATSAPP_URL = f"https://wa.me/{WHATSAPP_NUMBER}"
 
 OATLE_REPLY_EMAIL = "info@oatle-technologies.co.za"
+
+
 # ============================================================
 # BREVO HEADERS
 # ============================================================
@@ -374,13 +365,8 @@ def send_lead_follow_up_email(
     # Escape user-provided content before placing it into HTML.
     # --------------------------------------------------------
 
-    safe_name = html.escape(
-        recipient_name
-    )
-
-    safe_subject = html.escape(
-        subject
-    )
+    safe_name = html.escape(recipient_name)
+    safe_subject = html.escape(subject)
 
     html_message = (
         html.escape(message)
@@ -398,7 +384,6 @@ def send_lead_follow_up_email(
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -411,9 +396,7 @@ def send_lead_follow_up_email(
     >
 
     <title>{safe_subject}</title>
-
 </head>
-
 
 <body
     style="
@@ -424,7 +407,6 @@ def send_lead_follow_up_email(
         color:#171717;
     "
 >
-
 
 <table
     role="presentation"
@@ -449,7 +431,6 @@ def send_lead_follow_up_email(
             "
         >
 
-
             <!-- EMAIL CONTAINER -->
 
             <table
@@ -466,7 +447,6 @@ def send_lead_follow_up_email(
                 "
             >
 
-
                 <!-- LOGO -->
 
                 <tr>
@@ -478,7 +458,7 @@ def send_lead_follow_up_email(
                     >
 
                         <a
-                            href="https://www.technologies.co.za"
+                            href="https://www.oatle-technologies.co.za"
                             target="_blank"
                             style="
                                 text-decoration:none;
@@ -495,6 +475,8 @@ def send_lead_follow_up_email(
                                     max-width:100%;
                                     height:auto;
                                     border:0;
+                                    outline:none;
+                                    text-decoration:none;
                                 "
                             >
 
@@ -551,8 +533,6 @@ def send_lead_follow_up_email(
                             padding:0 28px 18px 28px;
                         "
                     >
-
-                        <!-- GOLD ACCENT -->
 
                         <table
                             role="presentation"
@@ -640,7 +620,6 @@ def send_lead_follow_up_email(
 
                             <tr>
 
-
                                 <!-- FACEBOOK -->
 
                                 <td
@@ -654,6 +633,7 @@ def send_lead_follow_up_email(
                                         target="_blank"
                                         style="
                                             text-decoration:none;
+                                            display:block;
                                         "
                                     >
 
@@ -667,6 +647,8 @@ def send_lead_follow_up_email(
                                                 width:28px;
                                                 height:28px;
                                                 border:0;
+                                                outline:none;
+                                                text-decoration:none;
                                             "
                                         >
 
@@ -688,6 +670,7 @@ def send_lead_follow_up_email(
                                         target="_blank"
                                         style="
                                             text-decoration:none;
+                                            display:block;
                                         "
                                     >
 
@@ -701,6 +684,8 @@ def send_lead_follow_up_email(
                                                 width:28px;
                                                 height:28px;
                                                 border:0;
+                                                outline:none;
+                                                text-decoration:none;
                                             "
                                         >
 
@@ -722,6 +707,7 @@ def send_lead_follow_up_email(
                                         target="_blank"
                                         style="
                                             text-decoration:none;
+                                            display:block;
                                         "
                                     >
 
@@ -735,6 +721,8 @@ def send_lead_follow_up_email(
                                                 width:28px;
                                                 height:28px;
                                                 border:0;
+                                                outline:none;
+                                                text-decoration:none;
                                             "
                                         >
 
@@ -752,6 +740,7 @@ def send_lead_follow_up_email(
                                         target="_blank"
                                         style="
                                             text-decoration:none;
+                                            display:block;
                                         "
                                     >
 
@@ -765,13 +754,14 @@ def send_lead_follow_up_email(
                                                 width:28px;
                                                 height:28px;
                                                 border:0;
+                                                outline:none;
+                                                text-decoration:none;
                                             "
                                         >
 
                                     </a>
 
                                 </td>
-
 
                             </tr>
 
@@ -793,7 +783,7 @@ def send_lead_follow_up_email(
                     >
 
                         <a
-                            href="mailto:info@oatle-technologies.co.za"
+                            href="mailto:{OATLE_REPLY_EMAIL}"
                             style="
                                 font-size:12px;
                                 line-height:1.5;
@@ -801,7 +791,7 @@ def send_lead_follow_up_email(
                                 text-decoration:none;
                             "
                         >
-                            info@oatle-technologies.co.za
+                            {OATLE_REPLY_EMAIL}
                         </a>
 
                     </td>
@@ -836,7 +826,6 @@ def send_lead_follow_up_email(
 
                 </tr>
 
-
             </table>
 
         </td>
@@ -844,7 +833,6 @@ def send_lead_follow_up_email(
     </tr>
 
 </table>
-
 
 </body>
 </html>
@@ -860,8 +848,6 @@ def send_lead_follow_up_email(
             "email": BREVO_LEAD_SENDER_EMAIL,
         },
 
-        # Replies go to the Oatle info address.
-        # The visible/sending address remains unchanged.
         "replyTo": {
             "name": "Oatle Technologies",
             "email": OATLE_REPLY_EMAIL,
