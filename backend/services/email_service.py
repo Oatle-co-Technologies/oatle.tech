@@ -90,7 +90,7 @@ INSTAGRAM_URL = "https://www.instagram.com/oatle.tech/"
 
 TIKTOK_URL = "https://www.tiktok.com/@vinoliacode?lang=en-GB"
 
-WHATSAPP_NUMBER = "2779532581"
+WHATSAPP_NUMBER = "27795732581"
 
 WHATSAPP_URL = f"https://wa.me/{WHATSAPP_NUMBER}"
 
