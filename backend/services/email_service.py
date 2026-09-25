@@ -82,7 +82,7 @@ BREVO_LEAD_SENDER_NAME = os.getenv(
 # OATLE EMAIL BRANDING
 # ============================================================
 
-OATLE_LOGO_URL = "https://www.oatle-technologies.co.za/oatle-logo/png"
+OATLE_LOGO_URL = "https://www.oatle-technologies.co.za/oatle-logo.png"
 
 FACEBOOK_URL = "https://www.facebook.com/oatle.tech"
 
