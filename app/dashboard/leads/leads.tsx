@@ -1316,8 +1316,25 @@ export default function LeadsPage() {
                         </div>
 
                         <div className="dashboard-form-field">
-                          <label htmlFor={`email-attachments-${lead.id}`}>
-                            Attachments
+                          <label
+                            htmlFor={`email-attachments-${lead.id}`}
+                            title="Attach files"
+                            aria-label="Attach files"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "36px",
+                              height: "36px",
+                              border: "1px solid #d9d9d9",
+                              borderRadius: "8px",
+                              cursor: sendingEmail ? "not-allowed" : "pointer",
+                              fontSize: "20px",
+                              lineHeight: 1,
+                              opacity: sendingEmail ? 0.5 : 1,
+                            }}
+                          >
+                            📎
                           </label>
 
                           <input
@@ -1326,6 +1343,7 @@ export default function LeadsPage() {
                             multiple
                             onChange={handleAttachmentChange}
                             disabled={sendingEmail}
+                            style={{ display: "none" }}
                           />
 
                           {emailForm.attachments.length > 0 && (

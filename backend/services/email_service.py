@@ -269,17 +269,6 @@ def send_task_assignment_email(
         "htmlContent": html_content,
     }
 
-    if attachments:
-        payload["attachment"] = [
-            {
-                "name": attachment["name"],
-                "content": base64.b64encode(
-                    attachment["content"]
-                ).decode("utf-8"),
-            }
-            for attachment in attachments
-        ]
-
     response = None
 
     try:
@@ -337,7 +326,7 @@ def send_lead_follow_up_email(
     recipient_name: str,
     subject: str,
     message: str,
-    attachments: list[dict[str, str]] | None = None,
+    attachments: list[dict[str, str | bytes]] | None = None,
 ):
     """
     Send a follow-up email to a lead or client from the
@@ -881,6 +870,18 @@ def send_lead_follow_up_email(
 
         "htmlContent": html_content,
     }
+
+    # Brevo requires base64-encoded attachment content.
+    if attachments:
+        payload["attachment"] = [
+            {
+                "name": attachment["name"],
+                "content": base64.b64encode(
+                    attachment["content"]
+                ).decode("utf-8"),
+            }
+            for attachment in attachments
+        ]
 
     response = None
 

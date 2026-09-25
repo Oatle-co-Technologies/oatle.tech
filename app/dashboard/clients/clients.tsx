@@ -655,13 +655,22 @@ export default function ClientsPage() {
                         >
                           <label
                             htmlFor={`client-email-attachments-${client.id}`}
-                            className="dashboard-muted"
+                            title="Attach files"
+                            aria-label="Attach files"
                             style={{
-                              display: "block",
-                              marginBottom: "8px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "36px",
+                              height: "36px",
+                              border: "1px solid #d9d9d9",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              fontSize: "20px",
+                              lineHeight: 1,
                             }}
                           >
-                            Attachments
+                            📎
                           </label>
 
                           <input
@@ -669,6 +678,7 @@ export default function ClientsPage() {
                             type="file"
                             multiple
                             onChange={handleAttachmentChange}
+                            style={{ display: "none" }}
                           />
 
                           {emailForm.attachments.length > 0 && (
