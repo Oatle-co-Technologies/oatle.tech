@@ -20,7 +20,7 @@ const socialLinks = [
     {
         name: "LinkedIn",
         href: "https://www.linkedin.com/in/ntombizodwa-moekwa-20b25a243",
-        icon: "https://cdn.simpleicons.org/linkedin/ffffff",
+        icon: "https://cdn.simpleicons.org/linkedin/FFFFFF",
     },
     {
         name: "WhatsApp",
