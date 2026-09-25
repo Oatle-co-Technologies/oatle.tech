@@ -78,8 +78,11 @@ BREVO_LEAD_SENDER_NAME = os.getenv(
 # Example:
 # https://www.yourdomain.co.za/images/oatle-logo.png
 
-OATLE_LOGO_URL = "https://www.oatle-technologies.co.za/oatle-logo/png"
+# ============================================================
+# OATLE EMAIL BRANDING
+# ============================================================
 
+OATLE_LOGO_URL = "https://www.oatle-technologies.co.za/oatle-logo/png"
 
 FACEBOOK_URL = "https://www.facebook.com/oatle.tech"
 
@@ -92,8 +95,6 @@ WHATSAPP_NUMBER = "2779532581"
 WHATSAPP_URL = f"https://wa.me/{WHATSAPP_NUMBER}"
 
 OATLE_REPLY_EMAIL = "info@oatle-technologies.co.za"
-
-
 # ============================================================
 # BREVO HEADERS
 # ============================================================
