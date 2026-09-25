@@ -471,7 +471,7 @@ def send_lead_follow_up_email(
                                 width="170"
                                 style="
                                     display:block;
-                                    width:170px;
+                                    width:250px;
                                     max-width:100%;
                                     height:auto;
                                     border:0;
