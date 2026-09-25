@@ -536,16 +536,20 @@ def send_lead_follow_up_email(
 
                         <table
                             role="presentation"
+                            width="100%"
                             cellspacing="0"
                             cellpadding="0"
                             border="0"
+                            style="
+                                width:100%;
+                            "
                         >
 
                             <tr>
 
                                 <td
                                     style="
-                                        width:55px;
+                                        width:100%;
                                         height:3px;
                                         background:#d4af37;
                                         font-size:0;
@@ -624,7 +628,7 @@ def send_lead_follow_up_email(
 
                                 <td
                                     style="
-                                        padding-right:10px;
+                                        padding-right:8px;
                                     "
                                 >
 
@@ -661,7 +665,7 @@ def send_lead_follow_up_email(
 
                                 <td
                                     style="
-                                        padding-right:10px;
+                                        padding-right:8px;
                                     "
                                 >
 
@@ -698,7 +702,7 @@ def send_lead_follow_up_email(
 
                                 <td
                                     style="
-                                        padding-right:10px;
+                                        padding-right:8px;
                                     "
                                 >
 
@@ -799,24 +803,24 @@ def send_lead_follow_up_email(
                 </tr>
 
 
-                <!-- FOOTER -->
+                <!-- BRANDED FOOTER -->
 
                 <tr>
 
                     <td
                         style="
-                            padding:12px 28px;
-                            background:#fafafa;
-                            border-top:1px solid #eeeeee;
+                            padding:18px 28px;
+                            background:#d4af37;
                         "
                     >
 
                         <p
                             style="
                                 margin:0;
-                                font-size:10px;
+                                font-size:11px;
                                 line-height:1.5;
-                                color:#999999;
+                                color:#ffffff;
+                                font-weight:600;
                             "
                         >
                             Oatle Technologies
