@@ -78,7 +78,7 @@ BREVO_LEAD_SENDER_NAME = os.getenv(
 # Example:
 # https://www.yourdomain.co.za/images/oatle-logo.png
 
-OATLE_LOGO_URL = "YOUR_PUBLIC_OATLE_LOGO_URL"
+OATLE_LOGO_URL = "https://www.oatle-technologies.co.za/oatle-logo/png"
 
 
 FACEBOOK_URL = "https://www.facebook.com/oatle.tech"
