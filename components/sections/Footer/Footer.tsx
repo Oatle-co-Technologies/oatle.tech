@@ -113,8 +113,8 @@ export default function Footer() {
                                 ))}
                             </div>
 
-                            <Link href="mailto:oatle.technologies@gmail.com">
-                                oatle.technologies@gmail.com
+                            <Link href="mailto:info@oatle-technologies.co.za">
+                                info@oatle-technologies.co.za
                             </Link>
                         </div>
                     </div>
