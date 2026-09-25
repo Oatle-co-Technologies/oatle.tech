@@ -1,3 +1,4 @@
+import base64
 import html
 import logging
 import os
@@ -268,6 +269,17 @@ def send_task_assignment_email(
         "htmlContent": html_content,
     }
 
+    if attachments:
+        payload["attachment"] = [
+            {
+                "name": attachment["name"],
+                "content": base64.b64encode(
+                    attachment["content"]
+                ).decode("utf-8"),
+            }
+            for attachment in attachments
+        ]
+
     response = None
 
     try:
@@ -325,6 +337,7 @@ def send_lead_follow_up_email(
     recipient_name: str,
     subject: str,
     message: str,
+    attachments: list[dict[str, str]] | None = None,
 ):
     """
     Send a follow-up email to a lead or client from the

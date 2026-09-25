@@ -1,15 +1,12 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
-
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from backend.database.connection import get_db
+from backend.database.connection import SessionLocal
 from backend.models.lead import Lead
 from backend.schemas.lead import LeadCreate
-from backend.services.email_service import (
-    send_lead_follow_up_email,
-)
+from backend.services.email_service import send_lead_follow_up_email
 
 
 router = APIRouter(
@@ -18,9 +15,29 @@ router = APIRouter(
 )
 
 
-# ============================================================
-# CREATE LEAD
-# ============================================================
+MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024
+
+ALLOWED_ATTACHMENT_TYPES = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/plain",
+}
+
+
+def get_db():
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 @router.post("")
 def create_lead(
@@ -28,20 +45,7 @@ def create_lead(
     db: Session = Depends(get_db),
 ):
     new_lead = Lead(
-        name=lead.name,
-        email=lead.email,
-        company=lead.company,
-        phone=lead.phone,
-        source=lead.source,
-        stage=lead.stage,
-        response=lead.response,
-        follow_up_reason=lead.follow_up_reason,
-        contact_attempts=lead.contact_attempts,
-        last_contacted_at=lead.last_contacted_at,
-        next_follow_up_at=lead.next_follow_up_at,
-        notes=lead.notes,
-        marketing_email_opt_in=lead.marketing_email_opt_in,
-        marketing_sms_opt_in=lead.marketing_sms_opt_in,
+        **lead.model_dump()
     )
 
     db.add(new_lead)
@@ -51,20 +55,12 @@ def create_lead(
     return new_lead
 
 
-# ============================================================
-# GET ALL LEADS
-# ============================================================
-
 @router.get("")
 def get_leads(
     db: Session = Depends(get_db),
 ):
     return db.query(Lead).all()
 
-
-# ============================================================
-# GET SINGLE LEAD
-# ============================================================
 
 @router.get("/{lead_id}")
 def get_lead(
@@ -86,10 +82,6 @@ def get_lead(
     return lead
 
 
-# ============================================================
-# UPDATE LEAD
-# ============================================================
-
 @router.put("/{lead_id}")
 def update_lead(
     lead_id: int,
@@ -108,24 +100,12 @@ def update_lead(
             detail="Lead not found",
         )
 
-    existing_lead.name = lead.name
-    existing_lead.email = lead.email
-    existing_lead.company = lead.company
-    existing_lead.phone = lead.phone
-    existing_lead.source = lead.source
-    existing_lead.stage = lead.stage
-    existing_lead.response = lead.response
-    existing_lead.follow_up_reason = lead.follow_up_reason
-    existing_lead.contact_attempts = lead.contact_attempts
-    existing_lead.last_contacted_at = lead.last_contacted_at
-    existing_lead.next_follow_up_at = lead.next_follow_up_at
-    existing_lead.notes = lead.notes
-    existing_lead.marketing_email_opt_in = (
-        lead.marketing_email_opt_in
-    )
-    existing_lead.marketing_sms_opt_in = (
-        lead.marketing_sms_opt_in
-    )
+    for field, value in lead.model_dump().items():
+        setattr(
+            existing_lead,
+            field,
+            value,
+        )
 
     db.commit()
     db.refresh(existing_lead)
@@ -133,14 +113,12 @@ def update_lead(
     return existing_lead
 
 
-# ============================================================
-# SEND LEAD FOLLOW-UP EMAIL
-# ============================================================
-
 @router.post("/{lead_id}/send-email")
-def send_lead_email(
+async def send_lead_email(
     lead_id: int,
-    email_data: dict,
+    subject: str = Form(...),
+    message: str = Form(...),
+    files: list[UploadFile] | None = File(default=None),
     db: Session = Depends(get_db),
 ):
     lead = (
@@ -154,9 +132,6 @@ def send_lead_email(
             status_code=404,
             detail="Lead not found",
         )
-
-    subject = email_data.get("subject", "")
-    message = email_data.get("message", "")
 
     if not subject.strip():
         raise HTTPException(
@@ -176,11 +151,45 @@ def send_lead_email(
             detail="Lead does not have an email address",
         )
 
+    attachments = []
+
+    for upload in files or []:
+        if not upload.filename:
+            continue
+
+        content = await upload.read()
+
+        if len(content) > MAX_ATTACHMENT_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Attachment is too large: {upload.filename}. "
+                    "Maximum size is 10 MB."
+                ),
+            )
+
+        if upload.content_type not in ALLOWED_ATTACHMENT_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Unsupported attachment type: "
+                    f"{upload.filename}"
+                ),
+            )
+
+        attachments.append(
+            {
+                "name": upload.filename,
+                "content": content,
+            }
+        )
+
     sent = send_lead_follow_up_email(
         recipient_email=lead.email,
         recipient_name=lead.name,
         subject=subject,
         message=message,
+        attachments=attachments,
     )
 
     if not sent:
@@ -189,11 +198,12 @@ def send_lead_email(
             detail="Failed to send email",
         )
 
-    # Only record the contact after Brevo
-    # successfully accepts the email.
+    # Sending an email counts as a contact attempt,
+    # matching the existing lead follow-up behaviour.
     lead.contact_attempts = (
         lead.contact_attempts + 1
     )
+
     lead.last_contacted_at = datetime.utcnow()
     lead.stage = "contacted"
 
@@ -205,10 +215,6 @@ def send_lead_email(
         "lead": lead,
     }
 
-
-# ============================================================
-# DELETE LEAD
-# ============================================================
 
 @router.delete("/{lead_id}")
 def delete_lead(

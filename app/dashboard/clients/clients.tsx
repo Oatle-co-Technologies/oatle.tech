@@ -26,6 +26,7 @@ type ClientForm = {
 type EmailForm = {
   subject: string;
   message: string;
+  attachments: File[];
 };
 
 const emptyForm: ClientForm = {
@@ -38,6 +39,7 @@ const emptyForm: ClientForm = {
 const emptyEmailForm: EmailForm = {
   subject: "",
   message: "",
+  attachments: [],
 };
 
 const API_URL =
@@ -285,6 +287,28 @@ export default function ClientsPage() {
     }));
   }
 
+  function handleAttachmentChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const files = Array.from(event.target.files || []);
+
+    setEmailForm((current) => ({
+      ...current,
+      attachments: [...current.attachments, ...files],
+    }));
+
+    event.target.value = "";
+  }
+
+  function removeAttachment(index: number) {
+    setEmailForm((current) => ({
+      ...current,
+      attachments: current.attachments.filter(
+        (_, attachmentIndex) => attachmentIndex !== index
+      ),
+    }));
+  }
+
   async function handleSendEmail(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -299,17 +323,19 @@ export default function ClientsPage() {
       setEmailError("");
       setEmailSuccess("");
 
+      const formData = new FormData();
+      formData.append("subject", emailForm.subject);
+      formData.append("message", emailForm.message);
+
+      emailForm.attachments.forEach((file) => {
+        formData.append("files", file);
+      });
+
       const response = await fetch(
         `${API_URL}/clients/${emailClient.id}/send-email`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            subject: emailForm.subject,
-            message: emailForm.message,
-          }),
+          body: formData,
         }
       );
 
@@ -331,10 +357,7 @@ export default function ClientsPage() {
 
       setEmailSuccess("Email sent successfully.");
 
-      setEmailForm({
-        subject: "",
-        message: "",
-      });
+      setEmailForm(emptyEmailForm);
 
       await loadClients();
     } catch (err) {
@@ -623,6 +646,60 @@ export default function ClientsPage() {
                             resize: "vertical",
                           }}
                         />
+
+                        <div
+                          style={{
+                            gridColumn: "1 / -1",
+                          }}
+                        >
+                          <label
+                            htmlFor={`client-email-attachments-${client.id}`}
+                            className="dashboard-muted"
+                            style={{
+                              display: "block",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            Attachments
+                          </label>
+
+                          <input
+                            id={`client-email-attachments-${client.id}`}
+                            type="file"
+                            multiple
+                            onChange={handleAttachmentChange}
+                          />
+
+                          {emailForm.attachments.length > 0 && (
+                            <div style={{ marginTop: "12px" }}>
+                              {emailForm.attachments.map((file, index) => (
+                                <div
+                                  key={`${file.name}-${index}`}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: "12px",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  <span>{file.name}</span>
+
+                                  <button
+                                    type="button"
+                                    className="dashboard-action-delete"
+                                    onClick={() =>
+                                      removeAttachment(index)
+                                    }
+                                    disabled={sendingEmail}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
                       </div>
 

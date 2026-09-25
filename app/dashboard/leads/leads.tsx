@@ -42,6 +42,7 @@ type LeadForm = {
 type EmailForm = {
   subject: string;
   message: string;
+  attachments: File[];
 };
 
 const emptyForm: LeadForm = {
@@ -64,6 +65,7 @@ const emptyForm: LeadForm = {
 const emptyEmailForm: EmailForm = {
   subject: "",
   message: "",
+  attachments: [],
 };
 
 const API_URL =
@@ -530,6 +532,32 @@ export default function LeadsPage() {
     }));
   }
 
+  function handleAttachmentChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    setEmailForm((current) => ({
+      ...current,
+      attachments: [...current.attachments, ...selectedFiles],
+    }));
+
+    event.target.value = "";
+  }
+
+  function removeAttachment(index: number) {
+    setEmailForm((current) => ({
+      ...current,
+      attachments: current.attachments.filter(
+        (_, fileIndex) => fileIndex !== index
+      ),
+    }));
+  }
+
   async function handleSendEmail(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -544,20 +572,19 @@ export default function LeadsPage() {
       setEmailError("");
       setEmailSuccess("");
 
+      const formData = new FormData();
+      formData.append("subject", emailForm.subject);
+      formData.append("message", emailForm.message);
+
+      emailForm.attachments.forEach((file) => {
+        formData.append("files", file);
+      });
+
       const response = await fetch(
         `${API_URL}/leads/${emailLead.id}/send-email`,
         {
           method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            subject:
-              emailForm.subject,
-            message:
-              emailForm.message,
-          }),
+          body: formData,
         }
       );
 
@@ -1285,6 +1312,56 @@ export default function LeadsPage() {
                             }
                             rows={8}
                           />
+                        </div>
+
+                        <div className="dashboard-form-field">
+                          <label htmlFor={`email-attachments-${lead.id}`}>
+                            Attachments
+                          </label>
+
+                          <input
+                            id={`email-attachments-${lead.id}`}
+                            type="file"
+                            multiple
+                            onChange={handleAttachmentChange}
+                            disabled={sendingEmail}
+                          />
+
+                          {emailForm.attachments.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "6px",
+                              }}
+                            >
+                              {emailForm.attachments.map((file, index) => (
+                                <div
+                                  key={`${file.name}-${index}`}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: "12px",
+                                  }}
+                                >
+                                  <span className="dashboard-muted">
+                                    {file.name}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    className="dashboard-action-delete"
+                                    onClick={() => removeAttachment(index)}
+                                    disabled={sendingEmail}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         {emailError && (
