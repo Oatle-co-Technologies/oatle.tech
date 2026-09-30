@@ -9,10 +9,6 @@ from sqlalchemy.orm import Session
 from backend.database.connection import SessionLocal
 from backend.models.staff import Staff
 
-ALLOWED_STAFF_EMAILS = {
-    "info@oatle-technologies.co.za",
-    "communications@oatle-technologies.co.za",
-}
 ALLOWED_ACCESS_LEVELS = {
     "admin",
     "member",
@@ -116,7 +112,7 @@ def get_current_staff(
             .first()
         )
 
-    if not staff and token_email in ALLOWED_STAFF_EMAILS:
+    if not staff and token_email:
         staff = (
             db.query(Staff)
             .filter(Staff.email.ilike(token_email))
@@ -129,17 +125,8 @@ def get_current_staff(
             detail=(
                 "No active staff record matched the verified account. "
                 f"Subject present: {bool(auth_user_id)}; "
-                f"Identity email present: {bool(token_email)}; "
-                "Approved email: false"
+                f"Identity email present: {bool(token_email)}"
             ),
-        )
-
-    staff_email = staff.email.lower().strip()
-
-    if staff_email not in ALLOWED_STAFF_EMAILS:
-        raise HTTPException(
-            status_code=403,
-            detail="This staff email is not allowed to access the dashboard",
         )
 
     if (
