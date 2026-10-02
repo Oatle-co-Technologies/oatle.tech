@@ -3,11 +3,20 @@ from datetime import date, datetime
 from pydantic import BaseModel
 
 
+class InvoicePaymentResponse(BaseModel):
+    id: int
+    amount: float
+    paid_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class InvoiceCreate(BaseModel):
     client_id: int
     project_id: int | None = None
     quoted_amount: float | None = None
-    amount_paid: float = 0
+    payment_amount: float = 0
     discount_percent: float = 0
     status: str = "draft"
     issue_date: date
@@ -19,7 +28,7 @@ class InvoiceUpdate(BaseModel):
     client_id: int
     project_id: int | None = None
     quoted_amount: float | None = None
-    amount_paid: float = 0
+    payment_amount: float = 0
     discount_percent: float = 0
     status: str
     issue_date: date
@@ -34,8 +43,9 @@ class InvoiceResponse(BaseModel):
     project_id: int | None
     discount_percent: float
     amount: float
-    amount_paid: float
-    amount_due: float
+    total_paid: float
+    balance_due: float
+    payments: list[InvoicePaymentResponse]
     status: str
     issue_date: date
     due_date: date | None

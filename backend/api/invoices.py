@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.dependencies import get_admin_staff
 from backend.database.connection import get_db
-from backend.models.invoice import Invoice
+from backend.models.invoice import Invoice, InvoicePayment
 from backend.models.project import Project
 from backend.models.pricing import AddOn, Product
 from backend.models.project_addon import ProjectAddOn
@@ -160,7 +160,7 @@ def create_invoice(
         db=db,
     )
 
-    if invoice.amount_paid < 0 or invoice.amount_paid > amount:
+    if invoice.payment_amount < 0 or invoice.payment_amount > amount:
         raise HTTPException(
             status_code=400,
             detail="Amount paid must be between zero and the invoice total",
@@ -168,7 +168,7 @@ def create_invoice(
 
     status = invoice.status
     paid_at = None
-    if invoice.amount_paid == amount:
+    if invoice.payment_amount == amount:
         status = "paid"
         paid_at = datetime.utcnow()
 
@@ -177,7 +177,6 @@ def create_invoice(
         project_id=invoice.project_id,
         discount_percent=invoice.discount_percent,
         amount=amount,
-        amount_paid=invoice.amount_paid,
         status=status,
         issue_date=invoice.issue_date,
         due_date=invoice.due_date,
@@ -187,6 +186,14 @@ def create_invoice(
 
     db.add(new_invoice)
     db.flush()
+
+    if invoice.payment_amount > 0:
+        db.add(
+            InvoicePayment(
+                invoice_id=new_invoice.id,
+                amount=invoice.payment_amount,
+            )
+        )
 
     new_invoice.invoice_number = (
         f"INV-{new_invoice.id:03d}"
@@ -262,25 +269,24 @@ def update_invoice(
             detail="Project not found",
         )
 
-    amount = calculate_project_amount(
-        project=project,
-        quoted_amount=invoice_data.quoted_amount,
-        discount_percent=invoice_data.discount_percent,
-        db=db,
-    )
+    # The invoice total is a historical value fixed when the invoice is
+    # created. Project pricing changes must not rewrite it later.
+    amount = float(invoice.amount)
 
     if (
-        invoice_data.amount_paid < 0
-        or invoice_data.amount_paid > amount
+        invoice_data.payment_amount < 0
+        or invoice.total_paid + invoice_data.payment_amount > amount
     ):
         raise HTTPException(
             status_code=400,
-            detail="Amount paid must be between zero and the invoice total",
+            detail="Payment must be positive and cannot exceed the balance due",
         )
+
+    total_paid = invoice.total_paid + invoice_data.payment_amount
 
     if (
         invoice_data.status == "paid"
-        and invoice_data.amount_paid < amount
+        and total_paid < amount
     ):
         raise HTTPException(
             status_code=400,
@@ -290,16 +296,32 @@ def update_invoice(
     invoice.client_id = invoice_data.client_id
     invoice.project_id = invoice_data.project_id
     invoice.discount_percent = invoice_data.discount_percent
-    invoice.amount = amount
-    invoice.amount_paid = invoice_data.amount_paid
     invoice.status = (
         "paid"
-        if invoice_data.amount_paid == amount
+        if total_paid == amount
         else invoice_data.status
     )
     invoice.issue_date = invoice_data.issue_date
     invoice.due_date = invoice_data.due_date
     invoice.notes = invoice_data.notes
+
+    if invoice_data.payment_amount > 0:
+        # Preserve the previous cumulative value as the first ledger entry
+        # when this deployment reaches a database before the SQL backfill.
+        if not invoice.payments and invoice.legacy_amount_paid > 0:
+            db.add(
+                InvoicePayment(
+                    invoice_id=invoice.id,
+                    amount=invoice.legacy_amount_paid,
+                    paid_at=invoice.paid_at or invoice.created_at,
+                )
+            )
+        db.add(
+            InvoicePayment(
+                invoice_id=invoice.id,
+                amount=invoice_data.payment_amount,
+            )
+        )
 
     if invoice.status == "paid":
         if invoice.paid_at is None:

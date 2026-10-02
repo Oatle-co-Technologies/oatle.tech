@@ -55,7 +55,11 @@ class Invoice(Base):
         nullable=False,
     )
 
-    amount_paid = Column(
+    # Kept temporarily for existing databases. New payments are written to
+    # invoice_payments, while this value supplies the opening balance until
+    # the backfill migration has been applied.
+    legacy_amount_paid = Column(
+        "amount_paid",
         Float,
         nullable=False,
         default=0,
@@ -96,9 +100,39 @@ class Invoice(Base):
 
     project = relationship("Project")
 
+    payments = relationship(
+        "InvoicePayment",
+        back_populates="invoice",
+        cascade="all, delete-orphan",
+        order_by="InvoicePayment.paid_at",
+    )
+
     @property
-    def amount_due(self) -> float:
+    def total_paid(self) -> float:
+        if self.payments:
+            return sum(float(payment.amount) for payment in self.payments)
+        return float(self.legacy_amount_paid or 0)
+
+    @property
+    def balance_due(self) -> float:
         return max(
-            float(self.amount) - float(self.amount_paid),
+            float(self.amount) - self.total_paid,
             0,
         )
+
+
+class InvoicePayment(Base):
+    __tablename__ = "invoice_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_id = Column(
+        Integer,
+        ForeignKey("invoices.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    amount = Column(Float, nullable=False)
+    paid_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    invoice = relationship("Invoice", back_populates="payments")

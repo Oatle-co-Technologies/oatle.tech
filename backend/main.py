@@ -9,7 +9,7 @@ from backend.models.client import Client
 from backend.models.lead import Lead
 from backend.models.project import Project
 from backend.models.task import Task
-from backend.models.invoice import Invoice
+from backend.models.invoice import Invoice, InvoicePayment
 from backend.models.pricing import Product, AddOn, Service
 from backend.models.project_addon import ProjectAddOn
 from backend.models.product_service import ProductService
