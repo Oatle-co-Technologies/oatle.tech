@@ -22,6 +22,7 @@ type AuthContextValue = {
   staff: StaffInfo | null;
   loading: boolean;
   authorizationError: string;
+  updateStaffName: (name: string) => void;
 };
 
 const AuthContext = createContext<AuthContextValue>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextValue>({
   staff: null,
   loading: true,
   authorizationError: "",
+  updateStaffName: () => {},
 });
 
 export function AuthProvider({
@@ -101,6 +103,8 @@ export function AuthProvider({
         staff,
         loading,
         authorizationError,
+        updateStaffName: (name) =>
+          setStaff((current) => current ? { ...current, name } : current),
       }}
     >
       {children}

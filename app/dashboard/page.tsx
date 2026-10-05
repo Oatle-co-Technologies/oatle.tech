@@ -135,17 +135,7 @@ export default function DashboardPage() {
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
 
-  const [displayName, setDisplayName] =
-    useState("");
-
-  const [displayNameInput, setDisplayNameInput] =
-    useState("");
-
-  const [showNameSetup, setShowNameSetup] =
-    useState(false);
-
-  const [savingName, setSavingName] =
-    useState(false);
+  const displayName = staff?.name || "";
 
   const [greetingMessage, setGreetingMessage] =
     useState(greetingMessages[0]);
@@ -160,9 +150,6 @@ export default function DashboardPage() {
 
   const isAdmin =
     staff?.access_level === "admin";
-
-  const userEmail =
-    staff?.email || "";
 
   /*
    * The current logged-in staff record gives us
@@ -184,24 +171,6 @@ export default function DashboardPage() {
       greetingMessages[randomIndex]
     );
   }, []);
-
-  useEffect(() => {
-    if (!userEmail) {
-      return;
-    }
-
-    const savedName =
-      window.localStorage.getItem(
-        `oatle-display-name:${userEmail}`
-      );
-
-    if (savedName) {
-      setDisplayName(savedName);
-      setShowNameSetup(false);
-    } else {
-      setShowNameSetup(true);
-    }
-  }, [userEmail]);
 
   async function loadDashboard() {
     try {
@@ -243,34 +212,6 @@ export default function DashboardPage() {
 
     void loadDashboard();
   }, [authLoading]);
-
-  function handleSaveDisplayName(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
-
-    const name =
-      displayNameInput.trim();
-
-    if (!name || !userEmail) {
-      return;
-    }
-
-    try {
-      setSavingName(true);
-
-      window.localStorage.setItem(
-        `oatle-display-name:${userEmail}`,
-        name
-      );
-
-      setDisplayName(name);
-      setShowNameSetup(false);
-      setDisplayNameInput("");
-    } finally {
-      setSavingName(false);
-    }
-  }
 
   function closeMobileNav() {
     setMobileNavOpen(false);
@@ -407,75 +348,6 @@ export default function DashboardPage() {
             </p>
           </div>
         </header>
-
-        {/* Display Name Setup */}
-        {showNameSetup && (
-          <section
-            className="dashboard-panel"
-            style={{
-              marginBottom: "24px",
-              padding: "32px",
-            }}
-          >
-            <p className="dashboard-panel-label">
-              WELCOME TO OATLE
-            </p>
-
-            <h2
-              style={{
-                marginTop: "8px",
-                marginBottom: "8px",
-              }}
-            >
-              What would you like us
-              to call you?
-            </h2>
-
-            <p
-              style={{
-                marginBottom: "20px",
-                color: "#777",
-              }}
-            >
-              This name is only used for
-              your dashboard greeting.
-            </p>
-
-            <form
-              onSubmit={
-                handleSaveDisplayName
-              }
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              <input
-                type="text"
-                value={
-                  displayNameInput
-                }
-                onChange={(event) =>
-                  setDisplayNameInput(
-                    event.target.value
-                  )
-                }
-                placeholder="Your name"
-                required
-              />
-
-              <button
-                type="submit"
-                disabled={savingName}
-              >
-                {savingName
-                  ? "Saving..."
-                  : "Save Name"}
-              </button>
-            </form>
-          </section>
-        )}
 
         {/* Error */}
         {error && (

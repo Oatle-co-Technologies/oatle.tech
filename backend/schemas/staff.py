@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StaffCreate(BaseModel):
@@ -15,3 +15,14 @@ class StaffResponse(StaffCreate):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class StaffNameUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
