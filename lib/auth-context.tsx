@@ -15,6 +15,7 @@ type StaffInfo = {
   email: string;
   access_level: string;
   active: boolean;
+  is_owner: boolean;
 };
 
 type AuthContextValue = {

@@ -141,6 +141,16 @@ def get_current_staff(
             ),
         )
 
+    # Resolve revenue access from verified identity, never the email header alone.
+    request.state.financial_owner = (
+        staff.email.lower().strip() == "info@oatle-technologies.co.za"
+        and (
+            (auth_user_uuid is not None and staff.auth_user_id == auth_user_uuid)
+            or str(payload.get("email", "")).lower().strip()
+            == "info@oatle-technologies.co.za"
+        )
+    )
+
     return staff
 
 
@@ -154,3 +164,7 @@ def get_admin_staff(
         )
 
     return staff
+
+
+def is_financial_owner(request: Request) -> bool:
+    return getattr(request.state, "financial_owner", False)

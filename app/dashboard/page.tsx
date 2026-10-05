@@ -44,7 +44,7 @@ type RecentActivity = {
 };
 
 type DashboardData = {
-  revenue: number;
+  revenue?: number;
   active_clients: number;
   open_leads: number;
   projects_in_progress: number;
@@ -398,22 +398,24 @@ export default function DashboardPage() {
             <>
               {/* Stats */}
               <section className="dashboard-stats">
-                <div className="dashboard-card">
-                  <p>Revenue</p>
+                {staff?.is_owner && dashboard.revenue !== undefined && (
+                  <div className="dashboard-card">
+                    <p>Revenue</p>
 
-                  <h2>
-                    R
-                    {Number(
-                      dashboard.revenue
-                    ).toLocaleString(
-                      "en-ZA"
-                    )}
-                  </h2>
+                    <h2>
+                      R
+                      {Number(
+                        dashboard.revenue
+                      ).toLocaleString(
+                        "en-ZA"
+                      )}
+                    </h2>
 
-                  <span>
-                    This month
-                  </span>
-                </div>
+                    <span>
+                      This month
+                    </span>
+                  </div>
+                )}
 
                 <div className="dashboard-card">
                   <p>

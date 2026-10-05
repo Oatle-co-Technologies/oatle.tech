@@ -48,6 +48,7 @@ class AuthDependenciesTests(unittest.TestCase):
     def setUp(self):
         self.user_id = uuid4()
         self.request = SimpleNamespace(
+            state=SimpleNamespace(),
             headers={
                 "Authorization": "Bearer verified-token",
                 "x-oatle-auth-email": "employee@oatle-technologies.co.za",

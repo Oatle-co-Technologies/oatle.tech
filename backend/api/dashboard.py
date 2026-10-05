@@ -1,13 +1,13 @@
 from datetime import datetime, date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from sqlalchemy import func
 
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
-from backend.dependencies import get_current_staff
+from backend.dependencies import get_current_staff, is_financial_owner
 
 from backend.models.client import Client
 
@@ -37,6 +37,7 @@ def get_db():
 
 @router.get("/summary")
 def get_dashboard_summary(
+    request: Request,
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff),
 ):
@@ -84,21 +85,23 @@ def get_dashboard_summary(
     # Only paid invoices whose paid_at falls in this month.
     # ---------------------------------------------------------
 
-    revenue = (
-        db.query(
-            func.coalesce(
-                func.sum(Invoice.amount),
-                0,
+    revenue = None
+    if is_financial_owner(request):
+        revenue = (
+            db.query(
+                func.coalesce(
+                    func.sum(Invoice.amount),
+                    0,
+                )
             )
+            .filter(
+                Invoice.status == "paid",
+                Invoice.paid_at >= month_start,
+                Invoice.paid_at < next_month,
+            )
+            .scalar()
+            or 0
         )
-        .filter(
-            Invoice.status == "paid",
-            Invoice.paid_at >= month_start,
-            Invoice.paid_at < next_month,
-        )
-        .scalar()
-        or 0
-    )
 
     # ---------------------------------------------------------
     # LEAD PIPELINE
@@ -291,7 +294,6 @@ def get_dashboard_summary(
         "active_clients": active_clients,
         "open_leads": open_leads,
         "projects_in_progress": active_project_count,
-        "revenue": float(revenue),
 
         "lead_pipeline": {
             "new": new_leads,
@@ -306,5 +308,8 @@ def get_dashboard_summary(
 
         "recent_activity": recent_activity,
     }
+
+    if revenue is not None:
+        response["revenue"] = float(revenue)
 
     return response
