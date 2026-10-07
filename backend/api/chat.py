@@ -1,9 +1,11 @@
 """Public marketing chat. No database, dashboard, or auth dependencies."""
 
 import os
+import re
+
+import httpx
 
 from fastapi import APIRouter, HTTPException
-from openai import APIError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 router = APIRouter(tags=["Public chat"])
@@ -35,27 +37,41 @@ class ChatResponse(BaseModel):
     reply: str
 
 
+# Fixed to a model available on Workers AI Free; no paid-provider fallback.
+MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8-fast"
+
+
 @router.post("/api/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest):
-    model = os.getenv("OPENAI_CHAT_MODEL", "").strip()
-    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("AI_API_KEY")
-    if not api_key or not model:
+    token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    if not token or not re.fullmatch(r"[a-fA-F0-9]{32}", account_id):
         raise HTTPException(503, "Chat is not configured yet")
 
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{MODEL}"
     try:
-        async with AsyncOpenAI(api_key=api_key, timeout=25.0, max_retries=0) as client:
-            response = await client.responses.create(
-                model=model,
-                instructions=INSTRUCTIONS,
-                input=[{"role": "user", "content": payload.message}],
-                max_output_tokens=600,
-                store=False,
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            response = await client.post(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+                json={
+                    "messages": [
+                        {"role": "system", "content": INSTRUCTIONS},
+                        {"role": "user", "content": payload.message},
+                    ],
+                    "max_tokens": 600,
+                },
             )
-        if not response.output_text:
+        if response.status_code == 429:
+            raise HTTPException(429, "Chat has reached its usage limit. Please contact our team")
+        if not response.is_success:
+            raise HTTPException(502, "Chat is temporarily unavailable")
+        data = response.json()
+        result = data.get("result") if isinstance(data, dict) else None
+        reply = result.get("response") if isinstance(result, dict) else None
+        if not isinstance(data, dict) or data.get("success") is not True or not isinstance(reply, str) or not reply.strip():
             raise HTTPException(502, "Chat could not generate a reply")
-        return ChatResponse(reply=response.output_text)
-    except RateLimitError:
-        raise HTTPException(429, "Chat is busy. Please try again later") from None
-    except APIError:
-        # Provider errors may include request details: never return them.
+        return ChatResponse(reply=reply.strip())
+    except (httpx.HTTPError, ValueError):
+        # Never return provider details, headers, or credentials.
         raise HTTPException(502, "Chat is temporarily unavailable") from None

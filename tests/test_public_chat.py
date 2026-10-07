@@ -1,80 +1,82 @@
-"""Offline checks: no real environment file or OpenAI request is used."""
-
+"""Offline checks; never load real secrets or call a provider."""
 import os
 import sys
 import unittest
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
-
+import httpx
 from fastapi.testclient import TestClient
 
 with patch("dotenv.load_dotenv"):
     from backend.chat_app import app
 
-
 class PublicChatTests(unittest.TestCase):
     def setUp(self):
-        self.environment = patch.dict(os.environ, {}, clear=True)
-        self.environment.start()
-        self.addCleanup(self.environment.stop)
+        self.env = patch.dict(os.environ, {}, clear=True)
+        self.env.start()
+        self.addCleanup(self.env.stop)
         self.client = TestClient(app)
 
-    def test_chat_isolated_from_internal_routes_and_imports(self):
+    def configure(self):
+        os.environ.update(CLOUDFLARE_API_TOKEN="test-placeholder", CLOUDFLARE_ACCOUNT_ID="a" * 32)
+
+    def request_with(self, upstream):
+        self.configure()
+        context = AsyncMock()
+        context.__aenter__.return_value.post = AsyncMock(return_value=upstream)
+        with patch("backend.api.chat.httpx.AsyncClient", return_value=context):
+            response = self.client.post("/api/chat", json={"message": " Hello "})
+        return response, context.__aenter__.return_value.post.call_args
+
+    def test_isolation(self):
         from backend.api.chat import router
-        self.assertEqual({route.path for route in router.routes}, {"/api/chat"})
+        self.assertEqual({r.path for r in router.routes}, {"/api/chat"})
         self.assertNotIn("backend.main", sys.modules)
         self.assertNotIn("backend.database.connection", sys.modules)
         self.assertEqual(self.client.get("/dashboard/summary").status_code, 404)
 
-    def test_unconfigured_chat_returns_safe_error(self):
-        response = self.client.post("/api/chat", json={"message": "Hello"})
-        self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.json(), {"detail": "Chat is not configured yet"})
+    def test_missing_configuration_and_no_openai_fallback(self):
+        os.environ.update(OPENAI_API_KEY="unused", OPENAI_CHAT_MODEL="unused")
+        self.assertEqual(self.client.post("/api/chat", json={"message":"Hello"}).status_code, 503)
 
-    def test_invalid_messages_and_extra_fields_rejected(self):
-        for body in ({"message": "  "}, {"message": "x" * 4001},
-                     {"message": "Hello", "tools": []}):
-            with self.subTest(body_size=len(str(body))):
-                self.assertEqual(self.client.post("/api/chat", json=body).status_code, 422)
+    def test_invalid_account_id(self):
+        self.configure()
+        os.environ["CLOUDFLARE_ACCOUNT_ID"] = "invalid/account"
+        self.assertEqual(self.client.post("/api/chat", json={"message":"Hello"}).status_code, 503)
 
-    def test_only_public_message_sent_and_reply_returned(self):
-        os.environ.update(OPENAI_API_KEY="test-placeholder", OPENAI_CHAT_MODEL="test-model")
-        upstream = SimpleNamespace(responses=SimpleNamespace(
-            create=AsyncMock(return_value=SimpleNamespace(output_text="Hello visitor"))))
-        context = AsyncMock()
-        context.__aenter__.return_value = upstream
-        with patch("backend.api.chat.AsyncOpenAI", return_value=context):
-            response = self.client.post("/api/chat", json={"message": " Hello "})
-        self.assertEqual(response.json(), {"reply": "Hello visitor"})
-        kwargs = upstream.responses.create.call_args.kwargs
-        self.assertEqual(kwargs["input"], [{"role": "user", "content": "Hello"}])
-        self.assertFalse(kwargs["store"])
-        self.assertNotIn("tools", kwargs)
-        self.assertNotIn("previous_response_id", kwargs)
+    def test_validation(self):
+        for body in ({"message":" "}, {"message":"x"*4001}, {"message":"Hello","tools":[]}):
+            self.assertEqual(self.client.post("/api/chat", json=body).status_code, 422)
 
-    def test_vercel_secret_alias_is_supported(self):
-        os.environ.update(AI_API_KEY="test-placeholder", OPENAI_CHAT_MODEL="test-model")
-        context = AsyncMock()
-        context.__aenter__.return_value = SimpleNamespace(responses=SimpleNamespace(
-            create=AsyncMock(return_value=SimpleNamespace(output_text="Hello"))))
-        with patch("backend.api.chat.AsyncOpenAI", return_value=context) as factory:
-            response = self.client.post("/api/chat", json={"message": "Hello"})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(factory.call_args.kwargs["api_key"], "test-placeholder")
+    def test_public_request_and_reply(self):
+        response, call = self.request_with(httpx.Response(200, json={"success":True,"result":{"response":"Hello visitor"}}))
+        self.assertEqual(response.json(), {"reply":"Hello visitor"})
+        self.assertTrue(call.args[0].startswith("https://api.cloudflare.com/"))
+        self.assertEqual(call.kwargs["json"]["messages"][-1], {"role":"user","content":"Hello"})
+        self.assertEqual(len(call.kwargs["json"]["messages"]), 2)
+        self.assertEqual(call.kwargs["json"]["max_tokens"], 600)
+        self.assertNotIn("tools", call.kwargs["json"])
 
-    def test_provider_errors_do_not_leak_details(self):
-        from openai import APIConnectionError
-        import httpx
+    def test_rate_limit(self):
+        response, _ = self.request_with(httpx.Response(429, json={"errors":[{"message":"private details"}]}))
+        self.assertEqual(response.status_code, 429)
+        self.assertNotIn("private details", response.text)
 
-        os.environ.update(OPENAI_API_KEY="test-placeholder", OPENAI_CHAT_MODEL="test-model")
-        context = AsyncMock()
-        context.__aenter__.side_effect = APIConnectionError(
-            message="private upstream details", request=httpx.Request("POST", "https://example.com"))
-        with patch("backend.api.chat.AsyncOpenAI", return_value=context):
-            response = self.client.post("/api/chat", json={"message": "Hello"})
+    def test_provider_errors_are_private(self):
+        for upstream in (httpx.Response(401, text="private details"),
+                         httpx.Response(200, json={"success":False,"errors":["private details"]}),
+                         httpx.Response(200, json=[]), httpx.Response(200, text="invalid json")):
+            response, _ = self.request_with(upstream)
+            self.assertEqual(response.status_code, 502)
+            self.assertNotIn("private details", response.text)
+
+    def test_connection_error_is_private(self):
+        self.configure()
+        context=AsyncMock()
+        context.__aenter__.return_value.post.side_effect=httpx.ConnectError("private details")
+        with patch("backend.api.chat.httpx.AsyncClient", return_value=context):
+            response=self.client.post("/api/chat", json={"message":"Hello"})
         self.assertEqual(response.status_code, 502)
-        self.assertNotIn("private upstream", response.text)
-
+        self.assertNotIn("private details", response.text)
 
 if __name__ == "__main__":
     unittest.main()

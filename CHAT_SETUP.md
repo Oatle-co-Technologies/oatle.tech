@@ -1,49 +1,35 @@
-# Public AI chat
+# Public Cloudflare AI chat
 
-This project uses Next.js for the frontend and Python/FastAPI for the backend.
-The endpoint implementation belongs in `backend/api/chat.py`, not `chat.js`
-or `check.js`.
+The public chatbot uses Cloudflare Workers AI, with the fixed Free-plan model
+`@cf/meta/llama-3.1-8b-instruct-fp8-fast`. It does not call OpenAI or fall back
+onto a paid provider. Keep your Cloudflare account on Workers Free; the code
+cannot control the account billing plan.
 
-Existing internal routes are registered in `backend/main.py` and exposed by
-`api/index.py`. Their `/api/backend/*` URLs pass through the authenticated
-Next.js backend proxy. The public chatbot instead uses `backend/chat_app.py`
-and the separate Vercel entry point `api/chat.py`. Do not register the chat
-router in `backend/main.py` or add a public exception to the dashboard proxy.
+In Vercel's server environment variables, set for Production:
 
-Install Python dependencies from the project root:
+- `CLOUDFLARE_API_TOKEN`: Secret, the Workers AI token.
+- `CLOUDFLARE_ACCOUNT_ID`: Config, the account ID from Cloudflare's REST API page.
 
-```sh
-python -m pip install -r requirements.txt
-```
+Use the same settings in `backend/.env` for local Python development. Never use
+a `NEXT_PUBLIC_` prefix or put the token in frontend code. Existing OpenAI
+settings are unused by this endpoint and can be removed separately.
 
-Keep the existing `OPENAI_API_KEY` in `backend/.env`. The backend also accepts
-`AI_API_KEY` for the existing write-only Vercel secret; `OPENAI_API_KEY` takes
-priority when both exist. Also set
-`OPENAI_CHAT_MODEL` to a Responses API model available to your OpenAI project.
-No model is assumed; the endpoint returns 503 until both settings exist.
-For Vercel, configure those server environment variables in the deployment;
-a local ignored `.env` file is not uploaded. Do not use a `NEXT_PUBLIC_` prefix.
+The route is `POST /api/chat`, accepting `{"message":"Hello"}` and returning
+`{"reply":"..."}`. The homepage widget needs no provider-specific changes.
 
-Local standalone server:
+The implementation is `backend/api/chat.py`, registered only in the separate
+`backend/chat_app.py`, exposed on Vercel by `api/chat.py`. There are no dashboard,
+auth, database, tool, or private-record imports. Each question is independent.
+Only the current message and public instructions are sent to Cloudflare.
 
-```sh
-python -m uvicorn backend.chat_app:app --port 8001
-```
+Install `requirements.txt` and deploy the code after setting the variables.
+For a standalone local server, run `python -m uvicorn backend.chat_app:app --port 8001`.
+Next.js alone does not run Vercel Python functions locally.
 
-The endpoint is `POST /api/chat` with JSON `{"message":"Hello"}` and returns
-`{"reply":"..."}`. On Vercel the website can call `/api/chat` directly.
-For local Next.js development, use a same-origin development proxy to port
-8001, or test this standalone server directly. No frontend widget or proxy
-has been added in this change.
+The Free-plan AI allowance is shared across the account and resets daily.
+If the provider returns a usage-limit error, the widget offers the contact page;
+no paid fallback is attempted. Input is capped at 4,000 characters and output at
+600 tokens. Deployment-level rate limiting should also protect the public route.
 
-Only the visitor's message and fixed public instructions are sent to OpenAI.
-There are no database imports, tools, private data retrieval, or conversation
-IDs. Requests accept a single message up to 4,000 characters; extra fields
-are rejected. Output is limited to 600 tokens and response storage is disabled
-via `store=False` (this is not a guarantee of zero provider retention).
-The initial assistant has no verified company knowledge beyond its name.
-
-Before public launch, configure deployment-level rate limiting for `/api/chat`
-and an OpenAI project spending limit. This public route currently has input
-and output bounds, but no cross-request abuse protection. A separate app
-isolates code and routing; the deployment still shares its server environment.
+Offline verification: `python -m unittest discover -s tests -p test_public_chat.py`.
+Tests replace environment loading and upstream requests; no secrets are read.
