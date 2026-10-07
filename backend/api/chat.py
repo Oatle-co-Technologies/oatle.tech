@@ -38,11 +38,12 @@ class ChatResponse(BaseModel):
 @router.post("/api/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest):
     model = os.getenv("OPENAI_CHAT_MODEL", "").strip()
-    if not os.getenv("OPENAI_API_KEY") or not model:
+    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("AI_API_KEY")
+    if not api_key or not model:
         raise HTTPException(503, "Chat is not configured yet")
 
     try:
-        async with AsyncOpenAI(timeout=25.0, max_retries=0) as client:
+        async with AsyncOpenAI(api_key=api_key, timeout=25.0, max_retries=0) as client:
             response = await client.responses.create(
                 model=model,
                 instructions=INSTRUCTIONS,

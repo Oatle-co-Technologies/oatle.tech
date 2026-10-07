@@ -16,7 +16,9 @@ Install Python dependencies from the project root:
 python -m pip install -r requirements.txt
 ```
 
-Keep the existing `OPENAI_API_KEY` in `backend/.env`. Also set
+Keep the existing `OPENAI_API_KEY` in `backend/.env`. The backend also accepts
+`AI_API_KEY` for the existing write-only Vercel secret; `OPENAI_API_KEY` takes
+priority when both exist. Also set
 `OPENAI_CHAT_MODEL` to a Responses API model available to your OpenAI project.
 No model is assumed; the endpoint returns 503 until both settings exist.
 For Vercel, configure those server environment variables in the deployment;

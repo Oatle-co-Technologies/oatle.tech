@@ -52,6 +52,16 @@ class PublicChatTests(unittest.TestCase):
         self.assertNotIn("tools", kwargs)
         self.assertNotIn("previous_response_id", kwargs)
 
+    def test_vercel_secret_alias_is_supported(self):
+        os.environ.update(AI_API_KEY="test-placeholder", OPENAI_CHAT_MODEL="test-model")
+        context = AsyncMock()
+        context.__aenter__.return_value = SimpleNamespace(responses=SimpleNamespace(
+            create=AsyncMock(return_value=SimpleNamespace(output_text="Hello"))))
+        with patch("backend.api.chat.AsyncOpenAI", return_value=context) as factory:
+            response = self.client.post("/api/chat", json={"message": "Hello"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(factory.call_args.kwargs["api_key"], "test-placeholder")
+
     def test_provider_errors_do_not_leak_details(self):
         from openai import APIConnectionError
         import httpx

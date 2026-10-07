@@ -1,4 +1,5 @@
 import Script from "next/script";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 import Navbar from "@/components/layout/Navbar";
 
@@ -65,6 +66,7 @@ export default function Home() {
       </main>
 
       <Footer />
+      <ChatWidget />
     </>
   );
 }
