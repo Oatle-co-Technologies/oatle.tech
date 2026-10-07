@@ -1,5 +1,7 @@
 """Offline checks; never load real secrets or call a provider."""
 import os
+import hashlib
+from pathlib import Path
 import sys
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -55,6 +57,19 @@ class PublicChatTests(unittest.TestCase):
         self.assertEqual(len(call.kwargs["json"]["messages"]), 2)
         self.assertEqual(call.kwargs["json"]["max_tokens"], 600)
         self.assertNotIn("tools", call.kwargs["json"])
+
+    def test_complete_public_pricing_reference(self):
+        from backend.api.pricing_knowledge import PRICING_GUIDE, SOURCE_PDF_SHA256
+        pdf = Path(__file__).resolve().parents[1] / "public/pricing-guide.pdf"
+        self.assertEqual(hashlib.sha256(pdf.read_bytes()).hexdigest(), SOURCE_PDF_SHA256,
+                         "Refresh the chatbot pricing snapshot after changing the PDF")
+        _, call = self.request_with(httpx.Response(200, json={"success":True,"result":{"response":"Hello"}}))
+        context = call.kwargs["json"]["messages"][0]["content"]
+        self.assertIn(PRICING_GUIDE, context)
+        for entry in ("From R3,000", "From R6,000", "From R8,500", "From R15,000",
+                      "Additional Website Page", "WhatsApp Integration", "Website Maintenance",
+                      "SEO Audit", "Ongoing SEO", "Third-party", "PAGE 4"):
+            self.assertIn(entry, context)
 
     def test_rate_limit(self):
         response, _ = self.request_with(httpx.Response(429, json={"errors":[{"message":"private details"}]}))

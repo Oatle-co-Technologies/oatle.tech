@@ -20,7 +20,12 @@ The route is `POST /api/chat`, accepting `{"message":"Hello"}` and returning
 The implementation is `backend/api/chat.py`, registered only in the separate
 `backend/chat_app.py`, exposed on Vercel by `api/chat.py`. There are no dashboard,
 auth, database, tool, or private-record imports. Each question is independent.
-Only the current message and public instructions are sent to Cloudflare.
+Only the current message, public instructions and the full published pricing
+guide are sent to Cloudflare. The guide is a static public snapshot in
+`backend/api/pricing_knowledge.py`, extracted from `public/pricing-guide.pdf`.
+Refresh that snapshot when the PDF changes; its source checksum is covered by
+an offline test to catch stale pricing. No PDF parsing dependency is needed
+in the deployed endpoint. Longer reference input uses more of the daily AI allowance.
 
 Install `requirements.txt` and deploy the code after setting the variables.
 For a standalone local server, run `python -m uvicorn backend.chat_app:app --port 8001`.
