@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 import { useAuth } from "@/lib/auth-context";
 
@@ -112,6 +113,15 @@ export default function LeadsPage() {
   // Load leads
   // ----------------------------------------------------------
 
+  const recordPage = useRecordPage({
+    base: "/dashboard/leads", records: leads, loading,
+    onNew: initializeAddForm, onEdit: initializeEditForm, onEmail: initializeEmailComposer,
+    onReset: () => { setShowForm(false); setEmailLead(null); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(lead: Lead) { recordPage.open("edit", lead.id); }
+  function openEmailComposer(lead: Lead) { recordPage.open("email", lead.id); }
+
   async function loadLeads() {
     if (!userEmail) {
       return;
@@ -154,14 +164,14 @@ export default function LeadsPage() {
   // Add / edit lead
   // ----------------------------------------------------------
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingLead(null);
     setForm({ ...emptyForm });
     setShowForm(true);
     setError("");
   }
 
-  function openEditForm(lead: Lead) {
+  function initializeEditForm(lead: Lead) {
     setEditingLead(lead);
 
     setForm({
@@ -206,6 +216,7 @@ export default function LeadsPage() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingLead(null);
     setForm({ ...emptyForm });
@@ -489,7 +500,7 @@ export default function LeadsPage() {
   // Email composer
   // ----------------------------------------------------------
 
-  function openEmailComposer(
+  function initializeEmailComposer(
     lead: Lead
   ) {
     setEmailLead(lead);
@@ -509,6 +520,7 @@ export default function LeadsPage() {
       return;
     }
 
+    recordPage.back();
     setEmailLead(null);
     setEmailForm({
       ...emptyEmailForm,
@@ -715,8 +727,8 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="dashboard-page">
-      <BackToDashboard />
+    <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       {/* Header controls */}
 
@@ -1009,6 +1021,7 @@ export default function LeadsPage() {
         </div>
       )}
 
+      {recordPage.showList && <>
       {/* Lead list */}
 
       <div className="dashboard-panel">
@@ -1046,7 +1059,7 @@ export default function LeadsPage() {
         {!loading &&
           leads.length > 0 && (
             <div>
-              {leads.map((lead) => (
+              {leads.filter(item => !recordPage.isDetail || item.id === recordPage.id).map((lead) => (
                 <div
                   key={lead.id}
                   className="dashboard-list-row dashboard-lead-row"
@@ -1185,9 +1198,7 @@ export default function LeadsPage() {
                             type="button"
                             className="dashboard-action-primary"
                             onClick={() =>
-                              contactAgain(
-                                lead
-                              )
+                              recordPage.isDetail ? contactAgain(lead) : recordPage.open("view", lead.id)
                             }
                           >
                             Contact Again
@@ -1197,9 +1208,7 @@ export default function LeadsPage() {
                             type="button"
                             className="dashboard-action-secondary"
                             onClick={() =>
-                              markNotNow(
-                                lead
-                              )
+                              recordPage.isDetail ? markNotNow(lead) : recordPage.open("view", lead.id)
                             }
                           >
                             Not Now
@@ -1209,9 +1218,7 @@ export default function LeadsPage() {
                             type="button"
                             className="dashboard-action-delete"
                             onClick={() =>
-                              markDropped(
-                                lead
-                              )
+                              recordPage.isDetail ? markDropped(lead) : recordPage.open("view", lead.id)
                             }
                           >
                             Drop
@@ -1429,6 +1436,7 @@ export default function LeadsPage() {
             </div>
           )}
       </div>
+      </>}
     </div>
   );
 }

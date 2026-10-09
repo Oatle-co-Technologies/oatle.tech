@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import emailjs from "@emailjs/browser";
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Client = {
@@ -142,6 +143,14 @@ export default function Invoices() {
 
   const [sendingInvoiceId, setSendingInvoiceId] =
     useState<number | null>(null);
+
+  const recordPage = useRecordPage({
+    base: "/dashboard/invoices", records: invoices, loading,
+    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onReset: () => { setShowForm(false); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(invoice: Invoice) { recordPage.open("edit", invoice.id); }
 
   async function loadInvoices() {
     if (!userEmail) {
@@ -424,7 +433,7 @@ export default function Invoices() {
     }));
   }
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingInvoice(null);
 
     setForm({
@@ -441,7 +450,7 @@ export default function Invoices() {
     setError("");
   }
 
-  function openEditForm(invoice: Invoice) {
+  function initializeEditForm(invoice: Invoice) {
     setEditingInvoice(invoice);
 
     setForm({
@@ -479,6 +488,7 @@ export default function Invoices() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingInvoice(null);
     setForm(emptyForm);
@@ -1019,8 +1029,8 @@ export default function Invoices() {
   }
 
   return (
-    <div className="dashboard-page">
-      <BackToDashboard />
+    <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       {/* Add Invoice */}
 
@@ -1722,6 +1732,7 @@ export default function Invoices() {
         </div>
       )}
 
+      {recordPage.showList && <>
       {/* Invoice List */}
 
       <div className="dashboard-panel">
@@ -1757,7 +1768,7 @@ export default function Invoices() {
           )}
 
         {!loading &&
-          invoices.map((invoice) => {
+          invoices.filter(item => !recordPage.isDetail || item.id === recordPage.id).map((invoice) => {
             const product =
               getProjectProduct(
                 invoice.project_id
@@ -1898,9 +1909,7 @@ export default function Invoices() {
                     type="button"
                     className="dashboard-action-primary"
                     onClick={() =>
-                      handleSendInvoice(
-                        invoice
-                      )
+                      recordPage.isDetail ? handleSendInvoice(invoice) : recordPage.open("email", invoice.id)
                     }
                     disabled={
                       sendingInvoiceId ===
@@ -1920,6 +1929,7 @@ export default function Invoices() {
             );
           })}
       </div>
+      </>}
     </div>
   );
 }

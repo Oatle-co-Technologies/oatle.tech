@@ -97,3 +97,8 @@
     padding: 0;
   }
 }
+
+.dashboard-record-header { margin-bottom: 24px; }
+.dashboard-record-header .dashboard-link { display: inline-flex; align-items: center; min-height: 44px; }
+.dashboard-record-detail > .dashboard-page-actions { display: none; }
+.dashboard-record-detail .dashboard-form-panel { margin-top: 0; }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/lib/auth-context";
 
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type StaffMember = {
@@ -49,6 +50,14 @@ export default function Staff() {
 
   const [saving, setSaving] = useState(false);
 
+  const recordPage = useRecordPage({
+    base: "/dashboard/staff", records: staff, loading,
+    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onReset: () => { setShowForm(false); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(member: StaffMember) { recordPage.open("edit", member.id); }
+
   async function loadStaff() {
     if (!userEmail) {
       return;
@@ -87,14 +96,14 @@ export default function Staff() {
     void loadStaff();
   }, [userEmail]);
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingStaff(null);
     setForm({ ...emptyForm });
     setShowForm(true);
     setError("");
   }
 
-  function openEditForm(
+  function initializeEditForm(
     member: StaffMember
   ) {
     setEditingStaff(member);
@@ -116,6 +125,7 @@ export default function Staff() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingStaff(null);
     setForm({ ...emptyForm });
@@ -246,8 +256,8 @@ export default function Staff() {
   }
 
   return (
-    <div className="dashboard-page">
-      <BackToDashboard />
+    <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       {/* Header controls */}
 
@@ -411,6 +421,7 @@ export default function Staff() {
         </div>
       )}
 
+      {recordPage.showList && <>
       {/* Staff list */}
 
       <div className="dashboard-panel">
@@ -447,7 +458,7 @@ export default function Staff() {
 
         {!loading &&
           staff.length > 0 &&
-          staff.map((member) => (
+          staff.filter(item => !recordPage.isDetail || item.id === recordPage.id).map((member) => (
             <div
               key={member.id}
               className="dashboard-list-row dashboard-staff-row"
@@ -535,6 +546,7 @@ export default function Staff() {
             </div>
           ))}
       </div>
+      </>}
     </div>
   );
 }

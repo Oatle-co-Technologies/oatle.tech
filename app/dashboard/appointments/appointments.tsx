@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 import { useAuth } from "@/lib/auth-context";
 
@@ -64,6 +65,14 @@ export default function AppointmentsPage() {
 
   const [saving, setSaving] = useState(false);
 
+  const recordPage = useRecordPage({
+    base: "/dashboard/appointments", records: appointments, loading,
+    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onReset: () => { setShowForm(false); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(appointment: Appointment) { recordPage.open("edit", appointment.id); }
+
   async function loadAppointments() {
     if (!userEmail) {
       return;
@@ -101,14 +110,14 @@ export default function AppointmentsPage() {
     void loadAppointments();
   }, [userEmail]);
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingAppointment(null);
     setForm(emptyForm);
     setShowForm(true);
     setError("");
   }
 
-  function openEditForm(
+  function initializeEditForm(
     appointment: Appointment
   ) {
     setEditingAppointment(appointment);
@@ -138,6 +147,7 @@ export default function AppointmentsPage() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingAppointment(null);
     setForm(emptyForm);
@@ -349,8 +359,8 @@ export default function AppointmentsPage() {
     appointments.filter(isReceived);
 
   return (
-    <div className="dashboard-page">
-      <BackToDashboard />
+    <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       {/* Header controls */}
       <div className="dashboard-page-actions">
@@ -507,6 +517,7 @@ export default function AppointmentsPage() {
         </div>
       )}
 
+      {recordPage.showList && <>
       {/* Upcoming appointments */}
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
@@ -817,6 +828,7 @@ export default function AppointmentsPage() {
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }

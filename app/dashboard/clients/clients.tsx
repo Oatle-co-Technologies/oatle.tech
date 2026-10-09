@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 import { useAuth } from "@/lib/auth-context";
@@ -84,6 +85,15 @@ export default function ClientsPage() {
   // LOAD CLIENTS
   // ============================================================
 
+  const recordPage = useRecordPage({
+    base: "/dashboard/clients", records: clients, loading,
+    onNew: initializeAddForm, onEdit: initializeEditForm, onEmail: initializeEmailComposer,
+    onReset: () => { setShowForm(false); setEmailClient(null); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(client: Client) { recordPage.open("edit", client.id); }
+  function openEmailComposer(client: Client) { recordPage.open("email", client.id); }
+
   async function loadClients() {
     if (!userEmail) {
       return;
@@ -125,14 +135,14 @@ export default function ClientsPage() {
   // ADD / EDIT CLIENT
   // ============================================================
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingClient(null);
     setForm(emptyForm);
     setShowForm(true);
     setError("");
   }
 
-  function openEditForm(client: Client) {
+  function initializeEditForm(client: Client) {
     setEditingClient(client);
 
     setForm({
@@ -147,6 +157,7 @@ export default function ClientsPage() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingClient(null);
     setForm(emptyForm);
@@ -255,7 +266,7 @@ export default function ClientsPage() {
   // EMAIL COMPOSER
   // ============================================================
 
-  function openEmailComposer(client: Client) {
+  function initializeEmailComposer(client: Client) {
     setEmailClient(client);
 
     setEmailForm({
@@ -269,6 +280,7 @@ export default function ClientsPage() {
   }
 
   function closeEmailComposer() {
+    recordPage.back();
     setEmailClient(null);
     setEmailForm(emptyEmailForm);
     setEmailError("");
@@ -385,9 +397,9 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="dashboard-page">
+    <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
 
-      <BackToDashboard />
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       {/* Header controls */}
 
@@ -496,6 +508,7 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {recordPage.showList && <>
       {/* Client list */}
 
       <div className="dashboard-panel">
@@ -532,7 +545,7 @@ export default function ClientsPage() {
         {!loading && clients.length > 0 && (
           <div className="dashboard-list">
 
-            {clients.map((client) => (
+            {clients.filter(item => !recordPage.isDetail || item.id === recordPage.id).map((client) => (
               <div
                 key={client.id}
                 className="dashboard-list-row"
@@ -764,6 +777,7 @@ export default function ClientsPage() {
         )}
       </div>
 
+      </>}
     </div>
   );
 }

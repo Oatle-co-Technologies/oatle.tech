@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Project = {
@@ -158,6 +159,14 @@ export default function Tasks() {
   const [saving, setSaving] = useState(false);
   const [taskOptionsLoaded, setTaskOptionsLoaded] = useState(false);
   const [productServicesLoading, setProductServicesLoading] = useState(false);
+
+  const recordPage = useRecordPage({
+    base: "/dashboard/tasks", records: tasks, loading, ready: taskOptionsLoaded && !projectsLoading,
+    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onReset: () => { setShowForm(false); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(task: Task) { recordPage.open("edit", task.id); }
 
   async function loadTasks() {
     if (!userEmail) {
@@ -406,7 +415,7 @@ export default function Tasks() {
     });
   }, [userEmail, isAdmin, currentStaff?.id]);
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingTask(null);
     setForm({
       ...emptyForm,
@@ -426,7 +435,7 @@ export default function Tasks() {
     void loadProjects();
   }
 
-  function openEditForm(task: Task) {
+  function initializeEditForm(task: Task) {
     setEditingTask(task);
     setError("");
     setTaskOptionsError("");
@@ -477,6 +486,7 @@ export default function Tasks() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingTask(null);
     setForm({ ...emptyForm });
@@ -791,7 +801,7 @@ export default function Tasks() {
 
   return (
     <div>
-      <BackToDashboard />
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       <div className="dashboard-page-actions">
         <button
@@ -1117,6 +1127,7 @@ export default function Tasks() {
         </div>
       )}
 
+      {recordPage.showList && <>
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <div>
@@ -1193,7 +1204,7 @@ export default function Tasks() {
           visibleTasks.length >
             0 && (
             <div className="dashboard-list">
-              {visibleTasks.map(
+              {visibleTasks.filter(item => !recordPage.isDetail || item.id === recordPage.id).map(
                 (task) => (
                   <div
                     key={task.id}
@@ -1335,6 +1346,7 @@ export default function Tasks() {
             </div>
           )}
       </div>
+      </>}
     </div>
   );
 }                                     

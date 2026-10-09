@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
 type Client = {
@@ -101,6 +102,14 @@ export default function Projects() {
     useState<ProjectForm>(emptyForm);
 
   const [saving, setSaving] = useState(false);
+
+  const recordPage = useRecordPage({
+    base: "/dashboard/projects", records: projects, loading,
+    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onReset: () => { setShowForm(false); },
+  });
+  function openAddForm() { recordPage.open("new"); }
+  function openEditForm(project: Project) { recordPage.open("edit", project.id); }
 
   async function loadProjects() {
     if (!userEmail) {
@@ -278,14 +287,14 @@ export default function Projects() {
     loadAddons();
   }, [userEmail]);
 
-  function openAddForm() {
+  function initializeAddForm() {
     setEditingProject(null);
     setForm({ ...emptyForm });
     setShowForm(true);
     setError("");
   }
 
-  function openEditForm(
+  function initializeEditForm(
     project: Project
   ) {
     setEditingProject(project);
@@ -314,6 +323,7 @@ export default function Projects() {
   }
 
   function closeForm() {
+    recordPage.back();
     setShowForm(false);
     setEditingProject(null);
     setForm({ ...emptyForm });
@@ -709,8 +719,8 @@ export default function Projects() {
   }
 
   return (
-    <div className="dashboard-page">
-      <BackToDashboard />
+    <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
+      {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
       {/* Header controls */}
 
@@ -960,6 +970,7 @@ export default function Projects() {
         </div>
       )}
 
+      {recordPage.showList && <>
       {/* Project list */}
 
       <div className="dashboard-panel">
@@ -1003,7 +1014,7 @@ export default function Projects() {
           projects.length >
             0 && (
             <div>
-              {projects.map(
+              {projects.filter(item => !recordPage.isDetail || item.id === recordPage.id).map(
                 (project) => {
                   const assignedAddons =
                     projectAddons[
@@ -1144,6 +1155,8 @@ export default function Projects() {
                         </button>
                       </div>
 
+                      {!recordPage.isDetail && <button type="button" className="dashboard-action-primary" onClick={() => recordPage.open("view", project.id)}>Manage project add-ons</button>}
+                      {recordPage.isDetail && <>
                       {/* Project Add-ons */}
 
                       <div className="dashboard-inline-panel">
@@ -1335,6 +1348,7 @@ export default function Projects() {
                           </span>
                         </div>
                       </div>
+                      </>}
                     </div>
                   );
                 }
@@ -1342,6 +1356,7 @@ export default function Projects() {
             </div>
           )}
       </div>
+      </>}
     </div>
   );
 }
