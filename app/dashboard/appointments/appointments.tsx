@@ -283,6 +283,13 @@ export default function AppointmentsPage() {
     return `dashboard-status dashboard-status-${normalizedStatus}`;
   }
 
+  function renderLocation(location: string | null) {
+    if (!location) return null;
+    return <p>{/^https?:\/\//i.test(location)
+      ? <a className="dashboard-link" href={location} target="_blank" rel="noopener noreferrer">Join meeting</a>
+      : location}</p>;
+  }
+
   function formatDate(date: string) {
     return new Date(date).toLocaleDateString(
       "en-ZA",
@@ -595,13 +602,7 @@ export default function AppointmentsPage() {
                         )}
                       </p>
 
-                      {appointment.location && (
-                        <p>
-                          {
-                            appointment.location
-                          }
-                        </p>
-                      )}
+                      {renderLocation(appointment.location)}
 
                       <div className="dashboard-list-status">
                         <span
@@ -695,6 +696,7 @@ export default function AppointmentsPage() {
                         appointment.start_time
                       )}
                     </p>
+                    {renderLocation(appointment.location)}
                   </div>
 
                   <div className="dashboard-list-actions">
@@ -785,6 +787,7 @@ export default function AppointmentsPage() {
                         appointment.start_time
                       )}
                     </p>
+                    {renderLocation(appointment.location)}
 
                     <div className="dashboard-list-status">
                       <span

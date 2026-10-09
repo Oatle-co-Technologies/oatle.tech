@@ -8,6 +8,8 @@ from backend.database.connection import get_db
 from backend.models.appointment import Appointment
 from backend.models.staff import Staff
 from backend.integrations.google_calendar import (
+    appointment_datetime,
+    calendar_event_location,
     create_calendar_event,
     delete_calendar_event,
     find_available_slots,
@@ -73,6 +75,10 @@ def create_appointment(
     appointment: AppointmentCreate,
     db: Session = Depends(get_db),
 ):
+    appointment = appointment.model_copy(update={
+        "start_time": appointment_datetime(appointment.start_time),
+        "end_time": appointment_datetime(appointment.end_time),
+    })
     if appointment.end_time <= appointment.start_time:
         raise HTTPException(
             status_code=400,
@@ -209,13 +215,20 @@ def get_appointments(
                     ),
                     title=event.get("summary") or "Google Calendar event",
                     appointment_type="google_calendar",
-                    start_time=datetime.fromisoformat(start),
-                    end_time=datetime.fromisoformat(end),
-                    location=event.get("location"),
+                    start_time=appointment_datetime(datetime.fromisoformat(start)),
+                    end_time=appointment_datetime(datetime.fromisoformat(end)),
+                    location=calendar_event_location(event),
                     notes=event.get("description"),
                     google_event_id=event_id,
                 )
                 db.add(appointment)
+            else:
+                # Re-sync existing records so Calendar edits and earlier bad imports are repaired.
+                appointment.start_time = appointment_datetime(datetime.fromisoformat(start))
+                appointment.end_time = appointment_datetime(datetime.fromisoformat(end))
+                appointment.title = event.get("summary") or "Google Calendar event"
+                appointment.location = calendar_event_location(event)
+                appointment.notes = event.get("description")
 
         db.commit()
     except Exception as error:
@@ -289,6 +302,8 @@ def update_appointment(
     )
 
     for field, value in update_data.items():
+        if field in ("start_time", "end_time") and value is not None:
+            value = appointment_datetime(value)
         setattr(appointment, field, value)
 
     if appointment.end_time <= appointment.start_time:

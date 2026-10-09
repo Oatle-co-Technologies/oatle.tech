@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
+from zoneinfo import ZoneInfo
 
 
 class AppointmentCreate(BaseModel):
@@ -41,5 +42,10 @@ class AppointmentResponse(AppointmentCreate):
     google_event_id: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer("start_time", "end_time")
+    def serialize_appointment_time(self, value: datetime) -> str:
+        local_zone = ZoneInfo("Africa/Johannesburg")
+        return (value.replace(tzinfo=local_zone) if value.tzinfo is None else value.astimezone(local_zone)).isoformat()
 
     model_config = ConfigDict(from_attributes=True)

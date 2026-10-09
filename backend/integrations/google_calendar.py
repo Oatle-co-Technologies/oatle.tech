@@ -20,6 +20,20 @@ def _calendar_datetime(value: datetime) -> datetime:
     return value.astimezone(ZoneInfo(CALENDAR_TIMEZONE))
 
 
+def appointment_datetime(value: datetime) -> datetime:
+    """Store appointment wall times consistently in Africa/Johannesburg."""
+    return _calendar_datetime(value).replace(tzinfo=None)
+
+
+def calendar_event_location(event: dict) -> str | None:
+    """Google keeps Meet links separately from the physical location field."""
+    video_link = event.get("hangoutLink") or next(
+        (entry.get("uri") for entry in event.get("conferenceData", {}).get("entryPoints", [])
+         if entry.get("entryPointType") == "video" and entry.get("uri")), None,
+    )
+    return video_link or event.get("location")
+
+
 def get_calendar_credentials():
     """
     Create Google Calendar credentials.
@@ -272,7 +286,7 @@ def update_calendar_event(
 
     return (
         service.events()
-        .update(
+        .patch(
             calendarId=calendar_id,
             eventId=event_id,
             body=event,
