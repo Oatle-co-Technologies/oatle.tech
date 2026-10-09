@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import "./dashboard.css";
+import TaskNotifications from "@/components/dashboard/TaskNotifications";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/lib/auth-context";
@@ -38,7 +39,7 @@ export default function DashboardLayout({
       staff &&
       allowedAccessLevels.has(staff.access_level))
   ) {
-    return <div className="dashboard-workspace">{children}</div>;
+    return <div className="dashboard-workspace">{!isUnauthorizedPage && <TaskNotifications key={staff?.id ?? "signed-out"} />}{children}</div>;
   }
 
   return null;

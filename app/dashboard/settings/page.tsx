@@ -1,4 +1,5 @@
 "use client";
+import { disableTaskAlerts } from "@/lib/task-notifications";
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -45,6 +46,7 @@ export default function SettingsPage() {
     setSigningOut(true);
     setError("");
     try {
+      await disableTaskAlerts();
       const result = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase"
         ? await createClient().auth.signOut({ scope: "local" })
         : await authClient.signOut();

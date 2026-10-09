@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from backend.models.pricing import Service
 from backend.models.staff import Staff
 from backend.models.task import Task
 from backend.schemas.task import TaskCreate, TaskResponse
+from backend.services.task_notifications import notify_task_counts
 from backend.services.email_service import (
     send_task_assignment_email,
 )
@@ -128,6 +129,7 @@ def validate_task_type(
 )
 def create_task(
     task: TaskCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff),
 ):
@@ -190,6 +192,7 @@ def create_task(
                 priority=new_task.priority,
             )
 
+    background_tasks.add_task(notify_task_counts, [new_task.assigned_to])
     return new_task
 
 
@@ -261,6 +264,7 @@ def get_task(
 def update_task(
     task_id: int,
     task: TaskCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff),
 ):
@@ -299,6 +303,8 @@ def update_task(
         db,
     )
 
+    previous_assignee = existing_task.assigned_to
+    previous_status = existing_task.status
     existing_task.project_id = task.project_id
     existing_task.product_service_id = (
         task.product_service_id
@@ -323,6 +329,8 @@ def update_task(
     db.commit()
     db.refresh(existing_task)
 
+    if previous_assignee != existing_task.assigned_to or previous_status != existing_task.status:
+        background_tasks.add_task(notify_task_counts, [previous_assignee, existing_task.assigned_to])
     return existing_task
 
 
@@ -333,6 +341,7 @@ def update_task(
 @router.delete("/{task_id}")
 def delete_task(
     task_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff),
 ):
@@ -357,9 +366,11 @@ def delete_task(
             detail="Task not found",
         )
 
+    previous_assignee = task.assigned_to
     db.delete(task)
     db.commit()
 
+    background_tasks.add_task(notify_task_counts, [previous_assignee])
     return {
         "message": "Task deleted successfully"
     }

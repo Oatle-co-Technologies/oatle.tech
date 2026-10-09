@@ -58,3 +58,10 @@
   .dashboard-workspace .dashboard-empty { min-height:76px; }
   .dashboard-workspace .dashboard-panel input, .dashboard-workspace .dashboard-panel select, .dashboard-workspace .dashboard-panel textarea { font-size:16px; }
 }
+
+.dashboard-task-notifications { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; padding:10px 28px; background:#fff; border-bottom:1px solid #e9e2d4; font-size:12px; }
+.dashboard-task-notification-count { display:flex; align-items:center; gap:8px; color:#705810; text-decoration:none; min-height:44px; }
+.dashboard-task-notification-count strong { background:#d4af37; color:#282822; border-radius:20px; min-width:26px; padding:4px 8px; text-align:center; }
+.dashboard-task-notifications button { background:#faf3dc; color:#705810; border:1px solid #e5d7a1; padding:8px 12px; border-radius:8px; min-height:44px; font:inherit; cursor:pointer; }
+.dashboard-task-notifications p { flex-basis:100%; margin:0; color:#66665e; text-align:right; line-height:1.5; }
+@media(max-width:700px) { .dashboard-task-notifications { padding:8px 16px; gap:6px 12px; justify-content:space-between; } .dashboard-task-notifications p { text-align:left; } }

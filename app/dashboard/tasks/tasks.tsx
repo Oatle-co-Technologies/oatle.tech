@@ -174,6 +174,7 @@ export default function Tasks() {
       const data: Task[] = await response.json();
 
       setTasks(data);
+      window.dispatchEvent(new Event("oatle:tasks-changed"));
     } catch (err) {
       setError(
         err instanceof Error
