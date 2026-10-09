@@ -41,7 +41,7 @@
   .dashboard-workspace .dashboard-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
   .dashboard-workspace .dashboard-nav-item { min-height:44px; display:flex; align-items:center; }
   .dashboard-workspace .dashboard-sidebar-bottom { margin-top:8px; }
-  .dashboard-workspace .dashboard-main { padding:20px max(10px,env(safe-area-inset-left)) max(28px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right)); }
+  .dashboard-workspace .dashboard-main { padding:20px max(30px,env(safe-area-inset-left)) max(28px,env(safe-area-inset-bottom)) max(30px,env(safe-area-inset-right)); }
   .dashboard-workspace .dashboard-header { margin-bottom:20px; }
   .dashboard-workspace .dashboard-header h1 { font-size:29px; line-height:1.2; }
   .dashboard-workspace .dashboard-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
