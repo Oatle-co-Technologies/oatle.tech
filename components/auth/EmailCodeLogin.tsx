@@ -72,7 +72,7 @@ export default function LoginScreen({ preview = true }: { preview?: boolean }) {
           {step === "email" ? (
             <div>
               <label htmlFor="login-email">Email address</label>
-              <input id="login-email" type="email" autoComplete="email" placeholder="you@company.co.za" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={busy} />
+              <input id="login-email" type="email" autoComplete="email" placeholder="you@oatle-technologies.co.za" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={busy} />
             </div>
           ) : (
             <div>
