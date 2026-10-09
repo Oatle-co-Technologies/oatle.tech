@@ -128,6 +128,7 @@ const COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID = 28;
 export default function Tasks() {
   const { userEmail, staff: currentStaff } = useAuth();
   const isAdmin = currentStaff?.access_level === "admin";
+  const isOwner = currentStaff?.access_level === "admin" && userEmail?.trim().toLowerCase() === "info@oatle-technologies.co.za";
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -162,7 +163,7 @@ export default function Tasks() {
 
   const recordPage = useRecordPage({
     base: "/dashboard/tasks", records: tasks, loading, ready: taskOptionsLoaded && !projectsLoading,
-    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onNew: () => { if (isOwner) initializeAddForm(); }, onEdit: initializeEditForm,
     onReset: () => { setShowForm(false); },
   });
   function openAddForm() { recordPage.open("new"); }
@@ -803,7 +804,7 @@ export default function Tasks() {
     <div>
       {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
-      <div className="dashboard-page-actions">
+      {isOwner && <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-button dashboard-button-primary"
@@ -811,8 +812,9 @@ export default function Tasks() {
         >
           + Add Task
         </button>
-      </div>
+      </div>}
 
+      {recordPage.action === "new" && !isOwner && <p role="alert">Only Vinolia can add tasks.</p>}
       {success && (
         <div className="dashboard-panel dashboard-success">
           <p>{success}</p>
@@ -1328,7 +1330,7 @@ export default function Tasks() {
                         Edit
                       </button>
 
-                      <button
+                      {isOwner && <button
                         type="button"
                         className="dashboard-button dashboard-button-delete"
                         onClick={() =>
@@ -1338,7 +1340,7 @@ export default function Tasks() {
                         }
                       >
                         Delete
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 )

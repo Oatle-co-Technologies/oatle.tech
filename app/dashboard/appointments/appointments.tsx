@@ -51,6 +51,7 @@ const SOUTH_AFRICA_TIME_ZONE = "Africa/Johannesburg";
 
 export default function AppointmentsPage() {
   const { staff, userEmail } = useAuth();
+  const isOwner = staff?.access_level === "admin" && userEmail?.trim().toLowerCase() === "info@oatle-technologies.co.za";
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +68,7 @@ export default function AppointmentsPage() {
 
   const recordPage = useRecordPage({
     base: "/dashboard/appointments", records: appointments, loading,
-    onNew: initializeAddForm, onEdit: initializeEditForm,
+    onNew: () => { if (isOwner) initializeAddForm(); }, onEdit: record => { if (isOwner) initializeEditForm(record); },
     onReset: () => { setShowForm(false); },
   });
   function openAddForm() { recordPage.open("new"); }
@@ -368,8 +369,9 @@ export default function AppointmentsPage() {
     <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
       {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
+      {recordPage.isDetail && !isOwner && (recordPage.action === "new" || recordPage.action === "edit") && <p role="alert">Only Vinolia can manage appointments.</p>}
       {/* Header controls */}
-      <div className="dashboard-page-actions">
+      {isOwner && <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-link"
@@ -377,10 +379,10 @@ export default function AppointmentsPage() {
         >
           + New Appointment
         </button>
-      </div>
+      </div>}
 
       {/* Appointment form */}
-      {showForm && (
+      {isOwner && showForm && (
         <div
           className="dashboard-panel"
           style={{ marginBottom: "24px" }}
@@ -614,7 +616,7 @@ export default function AppointmentsPage() {
                       </div>
                     </div>
 
-                    <div className="dashboard-list-actions">
+                    {isOwner && <div className="dashboard-list-actions">
                       <button
                         type="button"
                         className="dashboard-action-edit"
@@ -638,7 +640,7 @@ export default function AppointmentsPage() {
                       >
                         Delete
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 )
               )}
@@ -698,7 +700,7 @@ export default function AppointmentsPage() {
                     {renderLocation(appointment.location)}
                   </div>
 
-                  <div className="dashboard-list-actions">
+                  {isOwner && <div className="dashboard-list-actions">
                     <button
                       type="button"
                       className="dashboard-action-edit"
@@ -722,7 +724,7 @@ export default function AppointmentsPage() {
                     >
                       Delete
                     </button>
-                  </div>
+                  </div>}
                 </div>
               )
             )}
@@ -799,7 +801,7 @@ export default function AppointmentsPage() {
                     </div>
                   </div>
 
-                  <div className="dashboard-list-actions">
+                  {isOwner && <div className="dashboard-list-actions">
                     <button
                       type="button"
                       className="dashboard-action-edit"
@@ -823,7 +825,7 @@ export default function AppointmentsPage() {
                     >
                       Delete
                     </button>
-                  </div>
+                  </div>}
                 </div>
               )
             )}

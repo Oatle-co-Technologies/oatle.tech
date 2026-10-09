@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from backend.dependencies import get_owner_staff
 from pydantic import BaseModel, EmailStr
 
 from backend.integrations.google_calendar import (
@@ -77,6 +78,7 @@ def check_availability(
 @router.post("/events")
 def create_event(
     request: CalendarEventRequest,
+    _owner=Depends(get_owner_staff),
 ):
     """
     Create an appointment event on the

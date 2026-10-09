@@ -21,7 +21,7 @@ function formHarness() {
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === '@/lib/use-record-page') return { useRecordPage: options => ({ open: action => { if (action === 'new') options.onNew(); }, back() {}, showList: true, isDetail: false }) };
-    if (name === '@/lib/auth-context') return { useAuth: () => ({ staff: { id: 1, access_level: 'admin' } }) };
+    if (name === '@/lib/auth-context') return { useAuth: () => ({ userEmail: 'info@oatle-technologies.co.za', staff: { id: 1, access_level: 'admin' } }) };
     if (name === '@/components/dashboard/BackToDashboard') return { default: () => null };
     throw Error(name);
   } });

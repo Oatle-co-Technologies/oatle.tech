@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_current_staff, get_owner_staff
 from backend.models.appointment import Appointment
 from backend.models.staff import Staff
 from backend.integrations.google_calendar import (
@@ -74,6 +75,7 @@ def create_discovery_booking(
 def create_appointment(
     appointment: AppointmentCreate,
     db: Session = Depends(get_db),
+    _staff: Staff = Depends(get_owner_staff),
 ):
     appointment = appointment.model_copy(update={
         "start_time": appointment_datetime(appointment.start_time),
@@ -178,6 +180,7 @@ def create_appointment(
 )
 def get_appointments(
     db: Session = Depends(get_db),
+    _staff: Staff = Depends(get_current_staff),
 ):
     try:
         calendar_events = list_calendar_events()
@@ -258,6 +261,7 @@ def get_appointments(
 def get_appointment(
     appointment_id: int,
     db: Session = Depends(get_db),
+    _staff: Staff = Depends(get_current_staff),
 ):
     appointment = (
         db.query(Appointment)
@@ -286,6 +290,7 @@ def update_appointment(
     appointment_id: int,
     appointment_data: AppointmentUpdate,
     db: Session = Depends(get_db),
+    _staff: Staff = Depends(get_owner_staff),
 ):
     appointment = (
         db.query(Appointment)
@@ -373,6 +378,7 @@ def update_appointment(
 def delete_appointment(
     appointment_id: int,
     db: Session = Depends(get_db),
+    _staff: Staff = Depends(get_owner_staff),
 ):
     appointment = (
         db.query(Appointment)

@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.dependencies import get_current_staff
+from backend.dependencies import get_current_staff, get_owner_staff
 from backend.models.product_service import ProductService
 from backend.models.pricing import Service
 from backend.models.staff import Staff
@@ -131,7 +131,7 @@ def create_task(
     task: TaskCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_staff: Staff = Depends(get_current_staff),
+    current_staff: Staff = Depends(get_owner_staff),
 ):
     if current_staff.access_level != "admin":
         if task.assigned_to != current_staff.id:
@@ -343,7 +343,7 @@ def delete_task(
     task_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_staff: Staff = Depends(get_current_staff),
+    current_staff: Staff = Depends(get_owner_staff),
 ):
     task = (
         db.query(Task)

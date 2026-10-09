@@ -200,3 +200,9 @@ def get_admin_staff(
 
 def is_financial_owner(request: Request) -> bool:
     return getattr(request.state, "financial_owner", False)
+
+
+def get_owner_staff(request: Request, staff: Staff = Depends(get_current_staff)) -> Staff:
+    if staff.access_level != "admin" or not is_financial_owner(request):
+        raise HTTPException(status_code=403, detail="Only Vinolia can perform this action")
+    return staff
