@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import "./dashboard.css";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/lib/auth-context";
@@ -37,7 +38,7 @@ export default function DashboardLayout({
       staff &&
       allowedAccessLevels.has(staff.access_level))
   ) {
-    return children;
+    return <div className="dashboard-workspace">{children}</div>;
   }
 
   return null;

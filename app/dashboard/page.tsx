@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -248,9 +249,9 @@ export default function DashboardPage() {
     <div className="dashboard">
       {/* Mobile Header */}
       <div className="dashboard-mobile-header">
-        <div className="dashboard-logo">
-          Oatle Technologies
-        </div>
+        <Link href="/" className="dashboard-logo" aria-label="Oatle Technologies home">
+          <Image src="/oatle-technologies-transparent-logo.png" alt="Oatle Technologies" width={220} height={150} priority />
+        </Link>
 
         <button
           type="button"
@@ -277,9 +278,9 @@ export default function DashboardPage() {
             : ""
         }`}
       >
-        <div className="dashboard-logo">
-          Oatle Technologies
-        </div>
+        <Link href="/" className="dashboard-logo" aria-label="Oatle Technologies home">
+          <Image src="/oatle-technologies-transparent-logo.png" alt="Oatle Technologies" width={220} height={150} priority />
+        </Link>
 
         <nav
           id="dashboard-mobile-nav"
