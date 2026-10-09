@@ -7,7 +7,7 @@
 .dashboard-workspace .dashboard-nav-item { color:#66665e; border-radius:10px; padding:12px 14px; font-size:13px; }
 .dashboard-workspace .dashboard-nav-item:hover, .dashboard-workspace .dashboard-nav-item.active { background:#faf3dc; color:#705810; }
 .dashboard-workspace .dashboard-nav-item.active { box-shadow:inset 3px 0 #d4af37; font-weight:600; }
-.dashboard-workspace .dashboard-main { min-width:0; padding:36px; }
+.dashboard-workspace .dashboard-main { min-width:0; padding:36px 28px; }
 .dashboard-workspace .dashboard-header { margin-bottom:26px; gap:16px; }
 .dashboard-workspace .dashboard-header h1 { font-family:var(--font-playfair), Georgia, serif; font-size:36px; font-weight:500; line-height:1.2; }
 .dashboard-workspace .dashboard-eyebrow, .dashboard-workspace .dashboard-panel-label { color:#8b6d13; font-size:10px; letter-spacing:1.6px; }
@@ -30,7 +30,7 @@
 .dashboard-workspace .lead-pipeline strong { font-size:22px; }
 .dashboard-workspace .dashboard-list-row { gap:10px; padding:12px 0; }
 .dashboard-workspace .dashboard-nav-item:focus-visible, .dashboard-workspace .dashboard-mobile-menu-button:focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
-@media(max-width:1000px) { .dashboard-workspace .dashboard-main { padding:26px; } }
+@media(max-width:1000px) { .dashboard-workspace .dashboard-main { padding:26px 20px; } }
 @media(max-width:700px) {
   .dashboard-workspace .dashboard-mobile-header { background:#fff; border-bottom:1px solid #e9e2d4; color:#282822; padding:10px 16px; padding-top:max(10px,env(safe-area-inset-top)); min-height:64px; gap:12px; }
   .dashboard-workspace .dashboard-mobile-header .dashboard-logo { padding:0; overflow:visible; max-width:none; }
@@ -41,7 +41,7 @@
   .dashboard-workspace .dashboard-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
   .dashboard-workspace .dashboard-nav-item { min-height:44px; display:flex; align-items:center; }
   .dashboard-workspace .dashboard-sidebar-bottom { margin-top:8px; }
-  .dashboard-workspace .dashboard-main { padding:20px 16px max(28px,env(safe-area-inset-bottom)); }
+  .dashboard-workspace .dashboard-main { padding:20px max(10px,env(safe-area-inset-left)) max(28px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right)); }
   .dashboard-workspace .dashboard-header { margin-bottom:20px; }
   .dashboard-workspace .dashboard-header h1 { font-size:29px; line-height:1.2; }
   .dashboard-workspace .dashboard-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
