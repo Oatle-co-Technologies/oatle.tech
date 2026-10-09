@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { authClient } from "@/lib/auth/client";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
+import TaskNotifications from "@/components/dashboard/TaskNotifications";
 
 export default function SettingsPage() {
   const { staff, userEmail, updateStaffName } = useAuth();
@@ -91,6 +92,11 @@ export default function SettingsPage() {
             {saved && <p role="status">Your name has been saved.</p>}
           </div>
         </form>
+      </section>
+      <section className="dashboard-panel" style={{ marginTop: "24px" }}>
+        <h2>Task notifications</h2>
+        <p className="dashboard-subtitle">Receive alerts on this device for your assigned tasks.</p>
+        <TaskNotifications key={staff.id} />
       </section>
       <section className="dashboard-panel" style={{ marginTop: "24px" }}>
         <h2>Account</h2>

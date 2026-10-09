@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { disableTaskAlerts, setTaskBadge } from "@/lib/task-notifications";
 
 type Summary = { todo_count: number; staff_id: number; public_key: string; push_enabled: boolean };
-export default function TaskNotifications() {
+export default function TaskNotifications({ showControls = true }: { showControls?: boolean }) {
   const { staff } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [enabled, setEnabled] = useState(false);
@@ -79,7 +79,7 @@ export default function TaskNotifications() {
     } catch { setMessage("Could not update task alerts. Please try again."); }
     finally { setBusy(false); }
   }
-  if (!staff) return null;
+  if (!staff || !showControls) return null;
   return <section className="dashboard-task-notifications" aria-label="Your task notifications">
     <Link href="/dashboard/tasks" className="dashboard-task-notification-count">
       <Bell size={17} aria-hidden="true" />

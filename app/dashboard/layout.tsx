@@ -39,7 +39,7 @@ export default function DashboardLayout({
       staff &&
       allowedAccessLevels.has(staff.access_level))
   ) {
-    return <div className="dashboard-workspace">{!isUnauthorizedPage && <TaskNotifications key={staff?.id ?? "signed-out"} />}{children}</div>;
+    return <div className="dashboard-workspace">{!isUnauthorizedPage && pathname !== "/dashboard/settings" && <TaskNotifications key={staff?.id ?? "signed-out"} showControls={false} />}{children}</div>;
   }
 
   return null;
