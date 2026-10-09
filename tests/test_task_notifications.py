@@ -50,7 +50,7 @@ def test_subscription_cannot_move_to_another_staff_account():
     with patch.dict("os.environ", {"VAPID_PRIVATE_KEY": "test", "VAPID_PUBLIC_KEY": "test"}):
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as error:
-            subscribe(Subscription(endpoint="https://fcm.googleapis.com/test", keys=keys()), db, SimpleNamespace(id=2))
+            subscribe(Subscription(endpoint="https://fcm.googleapis.com/test", keys=keys()), BackgroundTasks(), db, SimpleNamespace(id=2))
         assert error.value.status_code == 409
         db.commit.assert_not_called()
     unsubscribe(Unsubscribe(endpoint="https://fcm.googleapis.com/test"), db, SimpleNamespace(id=2))
@@ -84,3 +84,14 @@ def test_push_contains_count_without_task_details_or_revenue():
         import json
         assert json.loads(send.call_args.kwargs["data"]) == {"todo_count": 3, "staff_id": 1}
         assert send.call_count == 1
+
+
+def test_enabling_alerts_initializes_existing_task_badge():
+    db = MagicMock()
+    db.execute.return_value.scalar.return_value = 1
+    background = BackgroundTasks()
+    with patch.dict("os.environ", {"VAPID_PRIVATE_KEY": "test", "VAPID_PUBLIC_KEY": "test"}):
+        subscribe(Subscription(endpoint="https://fcm.googleapis.com/test", keys=keys()), background, db, SimpleNamespace(id=1))
+    db.commit.assert_called_once()
+    assert background.tasks[0].func is notify_task_counts
+    assert background.tasks[0].args == ([1],)

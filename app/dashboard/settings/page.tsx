@@ -96,7 +96,7 @@ export default function SettingsPage() {
       <section className="dashboard-panel" style={{ marginTop: "24px" }}>
         <h2>Task notifications</h2>
         <p className="dashboard-subtitle">Receive alerts on this device for your assigned tasks.</p>
-        <TaskNotifications key={staff.id} />
+        <TaskNotifications key={staff.id} showCount={false} />
       </section>
       <section className="dashboard-panel" style={{ marginTop: "24px" }}>
         <h2>Account</h2>

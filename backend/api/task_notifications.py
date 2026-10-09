@@ -3,14 +3,14 @@ import hashlib
 import os
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from backend.dependencies import get_current_staff, get_db
 from backend.models.staff import Staff
-from backend.services.task_notifications import todo_count
+from backend.services.task_notifications import todo_count, notify_task_counts
 
 router = APIRouter(prefix="/task-notifications", tags=["Task notifications"])
 
@@ -50,7 +50,7 @@ def summary(db: Session = Depends(get_db), staff: Staff = Depends(get_current_st
 
 
 @router.post("/subscription")
-def subscribe(subscription: Subscription, db: Session = Depends(get_db), staff: Staff = Depends(get_current_staff)):
+def subscribe(subscription: Subscription, background_tasks: BackgroundTasks, db: Session = Depends(get_db), staff: Staff = Depends(get_current_staff)):
     if not os.getenv("VAPID_PRIVATE_KEY") or not os.getenv("VAPID_PUBLIC_KEY"):
         raise HTTPException(503, "Task alerts are not configured yet")
     digest = hashlib.sha256(subscription.endpoint.encode()).hexdigest()
@@ -64,6 +64,8 @@ def subscribe(subscription: Subscription, db: Session = Depends(get_db), staff: 
         db.rollback()
         raise HTTPException(409, "This device subscription belongs to another account. Disable alerts and enable them again.")
     db.commit()
+    # Initialize the closed-app badge from all existing To Do tasks after opt-in.
+    background_tasks.add_task(notify_task_counts, [staff.id])
     return {"subscribed": True}
 
 

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { disableTaskAlerts, setTaskBadge } from "@/lib/task-notifications";
 
 type Summary = { todo_count: number; staff_id: number; public_key: string; push_enabled: boolean };
-export default function TaskNotifications({ showControls = true }: { showControls?: boolean }) {
+export default function TaskNotifications({ showControls = true, showCount = true }: { showControls?: boolean; showCount?: boolean }) {
   const { staff } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [enabled, setEnabled] = useState(false);
@@ -59,6 +59,11 @@ export default function TaskNotifications({ showControls = true }: { showControl
     try {
       if (enabled) { await disableTaskAlerts(); setEnabled(false); if (summary) await setTaskBadge(summary.todo_count); return; }
       if (!summary?.push_enabled) { setMessage("Task alerts will be available after the next deployment."); return; }
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const installed = window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone;
+      if (ios && !installed) {
+        setMessage("Open Oatle from its Home Screen icon to enable iPhone notifications and icon badges."); return;
+      }
       if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
         setMessage("On iPhone, add Oatle to your Home Screen and open it there to enable alerts. This browser may not support push alerts."); return;
       }
@@ -79,16 +84,17 @@ export default function TaskNotifications({ showControls = true }: { showControl
     } catch { setMessage("Could not update task alerts. Please try again."); }
     finally { setBusy(false); }
   }
-  if (!staff || !showControls) return null;
+  if (!staff) return null;
   return <section className="dashboard-task-notifications" aria-label="Your task notifications">
-    <Link href="/dashboard/tasks" className="dashboard-task-notification-count">
+    {showCount && <Link href="/dashboard/tasks" className="dashboard-task-notification-count">
       <Bell size={17} aria-hidden="true" />
       <span>Your To Do tasks</span>
       <strong aria-live="polite" aria-atomic="true">{summary ? summary.todo_count : "…"}</strong>
-    </Link>
-    <button type="button" onClick={() => void toggleAlerts()} disabled={busy}>
+    </Link>}
+    {showControls && <button type="button" onClick={() => void toggleAlerts()} disabled={busy}>
       {busy ? "Updating…" : enabled ? "Disable task alerts" : "Enable task alerts"}
-    </button>
-    {message && <p role="status">{message}</p>}
+    </button>}
+    {showControls && <p className="dashboard-form-hint">On iPhone, open Oatle from the Home Screen and turn on Badges in Settings → Notifications → Oatle.</p>}
+    {showControls && message && <p role="status">{message}</p>}
   </section>;
 }
