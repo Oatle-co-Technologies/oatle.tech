@@ -147,6 +147,7 @@ export default function Tasks() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [taskView, setTaskView] = useState<"active" | "archive">("active");
 
   const [form, setForm] = useState<TaskForm>({
     ...emptyForm,
@@ -788,7 +789,7 @@ export default function Tasks() {
     }
   }
 
-  const visibleTasks = tasks.filter(
+  const assignedTasks = tasks.filter(
     (task) => {
       if (!assigneeFilter) {
         return true;
@@ -805,6 +806,13 @@ export default function Tasks() {
         Number(assigneeFilter)
       );
     }
+  );
+
+  // Completion determines archive membership; task records remain unchanged.
+  const archivedCount = assignedTasks.filter((task) => task.status === "completed").length;
+  const activeCount = assignedTasks.length - archivedCount;
+  const visibleTasks = assignedTasks.filter((task) =>
+    taskView === "archive" ? task.status === "completed" : task.status !== "completed"
   );
 
   return (
@@ -1140,7 +1148,7 @@ export default function Tasks() {
               TASK MANAGEMENT
             </p>
 
-            <h3>All Tasks</h3>
+            <h3>{taskView === "archive" ? "Archived tasks" : "Active tasks"}</h3>
           </div>
 
           <div className="dashboard-panel-actions">
@@ -1185,6 +1193,16 @@ export default function Tasks() {
           </div>
         </div>
 
+        <div className="dashboard-task-views" role="group" aria-label="Task view">
+          <button type="button" aria-pressed={taskView === "active"} onClick={() => setTaskView("active")}>
+            Active{!loading && ` (${activeCount})`}
+          </button>
+          <button type="button" aria-pressed={taskView === "archive"} onClick={() => setTaskView("archive")}>
+            Archive{!loading && ` (${archivedCount})`}
+          </button>
+        </div>
+        {taskView === "archive" && <p className="dashboard-form-hint">Completed tasks are kept here automatically. Edit a task and change its status to reopen it.</p>}
+
         {loading && (
           <p>Loading tasks...</p>
         )}
@@ -1192,7 +1210,7 @@ export default function Tasks() {
         {!loading &&
           visibleTasks.length ===
             0 && (
-            <p>No tasks yet.</p>
+            <p>{taskView === "archive" ? "No completed tasks in this archive." : "No active tasks. Completed tasks are in Archive."}</p>
           )}
 
         {!loading &&

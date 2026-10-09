@@ -65,3 +65,8 @@
 .dashboard-task-notifications button { background:#faf3dc; color:#705810; border:1px solid #e5d7a1; padding:8px 12px; border-radius:8px; min-height:44px; font:inherit; cursor:pointer; }
 .dashboard-task-notifications p { flex-basis:100%; margin:0; color:#66665e; text-align:right; line-height:1.5; }
 @media(max-width:700px) { .dashboard-task-notifications { padding:8px 16px; gap:6px 12px; justify-content:space-between; } .dashboard-task-notifications p { text-align:left; } }
+
+.dashboard-task-views { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.dashboard-task-views button { min-height:44px; padding:10px 16px; border:1px solid #e9e2d4; border-radius:10px; background:#fff; color:#66665e; font:inherit; font-size:13px; cursor:pointer; }
+.dashboard-task-views button[aria-pressed="true"] { background:#faf3dc; border-color:#d4af37; color:#705810; font-weight:600; }
+.dashboard-task-views button:focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
