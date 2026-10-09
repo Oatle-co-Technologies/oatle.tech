@@ -154,6 +154,8 @@ export default function Tasks() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [taskOptionsLoaded, setTaskOptionsLoaded] = useState(false);
+  const [productServicesLoading, setProductServicesLoading] = useState(false);
 
   async function loadTasks() {
     if (!userEmail) {
@@ -279,6 +281,7 @@ export default function Tasks() {
           (item) => item.active
         )
       );
+      setTaskOptionsLoaded(true);
       setTaskOptionsError("");
     } catch (err) {
       setTaskOptionsError(
@@ -289,93 +292,105 @@ export default function Tasks() {
     }
   }
 
-  async function loadProductServices(
-    productId: string,
-    assigneeId: string = form.assigned_to
-  ) {
-    if (!userEmail) {
-      return;
-    }
-
-    if (!productId) {
-      setAvailableProductServices([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${API_URL}/product-product-services/product/${productId}`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to load product services (${response.status})`
-        );
+  useEffect(() => {
+    let cancelled = false;
+    const productId = form.product_id;
+    const assigneeId = form.assigned_to;
+    async function loadProductServices() {
+      if (!taskOptionsLoaded) return;
+      if (!userEmail) {
+        return;
       }
 
-      const associations: ProductServiceAssociation[] =
-        await response.json();
+      if (!productId) {
+        if (!cancelled) { setAvailableProductServices([]); setProductServicesLoading(false); }
+        return;
+      }
 
-      const associatedProductServiceIds = new Set(
-        associations.map(
-          (association) =>
-            association.product_service_id
-        )
-      );
-
-      let filteredServices = productServices.filter(
-        (productService) =>
-          associatedProductServiceIds.has(
-            productService.id
-          ) && productService.active
-      );
-
-      if (assigneeId) {
-        const selectedStaff = staff.find(
-          (member) =>
-            member.id === Number(assigneeId)
+      setProductServicesLoading(true);
+      try {
+        const response = await fetch(
+          `${API_URL}/product-product-services/product/${productId}`
         );
 
-        const isCommunicationsSpecialist =
-          selectedStaff?.job_title
-            ?.trim()
-            .toLowerCase() ===
-          "communications specialist";
-
-        if (isCommunicationsSpecialist) {
-          filteredServices =
-            filteredServices.filter(
-              (service) =>
-                service.id >=
-                  COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID &&
-                service.id <=
-                  COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID
-            );
-        } else {
-          filteredServices =
-            filteredServices.filter(
-              (service) =>
-                service.id >=
-                  DEVELOPER_PRODUCT_SERVICE_MIN_ID &&
-                service.id <=
-                  DEVELOPER_PRODUCT_SERVICE_MAX_ID
-            );
+        if (!response.ok) {
+          throw new Error(
+            `Failed to load product services (${response.status})`
+          );
         }
+
+        const associations: ProductServiceAssociation[] =
+          await response.json();
+
+        const associatedProductServiceIds = new Set(
+          associations.map(
+            (association) =>
+              association.product_service_id
+          )
+        );
+
+        let filteredServices = productServices.filter(
+          (productService) =>
+            associatedProductServiceIds.has(
+              productService.id
+            ) && productService.active
+        );
+
+        if (assigneeId) {
+          const selectedStaff = staff.find(
+            (member) =>
+              member.id === Number(assigneeId)
+          );
+
+          const isCommunicationsSpecialist =
+            selectedStaff?.job_title
+              ?.trim()
+              .toLowerCase() ===
+            "communications specialist";
+
+          if (isCommunicationsSpecialist) {
+            filteredServices =
+              filteredServices.filter(
+                (service) =>
+                  service.id >=
+                    COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID &&
+                  service.id <=
+                    COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID
+              );
+          } else {
+            filteredServices =
+              filteredServices.filter(
+                (service) =>
+                  service.id >=
+                    DEVELOPER_PRODUCT_SERVICE_MIN_ID &&
+                  service.id <=
+                    DEVELOPER_PRODUCT_SERVICE_MAX_ID
+              );
+          }
+        }
+
+        if (cancelled) return;
+        setAvailableProductServices(filteredServices);
+        setForm((current) => {
+          if (current.product_id !== productId || current.assigned_to !== assigneeId) return current;
+          if (!current.product_service_id || filteredServices.some((item) => String(item.id) === current.product_service_id)) return current;
+          return { ...current, product_service_id: "" };
+        });
+      } catch (err) {
+        if (cancelled) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load product services"
+        );
+      } finally {
+        if (!cancelled) setProductServicesLoading(false);
       }
-
-      setAvailableProductServices(
-        filteredServices
-      );
-    } catch (err) {
-      setAvailableProductServices([]);
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load product services"
-      );
     }
-  }
+    void loadProductServices();
+    return () => { cancelled = true; };
+  }, [userEmail, form.product_id, form.assigned_to, productServices, staff, taskOptionsLoaded]);
 
   useEffect(() => {
     void Promise.resolve().then(() => {
@@ -451,16 +466,7 @@ export default function Tasks() {
 
     void loadTaskOptions();
 
-    if (selectedProductId) {
-      void loadProductServices(
-        String(selectedProductId),
-        task.assigned_to
-          ? String(task.assigned_to)
-          : ""
-      );
-    } else {
-      setAvailableProductServices([]);
-    }
+
   }
 
   function closeForm() {
@@ -478,51 +484,16 @@ export default function Tasks() {
   ) {
     const { name, value } = event.target;
 
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === "task_type"
-        ? {
-            project_id: "",
-            product_id: "",
-            product_service_id: "",
-            service_id: "",
-          }
-        : name === "product_id"
-        ? {
-            project_id: "",
-            product_service_id: "",
-          }
-        : name === "assigned_to"
-        ? {
-            product_service_id: "",
-          }
-        : {}),
-    }));
+    // Keep independent choices, including when changing the order of selection.
+    setForm((current) => ({ ...current, [name]: value }));
 
-    if (name === "product_id") {
-      void loadProductServices(
-        value,
-        form.assigned_to
-      );
-    }
-
-    if (name === "assigned_to") {
-      if (form.product_id) {
-        void loadProductServices(
-          form.product_id,
-          value
-        );
-      } else {
-        setAvailableProductServices([]);
-      }
-    }
   }
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
+    if (form.task_type === "product" && productServicesLoading) return;
 
     try {
       setSaving(true);
@@ -781,12 +752,7 @@ export default function Tasks() {
     void loadTasks();
     void loadTaskOptions();
 
-    if (form.product_id) {
-      void loadProductServices(
-        form.product_id,
-        form.assigned_to
-      );
-    }
+
   }
 
   const assignedTasks = tasks.filter(
@@ -860,8 +826,8 @@ export default function Tasks() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="dashboard-form-grid">
-              <select
+            <div className="dashboard-form-grid dashboard-task-form-grid">
+              <label className="dashboard-task-form-row"><span>Task type</span><select
                 name="task_type"
                 value={form.task_type}
                 onChange={handleChange}
@@ -874,12 +840,12 @@ export default function Tasks() {
                 <option value="service">
                   Service task
                 </option>
-              </select>
+              </select></label>
 
               {form.task_type ===
               "product" ? (
                 <>
-                  <select
+                  <label className="dashboard-task-form-row"><span>Product</span><select
                     name="product_id"
                     value={form.product_id}
                     onChange={handleChange}
@@ -899,9 +865,9 @@ export default function Tasks() {
                         </option>
                       )
                     )}
-                  </select>
+                  </select></label>
 
-                  <select
+                  <label className="dashboard-task-form-row"><span>Project</span><select
                     name="project_id"
                     value={form.project_id}
                     onChange={handleChange}
@@ -921,9 +887,9 @@ export default function Tasks() {
                         </option>
                       )
                     )}
-                  </select>
+                  </select></label>
 
-                  <select
+                  <label className="dashboard-task-form-row"><span>Product task</span><select
                     name="product_service_id"
                     value={
                       form.product_service_id
@@ -931,11 +897,11 @@ export default function Tasks() {
                     onChange={handleChange}
                     required
                     disabled={
-                      !form.product_id
+                      !form.product_id || productServicesLoading
                     }
                   >
                     <option value="">
-                      {form.product_id
+                      {productServicesLoading ? "Loading tasks…" : form.product_id
                         ? "Select Product Service"
                         : "Select a Product first"}
                     </option>
@@ -956,10 +922,10 @@ export default function Tasks() {
                         </option>
                       )
                     )}
-                  </select>
+                  </select></label>
                 </>
               ) : (
-                <select
+                <label className="dashboard-task-form-row"><span>Service</span><select
                   name="service_id"
                   value={form.service_id}
                   onChange={handleChange}
@@ -979,10 +945,10 @@ export default function Tasks() {
                       </option>
                     )
                   )}
-                </select>
+                </select></label>
               )}
 
-              <label className="dashboard-form-field">
+              <label className="dashboard-form-field dashboard-task-form-row">
                 <span>Assignee</span>
 
                 <select
@@ -1017,16 +983,16 @@ export default function Tasks() {
 
               {form.task_type ===
                 "service" && (
-                <input
+                <label className="dashboard-task-form-row"><span>Task name</span><input
                   name="name"
                   placeholder="Task Name"
                   value={form.name}
                   onChange={handleChange}
                   required
-                />
+                /></label>
               )}
 
-              <select
+              <label className="dashboard-task-form-row"><span>Category</span><select
                 name="category"
                 value={form.category}
                 onChange={handleChange}
@@ -1045,9 +1011,9 @@ export default function Tasks() {
                     </option>
                   )
                 )}
-              </select>
+              </select></label>
 
-              <select
+              <label className="dashboard-task-form-row"><span>Status</span><select
                 name="status"
                 value={form.status}
                 onChange={handleChange}
@@ -1063,9 +1029,9 @@ export default function Tasks() {
                     </option>
                   )
                 )}
-              </select>
+              </select></label>
 
-              <select
+              <label className="dashboard-task-form-row"><span>Priority</span><select
                 name="priority"
                 value={form.priority}
                 onChange={handleChange}
@@ -1081,33 +1047,33 @@ export default function Tasks() {
                     </option>
                   )
                 )}
-              </select>
+              </select></label>
 
-              <input
+              <label className="dashboard-task-form-row"><span>Due date</span><input
                 name="due_date"
                 type="date"
                 value={form.due_date}
                 onChange={handleChange}
-              />
+              /></label>
             </div>
 
-            <textarea
+            <label className="dashboard-task-form-row"><span>Description</span><textarea
               name="description"
               placeholder="Task Description"
               value={form.description}
               onChange={handleChange}
               rows={4}
               className="dashboard-form-textarea"
-            />
+            /></label>
 
-            <textarea
+            <label className="dashboard-task-form-row"><span>Notes</span><textarea
               name="notes"
               placeholder="Notes"
               value={form.notes}
               onChange={handleChange}
               rows={4}
               className="dashboard-form-textarea"
-            />
+            /></label>
 
             <div className="dashboard-form-actions">
               <button

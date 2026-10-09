@@ -20,7 +20,9 @@ self.addEventListener("push", (event) => {
     await self.registration.showNotification("Oatle task update", {
       body: count === null ? "Open your workspace to check your tasks." : count > 0
         ? `You have ${count} task${count === 1 ? "" : "s"} still To Do.` : "You have no tasks still To Do.",
-      icon: "/icons/icon-192.png", tag: "oatle-todo-tasks", data: { url: "/dashboard/tasks" },
+      // Each push is a fresh alert; reusing a tag can silently replace the previous alert.
+      icon: "/icons/icon-192.png", silent: false, vibrate: [200, 100, 200],
+      data: { url: "/dashboard/tasks" },
     });
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of windows) client.postMessage({ type: "oatle:tasks-changed" });

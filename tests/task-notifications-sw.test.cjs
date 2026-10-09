@@ -26,3 +26,14 @@ test('different signed-in account never receives another staff count', async () 
 test('unverified session uses generic notification without task count', async () => {
   const w=worker(null);await w.push();assert.deepEqual(w.calls.badges,[0]);assert.equal(w.calls.notifications[0].body,'Open your workspace to check your tasks.');
 });
+
+test('successive pushes create fresh, non-silent alerts even with no open windows', async () => {
+  const w = worker({staff_id:1,todo_count:3});
+  await w.push(); await w.push();
+  assert.equal(w.calls.notifications.length, 2);
+  for (const options of w.calls.notifications) {
+    assert.equal(options.silent, false);
+    assert.equal(options.tag, undefined);
+    assert.deepEqual(Array.from(options.vibrate), [200,100,200]);
+  }
+});

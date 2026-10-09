@@ -70,3 +70,16 @@
 .dashboard-task-views button { min-height:44px; padding:10px 16px; border:1px solid #e9e2d4; border-radius:10px; background:#fff; color:#66665e; font:inherit; font-size:13px; cursor:pointer; }
 .dashboard-task-views button[aria-pressed="true"] { background:#faf3dc; border-color:#d4af37; color:#705810; font-weight:600; }
 .dashboard-task-views button:focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
+
+/* Task labels remain visible after choosing a value. */
+.dashboard-workspace .dashboard-task-form-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.dashboard-workspace .dashboard-task-form-row { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: center; gap: 12px; margin: 0 0 14px; }
+.dashboard-workspace .dashboard-task-form-grid .dashboard-task-form-row { margin-bottom: 0; }
+.dashboard-workspace .dashboard-task-form-row > span { font-size: 14px; font-weight: 600; color: #53462d; }
+.dashboard-workspace .dashboard-task-form-row > :is(select, input, textarea) { width: 100%; min-width: 0; border: 1px solid #e5dfd3; border-radius: 9px; padding: 10px 12px; background: #fff; color: #25231e; }
+.dashboard-workspace .dashboard-task-form-row > small { grid-column: 2; }
+.dashboard-workspace .dashboard-task-form-row > textarea { margin: 0; }
+@media (max-width: 600px) {
+  .dashboard-workspace .dashboard-task-form-row { grid-template-columns: 90px minmax(0, 1fr); gap: 10px; }
+  .dashboard-workspace .dashboard-task-form-row > span { font-size: 13px; }
+}

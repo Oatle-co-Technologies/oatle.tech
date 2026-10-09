@@ -94,7 +94,7 @@ export default function TaskNotifications({ showControls = true, showCount = tru
     {showControls && <button type="button" onClick={() => void toggleAlerts()} disabled={busy}>
       {busy ? "Updating…" : enabled ? "Disable task alerts" : "Enable task alerts"}
     </button>}
-    {showControls && <p className="dashboard-form-hint">On iPhone, open Oatle from the Home Screen and turn on Badges in Settings → Notifications → Oatle.</p>}
+    {showControls && <p className="dashboard-form-hint">Enable alerts here on each phone, even if notifications are already allowed in phone settings. On iPhone, open Oatle from its Home Screen icon. On Android, use a browser that supports push notifications. Allow Sounds and Badges in your phone settings.</p>}
     {showControls && message && <p role="status">{message}</p>}
   </section>;
 }
