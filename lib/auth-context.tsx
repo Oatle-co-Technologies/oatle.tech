@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 
+import { createClient } from "@/lib/supabase/client";
 import { authClient } from "@/lib/auth/client";
 
 type StaffInfo = {
@@ -45,9 +46,17 @@ export function AuthProvider({
   const [authorizationError, setAuthorizationError] = useState("");
 
   useEffect(() => {
+    let stopped = false;
+    let generation = 0;
     async function loadSession() {
+      const current = ++generation;
+      setLoading(true);
+      setAuthorizationError("");
       try {
-        const result = await authClient.getSession();
+        const result = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase"
+          ? await createClient().auth.getUser()
+          : await authClient.getSession();
+        if (stopped || current !== generation) return;
         const sessionData = result.data as {
           user?: { email?: string | null };
           session?: { user?: { email?: string | null } };
@@ -71,6 +80,7 @@ export function AuthProvider({
           "/api/backend/auth/me"
         );
 
+        if (stopped || current !== generation) return;
         if (response.ok) {
           const data: StaffInfo = await response.json();
           setStaff(data);
@@ -88,13 +98,21 @@ export function AuthProvider({
           setStaff(null);
         }
       } catch {
-        setStaff(null);
+        if (!stopped && current === generation) setStaff(null);
       } finally {
-        setLoading(false);
+        if (!stopped && current === generation) setLoading(false);
       }
     }
 
     void loadSession();
+    if (process.env.NEXT_PUBLIC_AUTH_PROVIDER !== "supabase") return () => { stopped = true; };
+    // Do not await Supabase calls inside its auth callback; schedule outside its lock.
+    const { data: { subscription } } = createClient().auth.onAuthStateChange(() => {
+      window.setTimeout(() => { if (!stopped) void loadSession(); }, 0);
+    });
+    const resume = () => { if (document.visibilityState === "visible") void loadSession(); };
+    document.addEventListener("visibilitychange", resume);
+    return () => { stopped = true; subscription.unsubscribe(); document.removeEventListener("visibilitychange", resume); };
   }, []);
 
   return (

@@ -5,6 +5,8 @@ import jwt
 from fastapi import Depends, HTTPException, Request
 from jwt import PyJWKClient
 from sqlalchemy.orm import Session
+from sqlalchemy import text
+from functools import lru_cache
 
 from backend.database.connection import SessionLocal
 from backend.models.staff import Staff
@@ -22,6 +24,36 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@lru_cache(maxsize=4)
+def supabase_jwks_client(url: str):
+    return PyJWKClient(url, cache_keys=True)
+
+
+def get_supabase_staff(token: str, request: Request, db: Session) -> Staff:
+    base_url = (os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")).rstrip("/")
+    if not base_url.startswith("https://"):
+        raise HTTPException(status_code=500, detail="Authentication configuration is missing")
+    try:
+        key = supabase_jwks_client(base_url + "/auth/v1/.well-known/jwks.json").get_signing_key_from_jwt(token)
+        if key.algorithm_name not in {"ES256", "RS256"}:
+            raise jwt.InvalidTokenError("Unsupported signing algorithm")
+        payload = jwt.decode(token, key.key, algorithms=[key.algorithm_name],
+                             audience="authenticated", issuer=base_url + "/auth/v1",
+                             options={"require": ["exp", "sub", "iss", "aud"]})
+        subject = UUID(str(payload["sub"]))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication session")
+    if payload.get("is_anonymous") is True:
+        raise HTTPException(status_code=403, detail="Staff account required")
+    staff_id = db.execute(text("SELECT staff_id FROM public.staff_supabase_identities WHERE auth_user_id = :subject"),
+                          {"subject": subject}).scalar()
+    staff = db.query(Staff).filter(Staff.id == staff_id).first() if staff_id is not None else None
+    if not staff or not staff.active or staff.access_level not in ALLOWED_ACCESS_LEVELS:
+        raise HTTPException(status_code=403, detail="No active staff record matched the verified account")
+    request.state.financial_owner = staff.email.lower().strip() == "info@oatle-technologies.co.za"
+    return staff
 
 
 def get_current_staff(
@@ -49,6 +81,9 @@ def get_current_staff(
             status_code=401,
             detail="Authentication token missing",
         )
+
+    if os.getenv("AUTH_PROVIDER", "neon").lower() == "supabase":
+        return get_supabase_staff(token, request, db)
 
     jwks_url = os.getenv("NEON_AUTH_JWKS_URL", "").strip()
 
@@ -90,10 +125,7 @@ def get_current_staff(
         )
 
     auth_user_id = payload.get("sub")
-    token_email = (
-        request.headers.get("x-oatle-auth-email")
-        or payload.get("email", "")
-    )
+    token_email = payload.get("email", "")
     token_email = str(token_email).lower().strip()
 
     auth_user_uuid = None

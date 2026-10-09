@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/server";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,21 +18,19 @@ async function proxyToBackend(
     backendPath === "/appointments/discovery";
 
   let token: string | undefined;
-  let sessionEmail: string | undefined;
-
   if (!isPublicDiscoveryBooking) {
-    const tokenResult = await auth.token();
-    token = tokenResult.data?.token;
-    const sessionResult = await auth.getSession();
-    const sessionData = sessionResult.data as {
-      user?: { email?: string | null };
-      session?: { user?: { email?: string | null } };
-    } | null;
-    sessionEmail =
-      (
-        sessionData?.user?.email ||
-        sessionData?.session?.user?.email
-      )?.toLowerCase().trim();
+    if (process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase") {
+      const client = await createClient();
+      const { data: { user }, error } = await client.auth.getUser();
+      if (!error && user) {
+        const { data: { session } } = await client.auth.getSession();
+        if (session?.user.id === user.id) token = session.access_token;
+      }
+    } else {
+      const { auth } = await import("@/lib/auth/server");
+      const tokenResult = await auth.token();
+      token = tokenResult.data?.token;
+    }
   }
 
   if (!isPublicDiscoveryBooking && !token) {
@@ -56,9 +54,6 @@ async function proxyToBackend(
 
   headers.set("x-oatle-backend-path", backendPath);
 
-  if (sessionEmail) {
-    headers.set("x-oatle-auth-email", sessionEmail);
-  }
 
   if (contentType) {
     headers.set("content-type", contentType);
@@ -68,7 +63,9 @@ async function proxyToBackend(
     headers.set("accept", accept);
   }
 
-  const backendUrl = new URL("/api/index", request.url);
+  const backendUrl = process.env.NODE_ENV === "development" && process.env.BACKEND_INTERNAL_URL
+    ? new URL(backendPath, process.env.BACKEND_INTERNAL_URL)
+    : new URL("/api/index", request.url);
   backendUrl.search = new URL(request.url).search;
 
   const response = await fetch(backendUrl, {
@@ -87,6 +84,7 @@ async function proxyToBackend(
   // the original encoding or length metadata with the decoded response body.
   responseHeaders.delete("content-encoding");
   responseHeaders.delete("content-length");
+  responseHeaders.set("cache-control", "private, no-store");
   responseHeaders.delete("transfer-encoding");
 
   return new Response(response.body, {

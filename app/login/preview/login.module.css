@@ -1,0 +1,26 @@
+.page { min-height: 100svh; padding: 36px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(ellipse at 15% 20%, #e8b4c72e, transparent 45%), radial-gradient(ellipse at 90% 85%, #d4af3724, transparent 45%), var(--color-background); }
+.back { position: absolute; top: 30px; left: 5%; font-size: 14px; color: var(--color-text-light); }
+.back:hover { color: var(--color-text); }
+.card { margin-top: 36px; width: 100%; max-width: 470px; padding: 34px 42px 32px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: #fff; box-shadow: 0 18px 60px #362e1010; text-align: center; }
+.logo { display: flex; justify-content: center; margin-bottom: 22px; }
+.eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 2.2px; color: #8b6d13; }
+.card h1 { font-family: var(--font-playfair), Georgia, serif; font-size: 38px; line-height: 1.2; margin: 12px 0; letter-spacing: -1px; }
+.intro { font-size: 14px; max-width: 330px; margin: 0 auto 28px; overflow-wrap: anywhere; }
+.intro strong { color: var(--color-text); font-weight: 500; }
+.form { text-align: left; }
+.form label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 9px; }
+.form input { width: 100%; border: 1px solid #ddd; border-radius: 10px; padding: 14px 15px; background: #fff; color: var(--color-text); font: inherit; font-size: 14px; min-height: 50px; }
+.form input::placeholder { color: #969696; }
+.form input:focus { outline: 2px solid var(--color-gold); outline-offset: 3px; }
+.primary { display: flex; align-items: center; justify-content: space-between; width: 100%; border: 0; border-radius: 10px; margin-top: 18px; padding: 15px 20px; background: var(--color-gold); color: #222; font-size: 14px; font-weight: 600; transition: background .15s; }
+.primary:hover { background: var(--color-gold-hover); }
+.primary:focus-visible, .secondary:focus-visible, .back:focus-visible { outline: 2px solid #8b6d13; outline-offset: 4px; }
+.secondary { display: block; margin: 18px auto 0; border: 0; background: transparent; color: #8b6d13; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+.code { letter-spacing: 3px; text-align: center; }
+.hint { font-size: 12px; margin-top: 10px; }
+.note { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--color-border); font-size: 12px; }
+.message { font-size: 13px; margin-top: 16px; }
+.preview { font-size: 11px; margin-top: 20px; text-align: center; }
+.footer { text-align: center; margin-top: 30px; font-size: 11px; color: var(--color-text-light); }
+.footer span { display: block; margin-top: 6px; color: #8b6d13; font-size: 10px; letter-spacing: 1px; }
+@media (max-width: 520px) { .page { padding: 65px 18px 25px; } .back { top: 24px; } .card { margin-top: 0; padding: 28px 24px; } .card h1 { font-family: var(--font-playfair), Georgia, serif; font-size: 34px; } }

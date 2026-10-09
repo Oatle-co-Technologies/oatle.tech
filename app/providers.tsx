@@ -11,6 +11,10 @@ import { AuthProvider } from "@/lib/auth-context";
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter();
 
+  if (process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase") {
+    return <AuthProvider>{children}</AuthProvider>;
+  }
+
   return (
     <NeonAuthUIProvider
       authClient={authClient}

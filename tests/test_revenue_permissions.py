@@ -48,8 +48,9 @@ class FinancialPermissionsTests(unittest.TestCase):
             self.assertFalse(is_financial_owner(request))
 
     def test_spoofed_owner_header_denied(self):
-        request, staff = self.authenticate(linked=False, signed_email="employee@example.com")
-        self.assertFalse(is_financial_owner(request))
+        with self.assertRaises(HTTPException) as error:
+            self.authenticate(linked=False, signed_email="employee@example.com")
+        self.assertEqual(error.exception.status_code, 403)
 
     def test_summary_preserves_nonfinancial_fields_and_skips_revenue_query(self):
         class Query:

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { AuthView } from "@neondatabase/auth-ui";
 import { authViewPaths } from "@neondatabase/auth-ui/server";
 
@@ -12,6 +13,7 @@ export default async function AuthPage({
 }: {
   params: Promise<{ path: string }>;
 }) {
+  if (process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase") redirect("/login");
   const { path } = await params;
 
   return (

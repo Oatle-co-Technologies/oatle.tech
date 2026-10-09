@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { createClient } from "@/lib/supabase/client";
 import { authClient } from "@/lib/auth/client";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
@@ -44,7 +45,9 @@ export default function SettingsPage() {
     setSigningOut(true);
     setError("");
     try {
-      const result = await authClient.signOut();
+      const result = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase"
+        ? await createClient().auth.signOut({ scope: "local" })
+        : await authClient.signOut();
       if (result.error) throw new Error("Unable to sign out. Please try again.");
       window.location.assign(new URL("/login", window.location.origin).href);
     } catch (err) {

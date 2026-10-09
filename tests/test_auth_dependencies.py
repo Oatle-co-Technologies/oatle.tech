@@ -73,7 +73,7 @@ class AuthDependenciesTests(unittest.TestCase):
         jwks_client.return_value.get_signing_key_from_jwt.return_value = (
             signing_key
         )
-        decode.return_value = {"sub": str(self.user_id)}
+        decode.return_value = {"sub": str(self.user_id), "email": "employee@oatle-technologies.co.za"}
         staff = SimpleNamespace(
             auth_user_id=None,
             email="employee@oatle-technologies.co.za",

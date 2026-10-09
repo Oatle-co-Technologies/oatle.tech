@@ -6,7 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Oatle",
     description: "Oatle Technologies work dashboard",
     start_url: "/dashboard",
-    scope: "/dashboard",
+    // Keep the login screen inside the installed app during authentication.
+    scope: "/",
     display: "standalone",
     orientation: "any",
 

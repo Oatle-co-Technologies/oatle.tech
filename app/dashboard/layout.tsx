@@ -14,7 +14,7 @@ export default function DashboardLayout({
 }>) {
   const pathname = usePathname();
   const router = useRouter();
-  const { staff, loading } = useAuth();
+  const { staff, loading, userEmail } = useAuth();
 
   const isUnauthorizedPage =
     pathname === "/dashboard/unauthorized";
@@ -28,8 +28,8 @@ export default function DashboardLayout({
       return;
     }
 
-    router.replace("/dashboard/unauthorized");
-  }, [isUnauthorizedPage, loading, router, staff]);
+    router.replace(userEmail ? "/dashboard/unauthorized" : "/login");
+  }, [isUnauthorizedPage, loading, router, staff, userEmail]);
 
   if (
     isUnauthorizedPage ||
