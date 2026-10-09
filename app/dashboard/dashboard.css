@@ -83,3 +83,17 @@
   .dashboard-workspace .dashboard-task-form-row { grid-template-columns: 90px minmax(0, 1fr); gap: 10px; }
   .dashboard-workspace .dashboard-task-form-row > span { font-size: 13px; }
 }
+
+/* Center desktop workspace pages; Overview and mobile keep their existing layouts. */
+@media (min-width: 1001px) {
+  .dashboard-workspace .dashboard-content-centered {
+    width: calc(100% - 60px);
+    max-width: 1200px;
+    min-width: 0;
+    margin-inline: auto;
+    padding-block: 28px;
+  }
+  .dashboard-workspace .dashboard-content-centered > .dashboard-main {
+    padding: 0;
+  }
+}

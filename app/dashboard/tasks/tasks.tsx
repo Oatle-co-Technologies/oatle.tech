@@ -142,6 +142,8 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [taskOptionsError, setTaskOptionsError] = useState("");
+  const [projectsError, setProjectsError] = useState("");
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const [success, setSuccess] = useState("");
 
   const [showForm, setShowForm] = useState(false);
@@ -194,6 +196,8 @@ export default function Tasks() {
       return;
     }
 
+    setProjectsLoading(true);
+    setProjectsError("");
     try {
       const response = await fetch(`${API_URL}/projects`);
 
@@ -207,11 +211,13 @@ export default function Tasks() {
 
       setProjects(data);
     } catch (err) {
-      setError(
+      setProjectsError(
         err instanceof Error
           ? err.message
           : "Failed to load projects"
       );
+    } finally {
+      setProjectsLoading(false);
     }
   }
 
@@ -417,6 +423,7 @@ export default function Tasks() {
     setSuccess("");
 
     void loadTaskOptions();
+    void loadProjects();
   }
 
   function openEditForm(task: Task) {
@@ -749,6 +756,7 @@ export default function Tasks() {
   }
 
   function refreshTasks() {
+    void loadProjects();
     void loadTasks();
     void loadTaskOptions();
 
@@ -825,6 +833,7 @@ export default function Tasks() {
             </p>
           )}
 
+          {projectsError && <p className="dashboard-form-error" role="alert">Projects could not load. <button type="button" onClick={() => void loadProjects()}>Retry projects</button></p>}
           <form onSubmit={handleSubmit}>
             <div className="dashboard-form-grid dashboard-task-form-grid">
               <label className="dashboard-task-form-row"><span>Task type</span><select
@@ -869,12 +878,13 @@ export default function Tasks() {
 
                   <label className="dashboard-task-form-row"><span>Project</span><select
                     name="project_id"
+                    disabled={projectsLoading || Boolean(projectsError)}
                     value={form.project_id}
                     onChange={handleChange}
                     required
                   >
                     <option value="">
-                      Select Project
+                      {projectsLoading ? "Loading projects…" : projectsError ? "Projects unavailable" : projects.length ? "Select Project" : "No projects available"}
                     </option>
 
                     {projects.map(
