@@ -1,9 +1,11 @@
 import unittest
 from datetime import datetime
 from unittest.mock import Mock, patch
+from googleapiclient.errors import HttpError
+from httplib2 import Response
 
 from backend.api.appointments import get_appointments
-from backend.integrations.google_calendar import appointment_datetime, calendar_event_location, update_calendar_event
+from backend.integrations.google_calendar import appointment_datetime, calendar_event_location, update_calendar_event, delete_calendar_event
 from backend.schemas.appointment import AppointmentResponse
 
 
@@ -53,3 +55,21 @@ class CalendarSyncTests(unittest.TestCase):
         self.assertEqual(body['start']['dateTime'], '2026-10-12T10:00:00+02:00')
         self.assertNotIn('conferenceData', body); self.assertNotIn('attendees', body)
         service.events.return_value.update.assert_not_called()
+
+    def test_delete_already_removed_google_event_succeeds_but_other_errors_propagate(self):
+        for status in (404, 410, 403, 500):
+            with self.subTest(status=status):
+                service = Mock()
+                service.events.return_value.delete.return_value.execute.side_effect = HttpError(Response({"status": str(status)}), b'{"error":{"message":"Test"}}')
+                with patch('backend.integrations.google_calendar.build_calendar_service', return_value=service), patch('backend.integrations.google_calendar.get_calendar_id', return_value='test-calendar'):
+                    if status in (404, 410):
+                        delete_calendar_event('event-test')
+                    else:
+                        with self.assertRaises(HttpError): delete_calendar_event('event-test')
+
+    def test_cancelled_calendar_event_is_not_imported_again(self):
+        event = self.event(); event['status'] = 'cancelled'
+        db = Mock()
+        with patch('backend.api.appointments.list_calendar_events', return_value=[event]):
+            get_appointments(db)
+        db.add.assert_not_called()

@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar.freebusy",
@@ -300,11 +301,16 @@ def delete_calendar_event(event_id: str):
     service = build_calendar_service()
     calendar_id = get_calendar_id()
 
-    service.events().delete(
-        calendarId=calendar_id,
-        eventId=event_id,
-        sendUpdates="all",
-    ).execute()
+    try:
+        service.events().delete(
+            calendarId=calendar_id,
+            eventId=event_id,
+            sendUpdates="all",
+        ).execute()
+    except HttpError as error:
+        # A previously removed Calendar event must not strand its dashboard record.
+        if error.resp.status not in (404, 410):
+            raise
 
 
 def list_calendar_events():

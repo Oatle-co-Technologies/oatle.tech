@@ -260,9 +260,8 @@ export default function AppointmentsPage() {
       );
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to delete appointment (${response.status})`
-        );
+        const details = await response.json().catch(() => null);
+        throw new Error(typeof details?.detail === "string" ? details.detail : `Failed to delete appointment (${response.status})`);
       }
 
       await loadAppointments();

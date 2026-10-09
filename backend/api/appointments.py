@@ -183,6 +183,8 @@ def get_appointments(
         calendar_events = list_calendar_events()
 
         for event in calendar_events:
+            if event.get("status") == "cancelled":
+                continue
             event_id = event.get("id")
             start = event.get("start", {}).get("dateTime")
             end = event.get("end", {}).get("dateTime")
