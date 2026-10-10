@@ -1,0 +1,15 @@
+.env
+.env.*
+**/.env
+**/.env.*
+.vercel
+.git
+.kilo
+venv
+**/venv
+node_modules
+.next
+**/__pycache__
+*.tsbuildinfo
+**/google-service-account.json
+**/*service-account*.json
