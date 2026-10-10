@@ -34,6 +34,8 @@ class TaskCreate(BaseModel):
 class TaskResponse(TaskCreate):
     id: int
 
+    campaign_day_id: int | None = None
+
     assigned_staff: StaffResponse | None = None
 
     created_at: datetime | None = None

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import CampaignSchedule from "./campaign-schedule";
+import { displayDate, johannesburgDate } from "@/lib/campaign-dates";
 import { useAuth } from "@/lib/auth-context";
 import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
@@ -60,6 +62,7 @@ type Task = {
   notes: string | null;
   created_at: string;
   completed_at: string | null;
+  campaign_day_id?: number | null;
 };
 
 type TaskForm = {
@@ -68,7 +71,8 @@ type TaskForm = {
   product_service_id: string;
   service_id: string;
   assigned_to: string;
-  task_type: "product" | "service";
+  task_type: "product" | "service" | "daily";
+  campaign_day_id: string;
   name: string;
   description: string;
   category: string;
@@ -85,6 +89,7 @@ const emptyForm: TaskForm = {
   service_id: "",
   assigned_to: "",
   task_type: "product",
+  campaign_day_id: "",
   name: "",
   description: "",
   category: "",
@@ -126,7 +131,24 @@ const DEVELOPER_PRODUCT_SERVICE_MAX_ID = 18;
 const COMMUNICATIONS_PRODUCT_SERVICE_MIN_ID = 19;
 const COMMUNICATIONS_PRODUCT_SERVICE_MAX_ID = 28;
 
-export default function Tasks() {
+type CampaignDay = {
+  id: number;
+  focus_date: string;
+  industry: string;
+  campaign_name: string;
+  description: string | null;
+};
+
+export default function Tasks({ initialView = "overview" }: {
+  initialView?: "overview" | "management" | "schedule";
+} = {}) {
+  const router = useRouter();
+  const [section, setSection] = useState(initialView);
+  const [today, setToday] = useState(johannesburgDate);
+  const [campaigns, setCampaigns] = useState<CampaignDay[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
+  const [campaignsError, setCampaignsError] = useState("");
+  const [campaignFilter, setCampaignFilter] = useState<CampaignDay | null>(null);
   const { userEmail, staff: currentStaff } = useAuth();
   const isAdmin = currentStaff?.access_level === "admin";
   const isOwner = currentStaff?.access_level === "admin" && userEmail?.trim().toLowerCase() === "info@oatle-technologies.co.za";
@@ -167,6 +189,7 @@ export default function Tasks() {
     onNew: () => { if (isOwner) initializeAddForm(); }, onEdit: initializeEditForm,
     onReset: () => { setShowForm(false); },
   });
+  const activeSection = recordPage.isDetail ? "management" : section;
   function openAddForm() { recordPage.open("new"); }
   function openEditForm(task: Task) { recordPage.open("edit", task.id); }
 
@@ -199,6 +222,21 @@ export default function Tasks() {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadCampaigns() {
+    if (!userEmail) return;
+    setCampaignsLoading(true);
+    setCampaignsError("");
+    try {
+      const response = await fetch(`${API_URL}/daily-tasks/campaigns/schedule`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Failed to load campaign schedule (${response.status})`);
+      setCampaigns(await response.json());
+    } catch (err) {
+      setCampaignsError(err instanceof Error ? err.message : "Failed to load campaign schedule");
+    } finally {
+      setCampaignsLoading(false);
     }
   }
 
@@ -412,10 +450,16 @@ export default function Tasks() {
   useEffect(() => {
     void Promise.resolve().then(() => {
       void loadTasks();
+      void loadCampaigns();
       void loadProjects();
       void loadTaskOptions();
     });
   }, [userEmail, isAdmin, currentStaff?.id]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setToday(johannesburgDate()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   function initializeAddForm() {
     setEditingTask(null);
@@ -438,7 +482,6 @@ export default function Tasks() {
   }
 
   function initializeEditForm(task: Task) {
-    if (task.task_type === "daily") { window.location.assign("/dashboard/daily-tasks"); return; }
     setEditingTask(task);
     setError("");
     setTaskOptionsError("");
@@ -469,9 +512,8 @@ export default function Tasks() {
         ? String(task.assigned_to)
         : "",
       task_type:
-        task.task_type === "service"
-          ? "service"
-          : "product",
+        task.task_type === "daily" ? "daily" : task.task_type === "service" ? "service" : "product",
+      campaign_day_id: task.campaign_day_id ? String(task.campaign_day_id) : "",
       name: task.name,
       description: task.description ?? "",
       category: task.category ?? "",
@@ -489,7 +531,8 @@ export default function Tasks() {
   }
 
   function closeForm() {
-    recordPage.back();
+    router.push("/dashboard/tasks?view=management");
+    setSection("management");
     setShowForm(false);
     setEditingTask(null);
     setForm({ ...emptyForm });
@@ -571,20 +614,29 @@ export default function Tasks() {
           form.notes || null,
       };
 
-      const url = editingTask
-        ? `${API_URL}/tasks/${editingTask.id}`
-        : `${API_URL}/tasks`;
-
-      const method = editingTask
-        ? "PUT"
-        : "POST";
+      // Campaign/general tasks use the same editor with their existing API contract.
+      // Other task types retain their original payload and endpoints.
+      const daily = form.task_type === "daily";
+      const progressOnly = daily && !isAdmin;
+      const requestPayload = daily ? progressOnly ? {
+        status: form.status, notes: form.notes || null,
+      } : {
+        name: form.name, description: form.description || null,
+        assigned_to: Number(form.assigned_to), due_date: form.due_date || null,
+        campaign_day_id: form.campaign_day_id ? Number(form.campaign_day_id) : null,
+        status: form.status, notes: form.notes || null,
+      } : payload;
+      const url = daily
+        ? `${API_URL}/daily-tasks${editingTask ? `/${editingTask.id}${progressOnly ? "/progress" : ""}` : ""}`
+        : editingTask ? `${API_URL}/tasks/${editingTask.id}` : `${API_URL}/tasks`;
+      const method = progressOnly ? "PATCH" : editingTask ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestPayload),
       });
 
       if (!response.ok) {
@@ -609,7 +661,7 @@ export default function Tasks() {
       setSuccess(
         wasEditing
           ? "Task updated successfully."
-          : wasAssigned
+          : wasAssigned && !daily
           ? "Task created successfully. The assignee has been notified by email."
           : "Task created successfully."
       );
@@ -778,6 +830,7 @@ export default function Tasks() {
 
   const assignedTasks = tasks.filter(
     (task) => {
+      if (campaignFilter && task.campaign_day_id !== campaignFilter.id) return false;
       if (!assigneeFilter) {
         return true;
       }
@@ -802,9 +855,52 @@ export default function Tasks() {
     taskView === "archive" ? task.status === "completed" : task.status !== "completed"
   );
 
+  const completedCount = tasks.filter(task => task.status === "completed").length;
+  const overdueCount = tasks.filter(task => task.status !== "completed" && task.due_date && task.due_date < today).length;
+  const todayTasks = tasks.filter(task => task.due_date === today);
+  const focus = campaigns.find(day => day.focus_date === today);
+
   return (
-    <div>
+    <div className="tasks-workspace">
       {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
+      {!recordPage.isDetail && <>
+        <header className="dashboard-header">
+          <div><p className="dashboard-eyebrow">OATLE TECHNOLOGIES</p><h1>Tasks</h1></div>
+        </header>
+        <nav className="dashboard-task-views tasks-section-tabs" aria-label="Tasks sections">
+          <button type="button" aria-pressed={activeSection === "overview"} onClick={() => setSection("overview")}>Daily Overview</button>
+          <button type="button" aria-pressed={activeSection === "management"} onClick={() => setSection("management")}>Task Management</button>
+          <button type="button" aria-pressed={activeSection === "schedule"} onClick={() => setSection("schedule")}>Campaign Schedule</button>
+        </nav>
+      </>}
+
+      {activeSection === "overview" && <section aria-label="Daily Overview">
+        <p className="dashboard-subtitle">{displayDate(today)} · Africa/Johannesburg</p>
+        {focus && <p className="dashboard-form-hint">Today’s campaign: {focus.industry}</p>}
+        {error && <p className="dashboard-form-error" role="alert">{error}</p>}
+        {loading ? <p role="status">Loading tasks…</p> : <>
+          <div className="dashboard-stats tasks-overview-stats">
+            <div className="dashboard-card"><p>Completed</p><h2>{completedCount}</h2></div>
+            <div className="dashboard-card"><p>Outstanding</p><h2>{tasks.length - completedCount}</h2></div>
+            <div className="dashboard-card"><p>Overdue</p><h2>{overdueCount}</h2></div>
+            <div className="dashboard-card"><p>Blocked</p><h2>{tasks.filter(task => task.status === "blocked").length}</h2></div>
+          </div>
+          <div className="dashboard-panel">
+            <div className="dashboard-panel-header"><div><p className="dashboard-panel-label">TODAY</p><h3>Tasks due today</h3></div></div>
+            {todayTasks.length === 0 ? <p className="dashboard-empty">No tasks due today.</p> : <ul className="tasks-today-list">{todayTasks.map(task => <li key={task.id}>
+              <span>{task.name}</span><span className={getStatusClass(task.status)}>{formatStatus(task.status)}</span>
+            </li>)}</ul>}
+          </div>
+        </>}
+      </section>}
+
+      {activeSection === "schedule" && <CampaignSchedule
+        campaigns={campaigns} tasks={tasks} isAdmin={isAdmin} loading={campaignsLoading || loading}
+        error={campaignsError || error} today={today} apiUrl={API_URL} onRefresh={loadCampaigns}
+        onViewTasks={campaign => { setCampaignFilter(campaign); setTaskView("active"); setSection("management"); }}
+      />}
+
+      {activeSection === "management" && <>
 
       {isOwner && <div className="dashboard-page-actions">
         <button
@@ -817,7 +913,6 @@ export default function Tasks() {
       </div>}
 
       {recordPage.action === "new" && !isOwner && <p role="alert">Only Vinolia can add tasks.</p>}
-      <p><Link className="dashboard-link" href="/dashboard/daily-tasks">Open Daily Tasks for campaign assignments and progress updates →</Link></p>
       {success && (
         <div className="dashboard-panel dashboard-success">
           <p>{success}</p>
@@ -853,6 +948,7 @@ export default function Tasks() {
             <div className="dashboard-form-grid dashboard-task-form-grid">
               <label className="dashboard-task-form-row"><span>Task type</span><select
                 name="task_type"
+                disabled={editingTask?.task_type === "daily"}
                 value={form.task_type}
                 onChange={handleChange}
                 required
@@ -864,6 +960,7 @@ export default function Tasks() {
                 <option value="service">
                   Service task
                 </option>
+                <option value="daily" disabled={Boolean(editingTask && editingTask.task_type !== "daily")}>Campaign / general task</option>
               </select></label>
 
               {form.task_type ===
@@ -949,7 +1046,7 @@ export default function Tasks() {
                     )}
                   </select></label>
                 </>
-              ) : (
+              ) : form.task_type === "service" ? (
                 <label className="dashboard-task-form-row"><span>Service</span><select
                   name="service_id"
                   value={form.service_id}
@@ -971,7 +1068,11 @@ export default function Tasks() {
                     )
                   )}
                 </select></label>
-              )}
+              ) : null}
+
+              {form.task_type === "daily" && <label className="dashboard-task-form-row"><span>Campaign day (optional)</span><select
+                name="campaign_day_id" value={form.campaign_day_id} onChange={handleChange} disabled={!isAdmin || campaignsLoading}
+              ><option value="">No campaign</option>{campaigns.map(day => <option key={day.id} value={day.id}>{displayDate(day.focus_date)} · {day.industry}</option>)}</select></label>}
 
               <label className="dashboard-form-field dashboard-task-form-row">
                 <span>Assignee</span>
@@ -981,6 +1082,7 @@ export default function Tasks() {
                   value={form.assigned_to}
                   onChange={handleChange}
                   disabled={!isAdmin}
+                  required={form.task_type === "daily"}
                 >
                   <option value="">
                     Unassigned
@@ -998,7 +1100,7 @@ export default function Tasks() {
                   )}
                 </select>
 
-                {form.assigned_to && (
+                {form.assigned_to && form.task_type !== "daily" && (
                   <small className="dashboard-form-hint">
                     📧 Email notification will
                     be sent automatically.
@@ -1006,10 +1108,10 @@ export default function Tasks() {
                 )}
               </label>
 
-              {form.task_type ===
-                "service" && (
+              {form.task_type !== "product" && (
                 <label className="dashboard-task-form-row"><span>Task name</span><input
                   name="name"
+                  disabled={form.task_type === "daily" && !isAdmin}
                   placeholder="Task Name"
                   value={form.name}
                   onChange={handleChange}
@@ -1017,7 +1119,7 @@ export default function Tasks() {
                 /></label>
               )}
 
-              <label className="dashboard-task-form-row"><span>Category</span><select
+              {form.task_type !== "daily" && <label className="dashboard-task-form-row"><span>Category</span><select
                 name="category"
                 value={form.category}
                 onChange={handleChange}
@@ -1036,7 +1138,7 @@ export default function Tasks() {
                     </option>
                   )
                 )}
-              </select></label>
+              </select></label>}
 
               <label className="dashboard-task-form-row"><span>Status</span><select
                 name="status"
@@ -1056,7 +1158,7 @@ export default function Tasks() {
                 )}
               </select></label>
 
-              <label className="dashboard-task-form-row"><span>Priority</span><select
+              {form.task_type !== "daily" && <label className="dashboard-task-form-row"><span>Priority</span><select
                 name="priority"
                 value={form.priority}
                 onChange={handleChange}
@@ -1072,10 +1174,11 @@ export default function Tasks() {
                     </option>
                   )
                 )}
-              </select></label>
+              </select></label>}
 
               <label className="dashboard-task-form-row"><span>Due date</span><input
                 name="due_date"
+                disabled={form.task_type === "daily" && !isAdmin}
                 type="date"
                 value={form.due_date}
                 onChange={handleChange}
@@ -1084,6 +1187,7 @@ export default function Tasks() {
 
             <label className="dashboard-task-form-row"><span>Description</span><textarea
               name="description"
+              disabled={form.task_type === "daily" && !isAdmin}
               placeholder="Task Description"
               value={form.description}
               onChange={handleChange}
@@ -1133,6 +1237,7 @@ export default function Tasks() {
       )}
 
       {recordPage.showList && <>
+      {campaignFilter && <p className="tasks-campaign-filter">Campaign: {campaignFilter.industry} · {displayDate(campaignFilter.focus_date)} <button type="button" className="dashboard-button dashboard-button-secondary" onClick={() => setCampaignFilter(null)}>Clear campaign filter</button></p>}
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <div>
@@ -1154,7 +1259,7 @@ export default function Tasks() {
               }
             >
               <option value="">
-                All Staff
+                {isAdmin ? "All Staff" : "My tasks"}
               </option>
 
               {staff.map(
@@ -1232,10 +1337,10 @@ export default function Tasks() {
                         {task.task_type ===
                         "product"
                           ? "Product"
-                          : "Service"}
+                          : task.task_type === "daily" ? "Campaign / general" : "Service"}
                       </p>
 
-                      <p>
+                      {task.task_type !== "daily" && <p>
                         {task.task_type ===
                         "product"
                           ? `Product service: ${getProductServiceName(
@@ -1244,7 +1349,7 @@ export default function Tasks() {
                           : `Service: ${getServiceName(
                               task.service_id
                             )}`}
-                      </p>
+                      </p>}
 
                       <p>
                         Assigned to:{" "}
@@ -1351,6 +1456,7 @@ export default function Tasks() {
             </div>
           )}
       </div>
+      </>}
       </>}
     </div>
   );

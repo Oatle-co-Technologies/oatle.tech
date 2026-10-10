@@ -1,2 +1,5 @@
-import DailyTasks from "../daily-tasks/daily-tasks";
-export default function Page() { return <DailyTasks initialView="schedule" />; }
+import { redirect } from "next/navigation";
+
+export default function Page() {
+  redirect("/dashboard/tasks?view=schedule");
+}

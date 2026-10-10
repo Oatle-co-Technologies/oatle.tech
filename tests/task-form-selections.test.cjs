@@ -10,7 +10,7 @@ function formHarness() {
     useEffect() {},
     useState(initial) {
       const index = cursor++;
-      if (!(index in states)) states[index] = initial;
+      if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
     },
   };
@@ -19,14 +19,16 @@ function formHarness() {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { module, exports: module.exports, process: { env: {} }, require(name) {
     if (name === 'react') return react;
-    if (name === 'next/link') return { default: 'Link' };
+    if (name === 'next/navigation') return { useRouter: () => ({ push() {} }) };
+    if (name === './campaign-schedule') return { default: () => null };
+    if (name === '@/lib/campaign-dates') return { johannesburgDate: () => '2026-10-10', displayDate: value => value };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === '@/lib/use-record-page') return { useRecordPage: options => ({ open: action => { if (action === 'new') options.onNew(); }, back() {}, showList: true, isDetail: false }) };
     if (name === '@/lib/auth-context') return { useAuth: () => ({ userEmail: 'info@oatle-technologies.co.za', staff: { id: 1, access_level: 'admin' } }) };
     if (name === '@/components/dashboard/BackToDashboard') return { default: () => null };
     throw Error(name);
   } });
-  function render() { cursor = 0; return module.exports.default(); }
+  function render() { cursor = 0; return module.exports.default({ initialView: 'management' }); }
   function find(node, predicate) {
     if (!node || typeof node !== 'object') return;
     if (predicate(node)) return node;

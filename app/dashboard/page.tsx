@@ -82,14 +82,6 @@ const navigationItems = [
     label: "Tasks",
   },
   {
-    href: "/dashboard/daily-tasks",
-    label: "Daily Tasks",
-  },
-  {
-    href: "/dashboard/campaign-schedule",
-    label: "Campaign Schedule",
-  },
-  {
     href: "/dashboard/appointments",
     label: "Appointments",
   },
