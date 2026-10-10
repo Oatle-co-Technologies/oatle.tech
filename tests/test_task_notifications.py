@@ -17,8 +17,7 @@ from backend.api.tasks import update_task
 def test_personal_count_excludes_other_staff_and_started_tasks():
     engine = create_engine("sqlite://")
     # Count query uses all mapped columns; related records are not needed here.
-    with engine.begin() as connection:
-        connection.exec_driver_sql("CREATE TABLE tasks (id INTEGER PRIMARY KEY, project_id INTEGER, product_service_id INTEGER, service_id INTEGER, assigned_to INTEGER, task_type TEXT, name TEXT, description TEXT, category TEXT, status TEXT, priority TEXT, due_date DATE, notes TEXT, created_at DATETIME, completed_at DATETIME)")
+    Task.__table__.create(engine)
     with Session(engine) as db:
         db.add_all([Task(assigned_to=1, status=status, name="Test") for status in ["todo", "todo", "in_progress", "completed"]] + [Task(assigned_to=2, status="todo", name="Other"), Task(status="todo", name="Unassigned")])
         db.commit()

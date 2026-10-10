@@ -12,6 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from backend.database.base import Base
+from backend.models.campaign_day import CampaignDay  # Register campaign FK for standalone task queries.
 
 
 class Task(Base):
@@ -22,6 +23,11 @@ class Task(Base):
         primary_key=True,
         index=True,
     )
+
+    campaign_day_id = Column(Integer, ForeignKey("campaign_days.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by = Column(Integer, ForeignKey("staff.id", ondelete="SET NULL"), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    setup_key = Column(String(160), nullable=True, unique=True)
 
     project_id = Column(
         Integer,
@@ -125,5 +131,5 @@ class Task(Base):
     )
 
     assigned_staff = relationship(
-        "Staff",
+        "Staff", foreign_keys=[assigned_to],
     )

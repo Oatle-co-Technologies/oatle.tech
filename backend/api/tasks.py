@@ -61,6 +61,9 @@ def validate_task_type(
     task: TaskCreate,
     db: Session,
 ):
+    if task.task_type == "daily":
+        return
+
     if task.task_type == "product":
         if task.product_service_id is None:
             raise HTTPException(
@@ -279,6 +282,9 @@ def update_task(
             status_code=404,
             detail="Task not found",
         )
+
+    if getattr(existing_task, "task_type", None) == "daily":
+        raise HTTPException(status_code=409, detail="Update this task in Daily Tasks")
 
     if current_staff.access_level != "admin":
         if existing_task.assigned_to != current_staff.id:

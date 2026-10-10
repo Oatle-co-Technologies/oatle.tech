@@ -5,6 +5,7 @@ from backend.database.base import Base
 from backend.database.connection import engine
 
 # Models
+from backend.models.campaign_day import CampaignDay
 from backend.models.client import Client
 from backend.models.lead import Lead
 from backend.models.project import Project
@@ -36,6 +37,8 @@ from backend.api.auth import router as auth_router
 from backend.api.appointments import router as appointments_router
 from backend.api.google_calendar import router as google_calendar_router
 from backend.api.task_notifications import router as task_notifications_router
+from backend.api.daily_tasks import router as daily_tasks_router
+
 app = FastAPI()
 
 
@@ -55,6 +58,7 @@ app.include_router(clients_router)
 app.include_router(leads_router)
 app.include_router(project_router)
 app.include_router(tasks_router)
+app.include_router(daily_tasks_router)
 app.include_router(task_notifications_router)
 app.include_router(invoices_router)
 app.include_router(pricing_router)

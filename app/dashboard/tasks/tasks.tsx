@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
@@ -437,6 +438,7 @@ export default function Tasks() {
   }
 
   function initializeEditForm(task: Task) {
+    if (task.task_type === "daily") { window.location.assign("/dashboard/daily-tasks"); return; }
     setEditingTask(task);
     setError("");
     setTaskOptionsError("");
@@ -815,6 +817,7 @@ export default function Tasks() {
       </div>}
 
       {recordPage.action === "new" && !isOwner && <p role="alert">Only Vinolia can add tasks.</p>}
+      <p><Link className="dashboard-link" href="/dashboard/daily-tasks">Open Daily Tasks for campaign assignments and progress updates →</Link></p>
       {success && (
         <div className="dashboard-panel dashboard-success">
           <p>{success}</p>

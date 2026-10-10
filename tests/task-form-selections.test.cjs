@@ -19,6 +19,7 @@ function formHarness() {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { module, exports: module.exports, process: { env: {} }, require(name) {
     if (name === 'react') return react;
+    if (name === 'next/link') return { default: 'Link' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === '@/lib/use-record-page') return { useRecordPage: options => ({ open: action => { if (action === 'new') options.onNew(); }, back() {}, showList: true, isDetail: false }) };
     if (name === '@/lib/auth-context') return { useAuth: () => ({ userEmail: 'info@oatle-technologies.co.za', staff: { id: 1, access_level: 'admin' } }) };

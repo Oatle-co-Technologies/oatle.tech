@@ -125,3 +125,36 @@
     padding-right: max(20px, env(safe-area-inset-right));
   }
 }
+
+/* Daily Tasks uses the dashboard palette with touch-sized controls. */
+.daily-workspace { width:100%; max-width:1200px; margin:auto; padding:24px; }
+.daily-workspace h1 { font-family:var(--font-playfair),Georgia,serif; font-size:32px; }
+.daily-workspace h2 { font-size:22px; margin-bottom:16px; }
+.daily-workspace h3 { font-size:18px; font-weight:600; line-height:1.4; }
+.daily-workspace label { display:flex; flex-direction:column; gap:7px; font-size:14px; font-weight:500; margin:12px 0; }
+.daily-workspace input,.daily-workspace select,.daily-workspace textarea { width:100%; min-width:0; min-height:46px; padding:10px 12px; border:1px solid #d7cdb8; border-radius:9px; background:#fff; color:#282822; font:inherit; }
+.daily-workspace textarea { min-height:85px; resize:vertical; }
+.daily-workspace button,.daily-tabs a { min-height:44px; padding:10px 14px; border:1px solid #d7cdb8; border-radius:9px; background:#fff; color:#705810; font-size:14px; cursor:pointer; }
+.daily-workspace button[aria-pressed=true],.daily-editor button[type=submit] { background:#faf3dc; border-color:#8b6d13; }
+.daily-workspace button:disabled { opacity:.55; cursor:wait; }
+.daily-workspace :focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
+.daily-tabs,.daily-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:14px 0; }
+.daily-tabs a { display:inline-flex; align-items:center; text-decoration:none; }
+.daily-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+.daily-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.daily-task-card,.daily-schedule article,.daily-editor { border:1px solid #e9e2d4; background:#fff; overflow-wrap:anywhere; }
+.daily-card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.daily-overdue { border-left:4px solid #b47525!important; }
+.daily-badge { color:#794614; background:#fff2dc; padding:5px 8px; border-radius:6px; font-size:12px; white-space:nowrap; }
+.daily-description { white-space:pre-wrap; font-size:14px; line-height:1.7; margin:12px 0; }
+.daily-meta { color:#66665e; font-size:13px; line-height:1.6; margin:8px 0; }
+.daily-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; align-items:end; margin-bottom:18px; }
+.daily-filters button { margin-bottom:12px; }
+.daily-section { margin-top:28px; }
+.daily-section h2 span { font-size:16px; color:#77776e; }
+.daily-schedule { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
+.daily-editor { margin-top:24px; padding:24px; }
+.daily-editor form { max-width:720px; }
+.daily-error { padding:14px; border:1px solid #be5353; color:#802323; border-radius:9px; }
+.daily-feedback { min-height:28px; color:#47652d; font-size:14px; padding:8px 0; }
+@media(max-width:700px) { .daily-workspace { padding:16px; } .daily-grid { grid-template-columns:1fr; } .daily-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .daily-filters { grid-template-columns:1fr; gap:0; } .daily-schedule { grid-template-columns:1fr; } .daily-card-heading { flex-direction:column; } .daily-editor { padding:16px; } }
