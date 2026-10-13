@@ -137,13 +137,11 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
 
 
 function EmailBody({ message }: { message: Message }) {
-  const [showImages, setShowImages] = useState(false);
   const [height, setHeight] = useState(600);
   if (!message.html_body) return <div className="mail-body">{message.body || "This message has no readable text."}</div>;
-  const policy = `default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src ${showImages ? "https: http:" : "'none'"}; base-uri 'none'; form-action 'none'`;
+  const policy = `default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src https: http: data:; base-uri 'none'; form-action 'none'`;
   const document = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width,initial-scale=1"><base target="_blank"><style>body{margin:0;padding:16px;font-family:Arial,sans-serif;color:#282822;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}</style></head><body>${message.html_body}</body></html>`;
   return <div className="mail-body">
-    {!showImages && <button type="button" className="dashboard-button" onClick={() => setShowImages(true)}>Show email images</button>}
     <iframe title="Formatted email" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={document} style={{ width: "100%", height, border: 0, marginTop: 12 }} onLoad={event => {
       const frame = event.currentTarget;
       const resize = () => setHeight(Math.max(200, frame.contentDocument?.documentElement.scrollHeight ?? 600));

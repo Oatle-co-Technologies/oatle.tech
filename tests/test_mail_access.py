@@ -170,3 +170,15 @@ def test_html_email_preserves_layout_and_removes_active_content():
     assert '<script' not in result and 'onerror' not in result
     assert 'javascript:' not in result and '<iframe' not in result
     assert 'background-image' not in result
+
+
+def test_embedded_images_render_but_executable_data_links_do_not():
+    from email.message import EmailMessage
+    from backend.services.email_html import sanitize_email_html, embed_email_images
+    message = EmailMessage()
+    message.set_content('Hello')
+    message.add_alternative('<img src="cid:logo">', subtype='html')
+    message.get_payload()[1].add_related(b'png-bytes', maintype='image', subtype='png', cid='<logo>')
+    result = sanitize_email_html(embed_email_images('<img src="cid:logo"><a href="data:text/html,bad">Bad</a><img src="data:image/svg+xml,bad">', message))
+    assert 'data:image/png;base64,' in result
+    assert 'data:text/html' not in result and 'data:image/svg' not in result
