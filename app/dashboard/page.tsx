@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -254,6 +255,7 @@ export default function DashboardPage() {
           <Image src="/oatle-technologies-transparent-logo.png" alt="Oatle Technologies" width={220} height={150} priority />
         </Link>
 
+        <div className="admin-mobile-actions">
         <button
           type="button"
           className="dashboard-mobile-menu-button"
@@ -269,6 +271,8 @@ export default function DashboardPage() {
             ? "Close"
             : "Menu"}
         </button>
+        <Link href="/dashboard/inbox" className="admin-mail-shortcut" aria-label="Open your inbox"><Mail size={22} aria-hidden="true" /></Link>
+        </div>
       </div>
 
       {/* Sidebar */}
