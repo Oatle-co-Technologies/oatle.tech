@@ -81,3 +81,37 @@ def test_mail_requires_authentication():
     app.include_router(router)
     with TestClient(app) as client:
         assert client.get("/mail/inbox").status_code == 401
+
+
+def test_counts_cover_entire_inbox_not_only_page():
+    client = MagicMock()
+    client.select.return_value = ('OK', [b'100'])
+    client.response.return_value = ('UIDVALIDITY', [b'7'])
+    client.status.return_value = ('OK', [b'INBOX (MESSAGES 100 UNSEEN 35)'])
+    client.uid.side_effect = [('OK', [b'1 2']), ('OK', [(b'2 (FLAGS ())', b'Subject: New\r\n\r\n')]), ('OK', [(b'1 (FLAGS (\\Seen))', b'Subject: Read\r\n\r\n')])]
+    with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
+        result = mail.inbox({'address': 'kat@example.com', 'password': 'test'})
+    assert result['total'] == 100 and result['unread'] == 35
+    assert [m['unread'] for m in result['messages']] == [True, False]
+
+
+def test_send_cannot_spoof_sender(environment):
+    _, client = environment
+    payload = {'recipient': 'recipient@example.com', 'subject': 'Hello', 'body': 'Hello'}
+    with patch('backend.api.mail.send_message', return_value={'sent': True, 'sent_copy_saved': True}) as send:
+        assert client.post('/mail/send', json={**payload, 'from': 'colin@example.com'}).status_code == 422
+        send.assert_not_called()
+        assert client.post('/mail/send', json=payload).status_code == 200
+        assert send.call_args.args[0]['address'] == 'kat@example.com'
+        assert client.post('/mail/send', json={**payload, 'subject': 'Hello\r\nBcc: thief@example.com'}).status_code == 422
+
+
+def test_successful_delivery_is_not_retried_on_sent_folder_failure():
+    smtp = MagicMock()
+    smtp.__enter__.return_value = smtp
+    from fastapi import HTTPException
+    with patch.object(mail.smtplib, 'SMTP_SSL', return_value=smtp), patch.object(mail, 'connect', side_effect=HTTPException(502, 'Archive unavailable')):
+        result = mail.send_message({'address': 'kat@example.com', 'password': 'test'}, 'recipient@example.com', 'Hello', 'Body')
+    assert result == {'sent': True, 'sent_copy_saved': False}
+    smtp.send_message.assert_called_once()
+    assert smtp.send_message.call_args.kwargs['from_addr'] == 'kat@example.com'

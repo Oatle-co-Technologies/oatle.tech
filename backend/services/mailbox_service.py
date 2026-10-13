@@ -2,12 +2,16 @@
 from contextlib import contextmanager
 from email import policy
 from email.parser import BytesParser
-from email.utils import parseaddr
+from email.utils import parseaddr, formatdate, make_msgid
+from email.message import EmailMessage
 from html.parser import HTMLParser
 import imaplib
 import json
 import os
 import ssl
+import re
+import smtplib
+import time
 
 from fastapi import HTTPException
 
@@ -74,8 +78,16 @@ def headers(message):
 def inbox(box, before=None):
     with connect(box) as client:
         uid_validity = validity(client)
+        count_status, count_data = client.status("INBOX", "(MESSAGES UNSEEN)")
+        if count_status != "OK" or not count_data or not count_data[0]:
+            raise HTTPException(502, "Your inbox counts could not be loaded.")
+        total_match = re.search(rb"MESSAGES (\d+)", count_data[0])
+        unread_match = re.search(rb"UNSEEN (\d+)", count_data[0])
+        if not total_match or not unread_match:
+            raise HTTPException(502, "Your inbox counts could not be loaded.")
+        counts = {"total": int(total_match[1]), "unread": int(unread_match[1])}
         if before == 1:
-            return {"address": box["address"], "uid_validity": uid_validity, "messages": [], "next_before": None}
+            return {"address": box["address"], "uid_validity": uid_validity, "messages": [], "next_before": None, **counts}
         criteria = "ALL" if before is None else f"UID 1:{before - 1}"
         status, values = client.uid("search", None, criteria)
         if status != "OK":
@@ -92,7 +104,7 @@ def inbox(box, before=None):
             message = BytesParser(policy=policy.default).parsebytes(raw)
             messages.append({"uid": uid, "unread": b"\\Seen" not in meta, **headers(message)})
         return {"address": box["address"], "uid_validity": uid_validity, "messages": messages,
-                "next_before": uids[19] if len(uids) > 20 else None}
+                "next_before": uids[19] if len(uids) > 20 else None, **counts}
 
 
 class PlainHTML(HTMLParser):
@@ -134,3 +146,33 @@ def read_message(box, uid, uid_validity):
         return {"uid": uid, **headers(message), "body": body,
                 "truncated": len(raw) >= 2097152,
                 "attachments": [str(p.get_filename() or "Attachment") for p in message.iter_attachments()]}
+
+
+def send_message(box, recipient, subject, body):
+    message = EmailMessage()
+    message["From"] = box["address"]
+    message["To"] = recipient
+    message["Subject"] = subject
+    message["Date"] = formatdate(localtime=False)
+    message["Message-ID"] = make_msgid(domain=box["address"].split("@")[-1])
+    message.set_content(body)
+    try:
+        with smtplib.SMTP_SSL("smtp.purelymail.com", 465,
+                              context=ssl.create_default_context(), timeout=15) as client:
+            client.login(box["address"], box["password"])
+            client.send_message(message, from_addr=box["address"], to_addrs=[recipient])
+    except smtplib.SMTPAuthenticationError:
+        raise HTTPException(502, "Purelymail did not accept your mailbox login.") from None
+    except smtplib.SMTPRecipientsRefused:
+        raise HTTPException(422, "Purelymail did not accept the recipient address.") from None
+    except (smtplib.SMTPException, OSError):
+        raise HTTPException(502, "Delivery could not be confirmed. Check Purelymail before sending again.") from None
+    # Delivery already succeeded. Never report an archive failure as a send failure.
+    saved = False
+    try:
+        with connect(box) as client:
+            status, _ = client.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), message.as_bytes(policy=policy.SMTP))
+            saved = status == "OK"
+    except HTTPException:
+        pass
+    return {"sent": True, "sent_copy_saved": saved}

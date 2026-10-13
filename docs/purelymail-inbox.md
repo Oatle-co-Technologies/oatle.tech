@@ -1,8 +1,11 @@
 # Purelymail inbox setup
 
 The dashboard uses encrypted IMAP access to `imap.purelymail.com:993`.
-Existing Brevo sending remains unchanged. This change adds reading inboxes;
-it does not add a new email composer or change outgoing delivery.
+Existing Brevo notifications and client follow-ups remain unchanged.
+The inbox screen includes full inbox/unread counts, reading, composing, and replies.
+Personal mail is sent through smtp.purelymail.com:465 with the same mailbox credentials.
+A copy is appended to the Sent folder when available; an archive failure does not
+report a delivered message as failed or retry sending it.
 
 Configure these variables in the backend environment (locally in `backend/.env`
 and in production's server environment). Never use `NEXT_PUBLIC_` for mail credentials.

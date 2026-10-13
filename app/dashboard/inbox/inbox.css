@@ -13,3 +13,9 @@
 .mail-detail h2 { font-size:22px; overflow-wrap:anywhere; }
 .mail-body { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.7; margin-top:24px; font-size:14px; }
 @media(max-width:700px) { .mail-columns { grid-template-columns:1fr; } .mail-row { min-height:44px; } }
+
+.mail-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); margin-bottom:18px; }
+.mail-compose { margin-top:18px; margin-bottom:18px; }
+.mail-compose label { display:block; margin:16px 0; font-size:14px; }
+.mail-compose input, .mail-compose textarea { display:block; width:100%; box-sizing:border-box; margin-top:8px; padding:12px; border:1px solid #e9e2d4; border-radius:8px; font:inherit; color:#282822; background:#fff; }
+.mail-columns { margin-top:18px; }
