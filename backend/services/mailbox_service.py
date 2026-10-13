@@ -96,7 +96,7 @@ def inbox(box, before=None, view="inbox", search=""):
             criteria = f"{criteria} UID 1:{before - 1}"
         if search:
             client.literal = search.encode("utf-8")
-            status, values = client.uid("search", "UTF-8", criteria + " TEXT")
+            status, values = client.uid("search", "CHARSET", "UTF-8", criteria + " TEXT")
         else:
             status, values = client.uid("search", None, criteria)
         if status != "OK":

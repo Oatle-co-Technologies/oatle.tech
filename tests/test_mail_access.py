@@ -217,7 +217,7 @@ def test_search_uses_literal_unicode_text_without_imap_injection():
     with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
         mail.inbox({'address': 'kat@example.com', 'password': 'test'}, view='unread', search=term)
     assert client.literal == term.encode('utf-8')
-    client.uid.assert_called_once_with('search', 'UTF-8', 'UNSEEN TEXT')
+    client.uid.assert_called_once_with('search', 'CHARSET', 'UTF-8', 'UNSEEN TEXT')
 
 
 def test_reply_headers_are_derived_from_own_original_message():
@@ -248,3 +248,21 @@ def test_conversation_groups_inbox_and_sent_by_message_ids():
         result = mail.conversation({'address': 'kat@example.com', 'password': 'test'}, 1, 7)
     assert [item['view'] for item in result['messages']] == ['inbox','sent']
     assert [item['subject'] for item in result['messages']] == ['Hello','Re: Hello']
+
+
+
+def test_stdlib_uid_search_includes_charset_keyword():
+    # Exercise the real stdlib UID method: unlike search(), it does not insert CHARSET.
+    from contextlib import contextmanager
+    client = object.__new__(mail.imaplib.IMAP4)
+    client.state = 'SELECTED'
+    client._simple_command = MagicMock(return_value=('OK', []))
+    client._untagged_response = MagicMock(return_value=('OK', [b'']))
+    client.response = MagicMock(return_value=('UIDVALIDITY', [b'7']))
+    client.status = MagicMock(return_value=('OK', [b'INBOX (MESSAGES 5 UNSEEN 2)']))
+    @contextmanager
+    def connect(*args, **kwargs): yield client
+    with patch.object(mail, 'connect', connect):
+        mail.inbox({'address':'kat@example.com','password':'test'}, search='customer')
+    client._simple_command.assert_called_once_with('UID','SEARCH','CHARSET','UTF-8','ALL TEXT')
+    assert client.literal == b'customer'
