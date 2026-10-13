@@ -23,6 +23,7 @@ export default function DashboardLayout({
 
   const shouldOpenTasks =
     staff?.access_level === "member" &&
+    pathname !== "/dashboard/inbox" &&
     pathname !== "/dashboard/tasks" &&
     !pathname.startsWith("/dashboard/tasks/") &&
     !isUnauthorizedPage;

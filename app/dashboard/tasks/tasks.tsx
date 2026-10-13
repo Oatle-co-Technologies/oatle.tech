@@ -914,6 +914,7 @@ export default function Tasks({ initialView = "overview", initialFilter = "all" 
       {!recordPage.isDetail && <>
         <header className="dashboard-header">
           <div><p className="dashboard-eyebrow">OATLE TECHNOLOGIES</p><h1>Tasks</h1></div>
+          <Link className="dashboard-link" href="/dashboard/inbox">Open my inbox</Link>
         </header>
         <nav className="dashboard-task-views tasks-section-tabs" aria-label="Tasks sections">
           <button type="button" aria-pressed={activeSection === "overview"} onClick={() => setSection("overview")}>Daily Overview</button>

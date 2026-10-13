@@ -65,6 +65,7 @@ type DashboardData = {
 };
 
 const navigationItems = [
+  { href: "/dashboard/inbox", label: "Inbox" },
   {
     href: "/dashboard",
     label: "Overview",

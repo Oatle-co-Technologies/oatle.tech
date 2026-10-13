@@ -39,6 +39,8 @@ from backend.api.google_calendar import router as google_calendar_router
 from backend.api.task_notifications import router as task_notifications_router
 from backend.api.daily_tasks import router as daily_tasks_router
 
+from backend.api.mail import router as mail_router
+
 app = FastAPI()
 
 
@@ -68,6 +70,7 @@ app.include_router(staff_router)
 app.include_router(product_product_services_router)
 app.include_router(dashboard_router)
 app.include_router(auth_router)
+app.include_router(mail_router)
 app.include_router(appointments_router)
 app.include_router(google_calendar_router)
 @app.get("/")
