@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { emptyEmailDraft, parseEmailDraft, emailDraftKey, type EmailDraft } from "@/lib/email-drafts";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import "./inbox.css";
@@ -18,16 +19,21 @@ async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
 }
 
 type View = "inbox" | "unread" | "sent";
-type ScreenProps = { initialView: View; initialBefore: number | null; messageUid?: number; validity?: number };
+type ScreenProps = { initialSearch: string; initialView: View; initialBefore: number | null; messageUid?: number; validity?: number };
 
 export default function MailScreen(props: ScreenProps) {
   const { staff } = useAuth();
-  return staff ? <InboxContent key={`${staff.id}-${props.messageUid ?? "list"}-${props.initialView}-${props.initialBefore}`} {...props} address={staff.email} /> : null;
+  return staff ? <InboxContent key={`${staff.id}-${props.messageUid ?? "list"}-${props.initialView}-${props.initialBefore}-${props.initialSearch}`} {...props} address={staff.email} staffId={staff.id} /> : null;
 }
 
-function InboxContent({ initialView: view, initialBefore: before, messageUid, validity, address }: ScreenProps & { address: string }) {
+function InboxContent({ initialView: view, initialBefore: before, initialSearch: search, messageUid, validity, address, staffId }: ScreenProps & { address: string; staffId: number }) {
   const router = useRouter();
-  const listUrl = `/dashboard/inbox?view=${view}${before ? `&before=${before}` : ""}`;
+  const searchQuery = search ? `&q=${encodeURIComponent(search)}` : "";
+  const [searchInput, setSearchInput] = useState(search);
+  const [thread, setThread] = useState<(MailSummary & { view: View; uid_validity: number })[]>([]);
+  const [threadError, setThreadError] = useState("");
+  const [draftSaved, setDraftSaved] = useState("");
+  const listUrl = `/dashboard/inbox?view=${view}${before ? `&before=${before}` : ""}${searchQuery}`;
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [revision, setRevision] = useState(0);
@@ -37,7 +43,11 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
   const [readStatusError, setReadStatusError] = useState("");
   const [messageError, setMessageError] = useState("");
   const [composing, setComposing] = useState(false);
-  const [draft, setDraft] = useState({ recipient: "", subject: "", body: "" });
+  const [draft, setDraft] = useState<EmailDraft>(() => {
+    if (typeof window === "undefined") return emptyEmailDraft();
+    try { return parseEmailDraft(window.localStorage.getItem(emailDraftKey(staffId))); }
+    catch { return emptyEmailDraft(); }
+  });
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [sentNotice, setSentNotice] = useState("");
@@ -45,11 +55,11 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
   useEffect(() => {
     if (messageUid) return;
     const controller = new AbortController();
-    read<Inbox>(`/api/backend/mail/inbox?view=${view}${before ? `&before=${before}` : ""}`, controller.signal)
+    read<Inbox>(`/api/backend/mail/inbox?view=${view}${before ? `&before=${before}` : ""}${searchQuery}`, controller.signal)
       .then(setInbox).catch(err => { if (!controller.signal.aborted) { setInbox(null); setError(err.message); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [before, revision, view, messageUid]);
+  }, [before, revision, view, messageUid, searchQuery]);
 
   useEffect(() => {
     if (!messageUid || !validity) return;
@@ -67,9 +77,32 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
     return () => controller.abort();
   }, [messageUid, validity, view]);
 
+  useEffect(() => {
+    if (!messageUid || !validity) return;
+    const controller = new AbortController();
+    read<{ messages: (MailSummary & { view: View; uid_validity: number })[] }>(`/api/backend/mail/inbox/${messageUid}/conversation?uid_validity=${validity}&view=${view}`, controller.signal)
+      .then(result => { if (!controller.signal.aborted) setThread(result.messages); })
+      .catch(() => { if (!controller.signal.aborted) setThreadError("Conversation history could not be loaded. The selected email is still available."); });
+    return () => controller.abort();
+  }, [messageUid, validity, view]);
+
+  function updateDraft(next: EmailDraft) {
+    setDraft(next);
+    try {
+      window.localStorage.setItem(emailDraftKey(staffId), JSON.stringify(next));
+      setDraftSaved("Draft saved on this device.");
+    } catch { setDraftSaved("Draft could not be saved on this device. Keep this page open until you send it."); }
+  }
+
+  function clearDraft() {
+    setDraft(emptyEmailDraft());
+    try { window.localStorage.removeItem(emailDraftKey(staffId)); setDraftSaved(""); }
+    catch { setDraftSaved("Unable to remove the saved draft on this device."); }
+  }
+
   function loadPage(nextBefore: number | null) {
     if (nextBefore !== before) {
-      router.push(`/dashboard/inbox?view=${view}${nextBefore ? `&before=${nextBefore}` : ""}`);
+      router.push(`/dashboard/inbox?view=${view}${nextBefore ? `&before=${nextBefore}` : ""}${searchQuery}`);
       return;
     }
     setLoading(true); setError(""); setRevision(r => r + 1);
@@ -86,24 +119,29 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
       const result = await response.json();
       if (!response.ok) throw new Error(typeof result.detail === "string" ? result.detail : "Email could not be sent.");
       setSentNotice(result.sent_copy_saved ? "Email sent. A copy is saved in your Sent folder." : "Email sent. A copy could not be saved in your Sent folder.");
-      setDraft({ recipient: "", subject: "", body: "" }); setComposing(false);
+      clearDraft(); setComposing(false);
     } catch (err) { setSendError(err instanceof Error ? err.message : "Delivery could not be confirmed. Check Purelymail before sending again."); }
     finally { setSending(false); }
   }
 
   function compose(reply?: Message) {
-    setDraft({ recipient: reply?.reply_to || "", subject: reply ? (reply.subject.toLowerCase().startsWith("re:") ? reply.subject : `Re: ${reply.subject}`) : "", body: "" });
+    if (reply) {
+      if ((draft.recipient || draft.subject || draft.body) && !window.confirm("Replace the saved draft with a new reply?")) return;
+      updateDraft({ recipient: reply.reply_to, subject: reply.subject.toLowerCase().startsWith("re:") ? reply.subject : `Re: ${reply.subject}`, body: "", reply: { uid: messageUid!, uid_validity: validity!, view } });
+    }
+
     setSendError(""); setSentNotice(""); setComposing(true);
   }
 
   const composeForm = composing && <form className="dashboard-panel mail-compose" onSubmit={send}>
       <h2>New email</h2><p className="dashboard-subtitle">Emails use your Oatle branded template.</p><p className="dashboard-subtitle">From: {inbox?.address || address}</p>
-      <label>To<input type="email" required autoComplete="email" value={draft.recipient} disabled={sending} onChange={e => setDraft({ ...draft, recipient: e.target.value })}/></label>
-      <label>Subject<input required maxLength={200} value={draft.subject} disabled={sending} onChange={e => setDraft({ ...draft, subject: e.target.value })}/></label>
-      <label>Message<textarea required maxLength={100000} rows={8} value={draft.body} disabled={sending} onChange={e => setDraft({ ...draft, body: e.target.value })}/></label>
+      <label>To<input type="email" required autoComplete="email" value={draft.recipient} disabled={sending} onChange={e => updateDraft({ ...draft, recipient: e.target.value })}/></label>
+      <label>Subject<input required maxLength={200} value={draft.subject} disabled={sending} onChange={e => updateDraft({ ...draft, subject: e.target.value })}/></label>
+      <label>Message<textarea required maxLength={100000} rows={8} value={draft.body} disabled={sending} onChange={e => updateDraft({ ...draft, body: e.target.value })}/></label>
+      <p role="status" className="dashboard-subtitle">{draftSaved || "Drafts are saved automatically on this device as you type."}</p>
       {sendError && <p role="alert">{sendError}</p>}
       <button type="submit" className="dashboard-button dashboard-button-primary" disabled={sending}>{sending ? "Sending…" : "Send email"}</button>{" "}
-      <button type="button" className="dashboard-button" disabled={sending} onClick={() => setComposing(false)}>Cancel</button>
+      <button type="button" className="dashboard-button" disabled={sending} onClick={() => setComposing(false)}>Close draft</button>{" "}<button type="button" className="dashboard-button" disabled={sending} onClick={() => { if (window.confirm("Discard this saved draft?")) { clearDraft(); setComposing(false); } }}>Discard draft</button>
     </form>;
 
   if (messageUid) return <main className="mail-workspace mail-message-page">
@@ -114,6 +152,8 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
       <h1>{message.subject}</h1><p className="dashboard-subtitle">From: {message.sender}<br/>To: {message.to}<br/>{message.date}</p>
       {view !== "sent" && <button type="button" className="dashboard-button" disabled={sending} onClick={() => compose(message)}>Reply</button>}
       {readStatusError && <p role="alert">{readStatusError}</p>}
+      {threadError && <p className="dashboard-subtitle">{threadError}</p>}
+      {thread.length > 1 && <details className="mail-conversation"><summary>Conversation · {thread.length} emails</summary><ol>{thread.map(item => <li key={`${item.view}-${item.uid}`}><Link href={`/dashboard/inbox/${item.uid}?view=${item.view}&uid_validity=${item.uid_validity}`} aria-current={item.uid === messageUid && (item.view === view || (item.view === "inbox" && view === "unread")) ? "page" : undefined}>{item.subject}</Link><span>{item.sender} · {item.date}</span></li>)}</ol></details>}
       <EmailBody message={message} />
       {message.truncated && <p className="dashboard-subtitle">This large message is partially displayed.</p>}
       {!!message.attachments.length && <p className="dashboard-subtitle">Attachments: {message.attachments.join(", ")} (view in Purelymail)</p>}
@@ -125,17 +165,20 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
     <header className="dashboard-header"><div><p className="dashboard-eyebrow">OATLE TECHNOLOGIES</p><h1>Inbox</h1><p className="dashboard-subtitle">{inbox?.address || "Your email inbox"}</p></div>
       <button className="dashboard-button" type="button" disabled={loading} onClick={() => loadPage(null)}>Refresh</button></header>
     {error && <p className="dashboard-form-error" role="alert">{error}</p>}
-    <nav className="mail-views" aria-label="Email views">{(["inbox", "unread", "sent"] as const).map(option => <Link key={option} href={`/dashboard/inbox?view=${option}`} aria-current={view === option ? "page" : undefined}>{option === "inbox" ? "Inbox" : option === "unread" ? "Unread" : "Sent"}</Link>)}</nav>
+    <nav className="mail-views" aria-label="Email views">{(["inbox", "unread", "sent"] as const).map(option => <Link key={option} href={`/dashboard/inbox?view=${option}${searchQuery}`} aria-current={view === option ? "page" : undefined}>{option === "inbox" ? "Inbox" : option === "unread" ? "Unread" : "Sent"}</Link>)}</nav>
+    <form className="mail-search" role="search" onSubmit={event => { event.preventDefault(); router.push(`/dashboard/inbox?view=${view}${searchInput.trim() ? `&q=${encodeURIComponent(searchInput.trim())}` : ""}`); }}>
+      <label htmlFor="mail-search-input">Search emails</label><div><input id="mail-search-input" type="search" maxLength={200} value={searchInput} placeholder="Sender, subject, or message text" onChange={event => setSearchInput(event.target.value)} /><button type="submit" className="dashboard-button">Search</button>{search && <Link className="dashboard-link" href={`/dashboard/inbox?view=${view}`}>Clear search</Link>}</div>
+    </form>
     {sentNotice && <p role="status">{sentNotice}</p>}
     {inbox && !loading && <>
       <p className="dashboard-subtitle">{view === "sent" ? `${inbox.total} sent messages` : `${inbox.total} inbox messages · ${inbox.unread} unread`}</p>
-      <button type="button" className="dashboard-button dashboard-button-primary" disabled={sending} onClick={() => compose()}>Compose email</button>
+      <button type="button" className="dashboard-button dashboard-button-primary" disabled={sending} onClick={() => compose()}>Compose / resume draft</button>
     </>}
     {composeForm}
     {loading ? <p role="status">Loading your inbox…</p> : inbox && <div className="mail-list-page">
       <section className="dashboard-panel mail-list" aria-label="Inbox messages">
         {!inbox.messages.length && <p className="dashboard-empty">{view === "sent" ? "No sent messages." : view === "unread" ? "No unread messages." : "No messages in your inbox."}</p>}
-        {inbox.messages.map(item => <Link className="mail-row" key={item.uid} href={`/dashboard/inbox/${item.uid}?view=${view}&uid_validity=${inbox.uid_validity}${before ? `&before=${before}` : ""}`} prefetch={false}>
+        {inbox.messages.map(item => <Link className="mail-row" key={item.uid} href={`/dashboard/inbox/${item.uid}?view=${view}&uid_validity=${inbox.uid_validity}${before ? `&before=${before}` : ""}${searchQuery}`} prefetch={false}>
           <span className="mail-sender">{view === "sent" ? `To: ${item.to}` : item.sender}</span><span className="mail-subject">{item.unread && <span aria-label="Unread">● </span>}{item.subject}</span><span className="mail-date">{item.date}</span>
         </Link>)}
         <div className="mail-pagination">{before && <button type="button" className="dashboard-button" onClick={() => loadPage(null)}>Newest messages</button>}{inbox.next_before && <button type="button" className="dashboard-button" onClick={() => loadPage(inbox.next_before)}>Older messages</button>}</div>

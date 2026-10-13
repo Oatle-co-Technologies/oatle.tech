@@ -77,7 +77,7 @@ def headers(message):
             "date": str(message.get("Date", ""))}
 
 
-def inbox(box, before=None, view="inbox"):
+def inbox(box, before=None, view="inbox", search=""):
     folder = "Sent" if view == "sent" else "INBOX"
     with connect(box, folder) as client:
         uid_validity = validity(client)
@@ -94,7 +94,11 @@ def inbox(box, before=None, view="inbox"):
         criteria = "UNSEEN" if view == "unread" else "ALL"
         if before is not None:
             criteria = f"{criteria} UID 1:{before - 1}"
-        status, values = client.uid("search", None, criteria)
+        if search:
+            client.literal = search.encode("utf-8")
+            status, values = client.uid("search", "UTF-8", criteria + " TEXT")
+        else:
+            status, values = client.uid("search", None, criteria)
         if status != "OK":
             raise HTTPException(502, "Your inbox could not be loaded.")
         uids = sorted((int(value) for value in (values[0] or b"").split()), reverse=True)
@@ -109,7 +113,7 @@ def inbox(box, before=None, view="inbox"):
             message = BytesParser(policy=policy.default).parsebytes(raw)
             messages.append({"uid": uid, "unread": b"\\Seen" not in meta, **headers(message)})
         return {"address": box["address"], "uid_validity": uid_validity, "messages": messages,
-                "next_before": uids[19] if len(uids) > 20 else None, **counts}
+                "next_before": uids[19] if len(uids) > 20 else None, "matched": len(uids), **counts}
 
 
 class PlainHTML(HTMLParser):
@@ -160,13 +164,24 @@ def read_message(box, uid, uid_validity, view="inbox"):
                 "attachments": [str(p.get_filename() or "Attachment") for p in message.iter_attachments()]}
 
 
-def send_message(box, recipient, subject, body):
+def send_message(box, recipient, subject, body, reply=None):
     message = EmailMessage()
     message["From"] = box["address"]
     message["To"] = recipient
     message["Subject"] = subject
     message["Date"] = formatdate(localtime=False)
     message["Message-ID"] = make_msgid(domain=box["address"].split("@")[-1])
+    if reply:
+        with connect(box, "Sent" if reply["view"] == "sent" else "INBOX") as client:
+            if validity(client) != reply["uid_validity"]:
+                raise HTTPException(409, "The original email changed. Reopen it before replying.")
+            _, raw = raw_message(client, reply["uid"], "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID REFERENCES IN-REPLY-TO)])")
+            original = BytesParser(policy=policy.default).parsebytes(raw)
+            ids = re.findall(r"<[^<>\s]+>", str(original.get("Message-ID", "")))
+            if ids:
+                message["In-Reply-To"] = ids[0]
+                references = re.findall(r"<[^<>\s]+>", str(original.get("References", original.get("In-Reply-To", ""))))
+                message["References"] = " ".join(dict.fromkeys((references + ids)[:30]))
     message.set_content(body)
     message.add_alternative(render_branded_email("there", subject, body, reply_email=box["address"]), subtype="html")
     try:
@@ -201,3 +216,47 @@ def mark_message_read(box, uid, uid_validity, view="inbox"):
         if status != "OK":
             raise HTTPException(502, "This email could not be marked as read. Please try again.")
         return {"uid": uid, "unread": False}
+
+
+def conversation(box, uid, uid_validity, view="inbox"):
+    fields = "(FLAGS BODY.PEEK[HEADER.FIELDS (SUBJECT FROM TO DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])"
+    with connect(box, "Sent" if view == "sent" else "INBOX") as client:
+        if validity(client) != uid_validity:
+            raise HTTPException(409, "Your mailbox changed. Reopen the email.")
+        _, raw = raw_message(client, uid, fields)
+        original = BytesParser(policy=policy.default).parsebytes(raw)
+        ancestors = re.findall(r"<[^<>\s]+>", str(original.get("References", original.get("In-Reply-To", ""))))
+        ids = re.findall(r"<[^<>\s]+>", str(original.get("Message-ID", "")))
+        root = (ancestors or ids or [None])[0]
+        if not root:
+            return {"messages": []}
+        if len(root) > 500 or not root.isascii():
+            return {"messages": []}
+        quoted = '"' + root.replace('\\', '\\\\').replace('"', '\\"') + '"'
+        items = []
+        for folder, folder_view in (("INBOX", "inbox"), ("Sent", "sent")):
+            status, _ = client.select(folder, readonly=True)
+            if status != "OK":
+                continue
+            folder_validity = validity(client)
+            status, values = client.uid("search", None, f"OR HEADER Message-ID {quoted} OR HEADER References {quoted} HEADER In-Reply-To {quoted}")
+            if status != "OK":
+                continue
+            for identifier in (values[0] or b"").split()[-20:]:
+                try:
+                    _, raw = raw_message(client, int(identifier), fields)
+                except HTTPException as error:
+                    if error.status_code == 404:
+                        continue
+                    raise
+                email = BytesParser(policy=policy.default).parsebytes(raw)
+                related = re.findall(r"<[^<>\s]+>", " ".join(str(email.get(h, "")) for h in ("Message-ID", "References", "In-Reply-To")))
+                if root in related:
+                    items.append({"uid": int(identifier), "uid_validity": folder_validity, "view": folder_view, **headers(email)})
+        from email.utils import parsedate_to_datetime
+        def timestamp(item):
+            try:
+                return parsedate_to_datetime(item["date"]).timestamp()
+            except (ValueError, TypeError, OverflowError):
+                return 0
+        return {"messages": sorted(items, key=timestamp)}

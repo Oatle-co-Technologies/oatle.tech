@@ -4,16 +4,16 @@ from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from backend.dependencies import get_current_staff
 from backend.models.staff import Staff
-from backend.services.mailbox_service import inbox, mailbox_for, read_message, send_message, mark_message_read
+from backend.services.mailbox_service import inbox, mailbox_for, read_message, send_message, mark_message_read, conversation
 
 router = APIRouter(prefix="/mail", tags=["Mail"])
 
 
 @router.get("/inbox")
 def get_inbox(response: Response, before: int | None = Query(None, ge=1),
-              staff: Staff = Depends(get_current_staff), view: Literal["inbox", "unread", "sent"] = "inbox"):
+              staff: Staff = Depends(get_current_staff), view: Literal["inbox", "unread", "sent"] = "inbox", q: str = Query("", max_length=200, pattern=r"^[^\r\n]*$")):
     response.headers["Cache-Control"] = "no-store"
-    return inbox(mailbox_for(staff), before, view=view)
+    return inbox(mailbox_for(staff), before, view=view, search=q.strip())
 
 
 @router.get("/inbox/{uid}")
@@ -26,8 +26,16 @@ def get_message(response: Response, uid: int, uid_validity: int = Query(..., ge=
     return read_message(mailbox_for(staff), uid, uid_validity, view=view)
 
 
+class ReplyContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    uid: int = Field(ge=1)
+    uid_validity: int = Field(ge=1)
+    view: Literal["inbox", "unread", "sent"] = "inbox"
+
+
 class OutgoingMail(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    reply: ReplyContext | None = None
     recipient: EmailStr
     subject: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=100000)
@@ -44,7 +52,7 @@ class OutgoingMail(BaseModel):
 def send_mail(payload: OutgoingMail, response: Response,
               staff: Staff = Depends(get_current_staff)):
     response.headers["Cache-Control"] = "no-store"
-    return send_message(mailbox_for(staff), str(payload.recipient), payload.subject, payload.body)
+    return send_message(mailbox_for(staff), str(payload.recipient), payload.subject, payload.body, reply=payload.reply.model_dump() if payload.reply else None)
 
 
 @router.post("/inbox/{uid}/read")
@@ -55,3 +63,13 @@ def mark_read(response: Response, uid: int, uid_validity: int = Query(..., ge=1)
         raise HTTPException(422, "Invalid message identifier")
     response.headers["Cache-Control"] = "no-store"
     return mark_message_read(mailbox_for(staff), uid, uid_validity, view=view)
+
+
+@router.get("/inbox/{uid}/conversation")
+def get_conversation(response: Response, uid: int, uid_validity: int = Query(..., ge=1),
+                     staff: Staff = Depends(get_current_staff), view: Literal["inbox", "unread", "sent"] = "inbox"):
+    from fastapi import HTTPException
+    if uid < 1:
+        raise HTTPException(422, "Invalid message identifier")
+    response.headers["Cache-Control"] = "no-store"
+    return conversation(mailbox_for(staff), uid, uid_validity, view=view)

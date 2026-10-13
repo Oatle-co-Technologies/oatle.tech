@@ -9,5 +9,5 @@ export default async function Page({ params, searchParams }: {
   const { uid } = await params;
   if (!/^\d+$/.test(uid) || !Number.isSafeInteger(Number(uid)) || Number(uid) < 1) notFound();
   const query = mailRoute(await searchParams);
-  return <MailScreen initialView={query.view} initialBefore={query.before} messageUid={Number(uid)} validity={query.validity ?? undefined} />;
+  return <MailScreen initialView={query.view} initialBefore={query.before} initialSearch={query.search} messageUid={Number(uid)} validity={query.validity ?? undefined} />;
 }

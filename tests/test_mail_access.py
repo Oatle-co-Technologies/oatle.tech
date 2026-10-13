@@ -204,3 +204,47 @@ def test_mark_read_uses_authenticated_mailbox(environment):
     assert response.status_code == 200
     assert mark.call_args.args[0]['address'] == 'kat@example.com'
     assert mark.call_args.kwargs['view'] == 'unread'
+
+
+
+def test_search_uses_literal_unicode_text_without_imap_injection():
+    client = MagicMock()
+    client.select.return_value = ('OK', [b'100'])
+    client.response.return_value = ('UIDVALIDITY', [b'7'])
+    client.status.return_value = ('OK', [b'INBOX (MESSAGES 100 UNSEEN 35)'])
+    client.uid.return_value = ('OK', [b''])
+    term = 'café ") ALL'
+    with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
+        mail.inbox({'address': 'kat@example.com', 'password': 'test'}, view='unread', search=term)
+    assert client.literal == term.encode('utf-8')
+    client.uid.assert_called_once_with('search', 'UTF-8', 'UNSEEN TEXT')
+
+
+def test_reply_headers_are_derived_from_own_original_message():
+    smtp = MagicMock()
+    smtp.__enter__.return_value = smtp
+    client = MagicMock()
+    client.response.return_value = ('UIDVALIDITY', [b'7'])
+    client.append.return_value = ('OK', [])
+    client.uid.return_value = ('OK', [(b'1', b'Message-ID: <parent@example.com>\r\nReferences: <root@example.com>\r\n\r\n')])
+    from contextlib import contextmanager
+    @contextmanager
+    def connect(*args, **kwargs): yield client
+    with patch.object(mail, 'connect', connect), patch.object(mail.smtplib, 'SMTP_SSL', return_value=smtp):
+        mail.send_message({'address': 'kat@example.com', 'password': 'test'}, 'recipient@example.com', 'Re: Hello', 'Reply', reply={'uid':1,'uid_validity':7,'view':'inbox'})
+    message = smtp.send_message.call_args.args[0]
+    assert message['In-Reply-To'] == '<parent@example.com>'
+    assert str(message['References']) == '<root@example.com> <parent@example.com>'
+
+
+def test_conversation_groups_inbox_and_sent_by_message_ids():
+    client = MagicMock()
+    client.select.return_value = ('OK', [b'1'])
+    client.response.return_value = ('UIDVALIDITY', [b'7'])
+    source = b'Message-ID: <root@example.com>\r\nSubject: Hello\r\nDate: Tue, 13 Oct 2026 10:00:00 +0200\r\n\r\n'
+    reply = b'Message-ID: <reply@example.com>\r\nReferences: <root@example.com>\r\nSubject: Re: Hello\r\nDate: Tue, 13 Oct 2026 11:00:00 +0200\r\n\r\n'
+    client.uid.side_effect = [('OK',[(b'1',source)]),('OK',[b'1']),('OK',[(b'1',source)]),('OK',[b'2']),('OK',[(b'2',reply)])]
+    with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
+        result = mail.conversation({'address': 'kat@example.com', 'password': 'test'}, 1, 7)
+    assert [item['view'] for item in result['messages']] == ['inbox','sent']
+    assert [item['subject'] for item in result['messages']] == ['Hello','Re: Hello']
