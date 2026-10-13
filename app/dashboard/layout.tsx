@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import Tasks from "./tasks/tasks";
 import "./dashboard.css";
 import TaskNotifications from "@/components/dashboard/TaskNotifications";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,18 +24,7 @@ export default function DashboardLayout({
   const isUnauthorizedPage =
     pathname === "/dashboard/unauthorized";
 
-  const shouldOpenTasks =
-    staff?.access_level === "member" &&
-    pathname !== "/dashboard/inbox" &&
-    pathname !== "/dashboard/tasks" &&
-    !pathname.startsWith("/dashboard/tasks/") &&
-    !isUnauthorizedPage;
-
-  useEffect(() => {
-    if (!loading && shouldOpenTasks) {
-      router.replace("/dashboard/tasks?view=overview");
-    }
-  }, [loading, router, shouldOpenTasks]);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (
@@ -46,10 +38,6 @@ export default function DashboardLayout({
     router.replace(userEmail ? "/dashboard/unauthorized" : "/login");
   }, [isUnauthorizedPage, loading, router, staff, userEmail]);
 
-  if (shouldOpenTasks) {
-    return null;
-  }
-
   if (
     isUnauthorizedPage ||
     (!loading &&
@@ -61,7 +49,30 @@ export default function DashboardLayout({
         {!isUnauthorizedPage && pathname !== "/dashboard/settings" && (
           <TaskNotifications key={staff?.id ?? "signed-out"} showControls={false} />
         )}
-        {pathname === "/dashboard" ? children : (
+        {!isUnauthorizedPage && staff?.access_level === "member" ? (
+          <div className="member-dashboard">
+            <button type="button" className="member-menu-toggle" aria-expanded={menuOpen} aria-controls="member-dashboard-menu" onClick={() => setMenuOpen(open => !open)}>{menuOpen ? "Close menu" : "Menu"}</button>
+            <aside className={`member-dashboard-sidebar ${menuOpen ? "member-menu-open" : ""}`}>
+              <Link href="/" className="dashboard-logo" aria-label="Oatle Technologies home"><Image src="/oatle-technologies-transparent-logo.png" alt="Oatle Technologies" width={164} height={112} /></Link>
+              <nav id="member-dashboard-menu" className="dashboard-nav" aria-label="Dashboard menu">
+                {[
+                  { href: "/dashboard", label: "My dashboard" },
+                  { href: "/dashboard/clients", label: "Clients" },
+                  { href: "/dashboard/leads", label: "Leads" },
+                  { href: "/dashboard/tasks", label: "Tasks" },
+                  { href: "/dashboard/inbox", label: "Inbox" },
+                  { href: "/dashboard/appointments", label: "Appointments" },
+                  { href: "/dashboard/projects", label: "Projects" },
+                  { href: "/dashboard/settings", label: "Settings" },
+                ].map(item => {
+                  const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
+                  return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`dashboard-nav-item ${active ? "active" : ""}`} onClick={() => setMenuOpen(false)}>{item.label}</Link>;
+                })}
+              </nav>
+            </aside>
+            <div className="member-dashboard-content">{pathname === "/dashboard" ? <Tasks /> : children}</div>
+          </div>
+        ) : pathname === "/dashboard" ? children : (
           <div className="dashboard-content-centered">{children}</div>
         )}
       </div>

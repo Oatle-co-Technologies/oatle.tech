@@ -163,3 +163,17 @@
 .tasks-summary-link { display:block; color:inherit; text-decoration:none; transition:border-color .15s,background .15s; }
 .tasks-summary-link:hover { border-color:#96751a; background:#fffaf0; }
 .tasks-summary-link:focus-visible { outline:2px solid #96751a; outline-offset:3px; }
+
+/* Members keep the dashboard menu while their landing screen shows their tasks. */
+.member-dashboard { display:grid; grid-template-columns:220px minmax(0,1fr); min-height:100svh; }
+.member-dashboard-sidebar { background:#fff; border-right:1px solid #e9e2d4; padding:28px 16px; }
+.member-dashboard-sidebar .dashboard-logo { display:flex; justify-content:center; margin-bottom:24px; padding:0; }
+.member-dashboard-content { min-width:0; padding:28px; }
+.member-menu-toggle { display:none; }
+@media(max-width:700px) {
+  .member-dashboard { display:block; }
+  .member-menu-toggle { display:block; margin:16px 20px; min-height:44px; padding:8px 16px; border:1px solid #e9e2d4; border-radius:8px; background:#fff; color:#282822; font:inherit; }
+  .member-dashboard-sidebar { display:none; border-right:0; border-bottom:1px solid #e9e2d4; }
+  .member-dashboard-sidebar.member-menu-open { display:block; }
+  .member-dashboard-content { padding:20px; }
+}
