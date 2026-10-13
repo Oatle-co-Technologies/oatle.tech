@@ -22,7 +22,10 @@ export default function DashboardLayout({
     pathname === "/dashboard/unauthorized";
 
   const shouldOpenTasks =
-    pathname === "/dashboard" && staff?.access_level === "member";
+    staff?.access_level === "member" &&
+    pathname !== "/dashboard/tasks" &&
+    !pathname.startsWith("/dashboard/tasks/") &&
+    !isUnauthorizedPage;
 
   useEffect(() => {
     if (!loading && shouldOpenTasks) {

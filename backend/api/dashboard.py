@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.database.connection import SessionLocal
-from backend.dependencies import get_current_staff, is_financial_owner
+from backend.dependencies import get_admin_staff, is_financial_owner
 
 from backend.models.client import Client
 
@@ -40,7 +40,7 @@ def get_db():
 def get_dashboard_summary(
     request: Request,
     db: Session = Depends(get_db),
-    current_staff: Staff = Depends(get_current_staff),
+    current_staff: Staff = Depends(get_admin_staff),
 ):
 
     today = date.today()
