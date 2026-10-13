@@ -23,3 +23,10 @@
 .mail-views { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; }
 .mail-views button { min-height:44px; padding:10px 20px; border:1px solid #e9e2d4; border-radius:8px; background:#fff; color:#282822; font:inherit; cursor:pointer; }
 .mail-views button[aria-pressed=true] { background:#faf3dc; color:#705810; border-color:#d4af37; }
+
+.mail-views a { display:inline-flex; align-items:center; min-height:44px; padding:10px 20px; border:1px solid #e9e2d4; border-radius:8px; background:#fff; color:#282822; text-decoration:none; box-sizing:border-box; }
+.mail-views a[aria-current=page] { background:#faf3dc; color:#705810; border-color:#d4af37; }
+.mail-list-page { margin-top:18px; }
+.mail-list-page .mail-row { text-decoration:none; }
+.mail-message-page .mail-detail { margin-top:22px; }
+.mail-message-page h1 { overflow-wrap:anywhere; font-size:28px; line-height:1.3; }
