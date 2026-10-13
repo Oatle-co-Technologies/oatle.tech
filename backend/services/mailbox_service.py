@@ -15,6 +15,7 @@ import time
 
 from fastapi import HTTPException
 from backend.services.email_service import render_branded_email
+from backend.services.email_html import sanitize_email_html
 
 
 def mailbox_for(staff):
@@ -147,7 +148,14 @@ def read_message(box, uid, uid_validity, view="inbox"):
             parser = PlainHTML()
             parser.feed(body)
             body = "".join(parser.text)
-        return {"uid": uid, **headers(message), "body": body,
+        html_part = message.get_body(preferencelist=("html",))
+        formatted = None
+        if html_part:
+            try:
+                formatted = sanitize_email_html(html_part.get_content())
+            except (LookupError, UnicodeError):
+                formatted = sanitize_email_html((html_part.get_payload(decode=True) or b"").decode("utf-8", errors="replace"))
+        return {"uid": uid, **headers(message), "body": body, "html_body": formatted,
                 "truncated": len(raw) >= 2097152,
                 "attachments": [str(p.get_filename() or "Attachment") for p in message.iter_attachments()]}
 

@@ -17,3 +17,5 @@ python-multipart
 httpx>=0.27,<1
 
 pywebpush>=2.0,<3
+
+bleach[css]>=6.2,<7

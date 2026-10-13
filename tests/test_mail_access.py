@@ -160,3 +160,13 @@ def test_sent_message_reads_sent_folder():
 def test_arbitrary_folder_cannot_be_selected(environment):
     _, client = environment
     assert client.get('/mail/inbox?view=other-user').status_code == 422
+
+
+def test_html_email_preserves_layout_and_removes_active_content():
+    from backend.services.email_html import sanitize_email_html
+    result = sanitize_email_html('<table><tr><td style="color: red; padding: 12px; background-image:url(https://tracker.example)">Hello <b>Kat</b></td></tr></table><script>alert(1)</script><img src="https://example.com/logo.png" onerror="alert(1)"><a href="javascript:alert(1)">Bad link</a><iframe src="https://example.com"></iframe>')
+    assert '<table>' in result and '<b>Kat</b>' in result
+    assert 'padding: 12px' in result
+    assert '<script' not in result and 'onerror' not in result
+    assert 'javascript:' not in result and '<iframe' not in result
+    assert 'background-image' not in result

@@ -8,7 +8,7 @@ import "./inbox.css";
 
 type MailSummary = { uid: number; subject: string; sender: string; to: string; date: string; unread: boolean };
 type Inbox = { address: string; total: number; unread: number; uid_validity: number; messages: MailSummary[]; next_before: number | null };
-type Message = MailSummary & { to: string; reply_to: string; body: string; truncated: boolean; attachments: string[] };
+type Message = MailSummary & { to: string; reply_to: string; body: string; html_body?: string | null; truncated: boolean; attachments: string[] };
 
 async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { cache: "no-store", signal });
@@ -105,7 +105,7 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
     {!validity ? <p role="alert">Open this email from your message list.</p> : messageLoading ? <p role="status">Opening email…</p> : messageError ? <p role="alert">{messageError}</p> : message && <article className="dashboard-panel mail-detail" aria-label="Email message">
       <h1>{message.subject}</h1><p className="dashboard-subtitle">From: {message.sender}<br/>To: {message.to}<br/>{message.date}</p>
       {view !== "sent" && <button type="button" className="dashboard-button" disabled={sending} onClick={() => compose(message)}>Reply</button>}
-      <div className="mail-body">{message.body || "This message has no readable text."}</div>
+      <EmailBody message={message} />
       {message.truncated && <p className="dashboard-subtitle">This large message is partially displayed.</p>}
       {!!message.attachments.length && <p className="dashboard-subtitle">Attachments: {message.attachments.join(", ")} (view in Purelymail)</p>}
     </article>}
@@ -133,4 +133,22 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
       </section>
     </div>}
   </main>;
+}
+
+
+function EmailBody({ message }: { message: Message }) {
+  const [showImages, setShowImages] = useState(false);
+  const [height, setHeight] = useState(600);
+  if (!message.html_body) return <div className="mail-body">{message.body || "This message has no readable text."}</div>;
+  const policy = `default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src ${showImages ? "https: http:" : "'none'"}; base-uri 'none'; form-action 'none'`;
+  const document = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width,initial-scale=1"><base target="_blank"><style>body{margin:0;padding:16px;font-family:Arial,sans-serif;color:#282822;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}</style></head><body>${message.html_body}</body></html>`;
+  return <div className="mail-body">
+    {!showImages && <button type="button" className="dashboard-button" onClick={() => setShowImages(true)}>Show email images</button>}
+    <iframe title="Formatted email" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={document} style={{ width: "100%", height, border: 0, marginTop: 12 }} onLoad={event => {
+      const frame = event.currentTarget;
+      const resize = () => setHeight(Math.max(200, frame.contentDocument?.documentElement.scrollHeight ?? 600));
+      resize();
+      frame.contentDocument?.querySelectorAll("img").forEach(img => { img.addEventListener("load", resize, { once: true }); img.addEventListener("error", resize, { once: true }); });
+    }} />
+  </div>;
 }
