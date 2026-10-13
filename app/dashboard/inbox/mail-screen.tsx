@@ -34,6 +34,7 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
   const [loading, setLoading] = useState(true);
   const [messageLoading, setMessageLoading] = useState(Boolean(messageUid));
   const [error, setError] = useState("");
+  const [readStatusError, setReadStatusError] = useState("");
   const [messageError, setMessageError] = useState("");
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState({ recipient: "", subject: "", body: "" });
@@ -54,7 +55,14 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
     if (!messageUid || !validity) return;
     const controller = new AbortController();
     read<Message>(`/api/backend/mail/inbox/${messageUid}?uid_validity=${validity}&view=${view}`, controller.signal)
-      .then(setMessage).catch(err => { if (!controller.signal.aborted) setMessageError(err.message); })
+      .then(async data => {
+        if (controller.signal.aborted) return;
+        setMessage(data);
+        try {
+          const response = await fetch(`/api/backend/mail/inbox/${messageUid}/read?uid_validity=${validity}&view=${view}`, { method: "POST", signal: controller.signal });
+          if (!response.ok) throw new Error("Email opened, but its read status could not be updated. Reopen it to try again.");
+        } catch (err) { if (!controller.signal.aborted) setReadStatusError(err instanceof Error ? err.message : "Read status could not be updated."); }
+      }).catch(err => { if (!controller.signal.aborted) setMessageError(err.message); })
       .finally(() => { if (!controller.signal.aborted) setMessageLoading(false); });
     return () => controller.abort();
   }, [messageUid, validity, view]);
@@ -105,6 +113,7 @@ function InboxContent({ initialView: view, initialBefore: before, messageUid, va
     {!validity ? <p role="alert">Open this email from your message list.</p> : messageLoading ? <p role="status">Opening email…</p> : messageError ? <p role="alert">{messageError}</p> : message && <article className="dashboard-panel mail-detail" aria-label="Email message">
       <h1>{message.subject}</h1><p className="dashboard-subtitle">From: {message.sender}<br/>To: {message.to}<br/>{message.date}</p>
       {view !== "sent" && <button type="button" className="dashboard-button" disabled={sending} onClick={() => compose(message)}>Reply</button>}
+      {readStatusError && <p role="alert">{readStatusError}</p>}
       <EmailBody message={message} />
       {message.truncated && <p className="dashboard-subtitle">This large message is partially displayed.</p>}
       {!!message.attachments.length && <p className="dashboard-subtitle">Attachments: {message.attachments.join(", ")} (view in Purelymail)</p>}

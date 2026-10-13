@@ -182,3 +182,25 @@ def test_embedded_images_render_but_executable_data_links_do_not():
     result = sanitize_email_html(embed_email_images('<img src="cid:logo"><a href="data:text/html,bad">Bad</a><img src="data:image/svg+xml,bad">', message))
     assert 'data:image/png;base64,' in result
     assert 'data:text/html' not in result and 'data:image/svg' not in result
+
+
+
+def test_opened_email_can_be_marked_read_on_server():
+    client = MagicMock()
+    client.select.return_value = ('OK', [b'1'])
+    client.response.return_value = ('UIDVALIDITY', [b'8'])
+    client.uid.side_effect = [('OK', [(b'1', b'Message-ID: <test>\r\n\r\n')]), ('OK', [])]
+    with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
+        result = mail.mark_message_read({'address': 'kat@example.com', 'password': 'test'}, 1, 8)
+    client.select.assert_called_once_with('INBOX', readonly=False)
+    assert client.uid.call_args.args == ('store', '1', '+FLAGS.SILENT', '(\\Seen)')
+    assert result['unread'] is False
+
+
+def test_mark_read_uses_authenticated_mailbox(environment):
+    _, client = environment
+    with patch('backend.api.mail.mark_message_read', return_value={'uid': 5, 'unread': False}) as mark:
+        response = client.post('/mail/inbox/5/read?uid_validity=7&view=unread&staff_id=3')
+    assert response.status_code == 200
+    assert mark.call_args.args[0]['address'] == 'kat@example.com'
+    assert mark.call_args.kwargs['view'] == 'unread'

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from backend.dependencies import get_current_staff
 from backend.models.staff import Staff
-from backend.services.mailbox_service import inbox, mailbox_for, read_message, send_message
+from backend.services.mailbox_service import inbox, mailbox_for, read_message, send_message, mark_message_read
 
 router = APIRouter(prefix="/mail", tags=["Mail"])
 
@@ -45,3 +45,13 @@ def send_mail(payload: OutgoingMail, response: Response,
               staff: Staff = Depends(get_current_staff)):
     response.headers["Cache-Control"] = "no-store"
     return send_message(mailbox_for(staff), str(payload.recipient), payload.subject, payload.body)
+
+
+@router.post("/inbox/{uid}/read")
+def mark_read(response: Response, uid: int, uid_validity: int = Query(..., ge=1),
+              staff: Staff = Depends(get_current_staff), view: Literal["inbox", "unread", "sent"] = "inbox"):
+    from fastapi import HTTPException
+    if uid < 1:
+        raise HTTPException(422, "Invalid message identifier")
+    response.headers["Cache-Control"] = "no-store"
+    return mark_message_read(mailbox_for(staff), uid, uid_validity, view=view)

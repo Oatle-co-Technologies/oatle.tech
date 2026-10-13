@@ -34,12 +34,12 @@ def mailbox_for(staff):
 
 
 @contextmanager
-def connect(box, folder="INBOX"):
+def connect(box, folder="INBOX", readonly=True):
     client = None
     try:
         client = imaplib.IMAP4_SSL("imap.purelymail.com", 993, ssl_context=ssl.create_default_context(), timeout=10)
         client.login(box["address"], box["password"])
-        result, _ = client.select(folder, readonly=True)
+        result, _ = client.select(folder, readonly=readonly)
         if result != "OK":
             raise imaplib.IMAP4.error("Cannot open inbox")
         yield client
@@ -189,3 +189,15 @@ def send_message(box, recipient, subject, body):
     except HTTPException:
         pass
     return {"sent": True, "sent_copy_saved": saved}
+
+
+def mark_message_read(box, uid, uid_validity, view="inbox"):
+    with connect(box, "Sent" if view == "sent" else "INBOX", readonly=False) as client:
+        if validity(client) != uid_validity:
+            raise HTTPException(409, "Your inbox changed. Refresh it before opening this message.")
+        # Verify existence before changing flags; some servers accept missing UIDs silently.
+        raw_message(client, uid, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])")
+        status, _ = client.uid("store", str(uid), "+FLAGS.SILENT", "(\\Seen)")
+        if status != "OK":
+            raise HTTPException(502, "This email could not be marked as read. Please try again.")
+        return {"uid": uid, "unread": False}
