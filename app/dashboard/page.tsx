@@ -354,6 +354,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </header>
+        <Link className="dashboard-link home-inbox-link" href="/dashboard/inbox">Open my inbox</Link>
 
         {/* Error */}
         {error && (

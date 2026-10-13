@@ -199,3 +199,5 @@
 .admin-mobile-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .admin-mail-shortcut { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; border:1px solid #e9e2d4; border-radius:8px; background:#fff; color:#8b6d13; }
 .admin-mail-shortcut:focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
+
+.home-inbox-link { display:inline-flex; align-items:center; min-height:44px; margin-bottom:18px; }
