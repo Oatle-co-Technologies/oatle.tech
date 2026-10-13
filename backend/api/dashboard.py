@@ -16,6 +16,7 @@ from backend.models.lead import Lead
 from backend.models.project import Project
 
 from backend.models.task import Task
+from backend.services.campaign_tasks import campaign_task_filter
 from backend.models.staff import Staff
 
 from backend.models.invoice import Invoice
@@ -209,7 +210,7 @@ def get_dashboard_summary(
     # ---------------------------------------------------------
 
     today_tasks_query = (
-        db.query(Task)
+        db.query(Task).filter(~campaign_task_filter())
         .filter(
             Task.due_date == today,
             Task.status != "completed",
@@ -256,7 +257,7 @@ def get_dashboard_summary(
     # distinguish tasks belonging to different staff members.
     # ---------------------------------------------------------
 
-    recent_tasks_query = db.query(Task)
+    recent_tasks_query = db.query(Task).filter(~campaign_task_filter())
 
     if current_staff.access_level != "admin":
         recent_tasks_query = recent_tasks_query.filter(

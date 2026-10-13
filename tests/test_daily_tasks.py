@@ -131,3 +131,19 @@ def test_campaign_date_unique_and_setup_idempotent(environment):
     duplicate = client.post("/daily-tasks/campaigns/schedule", json={"focus_date": "2026-10-13", "industry": "Duplicate", "campaign_name": "Launch"})
     assert duplicate.status_code == 409
     assert client.get("/daily-tasks/campaigns/schedule").status_code == 200
+
+
+def test_campaign_resource_link_roundtrip_and_permissions(environment):
+    client, db, identity = environment
+    payload = {"focus_date": "2026-10-26", "industry": "Plumbing Services", "campaign_name": "October", "resource_url": " https://example.com/demo "}
+    response = client.post("/daily-tasks/campaigns/schedule", json=payload)
+    assert response.status_code == 201
+    record = response.json()
+    assert record["resource_url"] == "https://example.com/demo"
+    identity.update(id=2, access_level="member")
+    assert client.get("/daily-tasks/campaigns/schedule").json()[0]["resource_url"] == record["resource_url"]
+    assert client.put(f"/daily-tasks/campaigns/schedule/{record['id']}", json=payload).status_code == 403
+    identity.update(id=1, access_level="admin")
+    for invalid in ["javascript:alert(1)", "data:text/html,test", "https://user:password@example.com", "https://"]:
+        assert client.put(f"/daily-tasks/campaigns/schedule/{record['id']}", json={**payload, "resource_url": invalid}).status_code == 422
+    assert client.put(f"/daily-tasks/campaigns/schedule/{record['id']}", json={**payload, "resource_url": ""}).json()["resource_url"] is None

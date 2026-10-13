@@ -19,6 +19,8 @@ function formHarness() {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { module, exports: module.exports, process: { env: {} }, require(name) {
     if (name === 'react') return react;
+    if (name === 'next/link') return { default: 'Link' };
+    if (name === '@/lib/task-filters') return { taskMatchesFilter: (t,f,today) => f === 'completed' ? t.status === 'completed' : f === 'blocked' ? t.status === 'blocked' : f === 'overdue' ? t.status !== 'completed' && Boolean(t.due_date && t.due_date < today) : t.status !== 'completed' };
     if (name === 'next/navigation') return { useRouter: () => ({ push() {} }) };
     if (name === './campaign-schedule') return { default: () => null };
     if (name === '@/lib/campaign-dates') return { johannesburgDate: () => '2026-10-10', displayDate: value => value };

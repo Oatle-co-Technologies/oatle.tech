@@ -39,21 +39,21 @@ def seed_campaign(db, founder_id, kat_id, colin_id, created_by):
     for index, industry in enumerate(INDUSTRIES):
         focus = date(2026, 10, 13) + timedelta(days=index)
         day = days[focus]
-        # Previous working day delivery gives the founder time for flyer design.
+        # Previous working day delivery gives Vinolia time for flyer design.
         prior = focus - timedelta(days=1)
         while prior.weekday() >= 5:
             prior -= timedelta(days=1)
         key = "oct2026-" + str(index)
         task(key + "-screenshots", "Verify " + industry + " demo and supply screenshots",
-             "Test desktop and mobile, fix technical issues, capture both screenshots and deliver to the founder. If assets are already ready, record their location and complete this once.", colin_id, prior, day)
+             "Test desktop and mobile, fix technical issues, capture both screenshots and deliver to Vinolia. If assets are already ready, record their location and complete this once.", colin_id, prior, day)
         task(key + "-flyer", "Design " + industry + " promotional flyer",
              "Create one branded static image with desktop and mobile screenshots. Promote the demo and Oatle website development services. Deliver to Kat; no voiceover or video editing required. Prefer delivery ahead of campaign day.", founder_id, focus, day)
         suggestions = [
             ("research", "Research and qualify one promising business", "Identify at least one promising business in today's industry. Use professional judgment to qualify the opportunity."),
-            ("outreach", "Contact a qualified prospect and share the demo", "Choose the professional channel and personalise the message independently. Escalate pricing, discounts, quotations and agreements to the founder."),
-            ("publish", "Write a caption and publish the completed flyer", "Publish the founder's approved static promotional flyer with suitable social copy when it is ready."),
+            ("outreach", "Contact a qualified prospect and share the demo", "Choose the professional channel and personalise the message independently. Escalate pricing, discounts, quotations and agreements to Vinolia."),
+            ("publish", "Write a caption and publish the completed flyer", "Publish Vinolia's approved static promotional flyer with suitable social copy when it is ready."),
             ("leads", "Record outreach and follow-ups in Leads", "Use the existing Leads section to record prospect details, outreach and the next follow-up."),
-            ("enquiries", "Respond to enquiries and follow up", "Manage ongoing communication and escalate qualified sales opportunities to the founder."),
+            ("enquiries", "Respond to enquiries and follow up", "Manage ongoing communication and escalate qualified sales opportunities to Vinolia."),
         ]
         for suffix, name, description in suggestions:
             task(key + "-" + suffix, industry + ": " + name, description, kat_id, focus, day)

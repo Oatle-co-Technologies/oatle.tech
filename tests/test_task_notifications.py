@@ -94,3 +94,21 @@ def test_enabling_alerts_initializes_existing_task_badge():
     db.commit.assert_called_once()
     assert background.tasks[0].func is notify_task_counts
     assert background.tasks[0].args == ([1],)
+
+
+def test_campaign_tasks_are_excluded_from_regular_lists_and_alert_counts():
+    from backend.api.tasks import get_tasks
+    engine = create_engine("sqlite://")
+    Task.__table__.create(engine)
+    with Session(engine) as db:
+        db.add_all([Task(id=1,name="Regular",assigned_to=1,status="todo",task_type="service"),
+                    Task(id=2,name="Campaign",assigned_to=1,status="todo",task_type="daily",campaign_day_id=2),
+                    Task(id=3,name="Campaign preparation",assigned_to=1,status="todo",task_type="daily",setup_key="oct2026-plumbing"),
+                    Task(id=4,name="Other staff campaign",assigned_to=2,status="todo",task_type="daily",campaign_day_id=2)])
+        db.commit()
+        member=SimpleNamespace(id=1,access_level="member")
+        admin=SimpleNamespace(id=1,access_level="admin")
+        assert todo_count(db,1)==1
+        assert [t.id for t in get_tasks(campaign_only=False,db=db,current_staff=member)]==[1]
+        assert {t.id for t in get_tasks(campaign_only=True,db=db,current_staff=member)}=={2,3}
+        assert {t.id for t in get_tasks(campaign_only=True,db=db,current_staff=admin)}=={2,3,4}

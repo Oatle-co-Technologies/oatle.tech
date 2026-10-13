@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { taskMatchesFilter, type TaskFilter } from "@/lib/task-filters";
 import CampaignSchedule from "./campaign-schedule";
 import { displayDate, johannesburgDate } from "@/lib/campaign-dates";
 import { useAuth } from "@/lib/auth-context";
@@ -139,21 +141,26 @@ type CampaignDay = {
   description: string | null;
 };
 
-export default function Tasks({ initialView = "overview" }: {
+export default function Tasks({ initialView = "overview", initialFilter = "all" }: {
   initialView?: "overview" | "management" | "schedule";
+  initialFilter?: TaskFilter;
 } = {}) {
   const router = useRouter();
   const [section, setSection] = useState(initialView);
+  const [overviewFilter, setOverviewFilter] = useState<TaskFilter>(initialFilter);
+  const [completionSaving, setCompletionSaving] = useState<number | null>(null);
   const [today, setToday] = useState(johannesburgDate);
   const [campaigns, setCampaigns] = useState<CampaignDay[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [campaignsError, setCampaignsError] = useState("");
-  const [campaignFilter, setCampaignFilter] = useState<CampaignDay | null>(null);
   const { userEmail, staff: currentStaff } = useAuth();
   const isAdmin = currentStaff?.access_level === "admin";
   const isOwner = currentStaff?.access_level === "admin" && userEmail?.trim().toLowerCase() === "info@oatle-technologies.co.za";
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [campaignTasks, setCampaignTasks] = useState<Task[]>([]);
+  const [campaignTasksLoading, setCampaignTasksLoading] = useState(true);
+  const [campaignTasksError, setCampaignTasksError] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productServices, setProductServices] = useState<
@@ -174,7 +181,7 @@ export default function Tasks({ initialView = "overview" }: {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState("");
-  const [taskView, setTaskView] = useState<"active" | "archive">("active");
+  const [taskView, setTaskView] = useState<"active" | "archive">(initialFilter === "completed" ? "archive" : "active");
 
   const [form, setForm] = useState<TaskForm>({
     ...emptyForm,
@@ -222,6 +229,21 @@ export default function Tasks({ initialView = "overview" }: {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadCampaignTasks() {
+    if (!userEmail) return;
+    setCampaignTasksLoading(true);
+    setCampaignTasksError("");
+    try {
+      const response = await fetch(`${API_URL}/tasks?campaign_only=true`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Campaign tasks could not be loaded.");
+      setCampaignTasks(await response.json());
+    } catch (err) {
+      setCampaignTasksError(err instanceof Error ? err.message : "Campaign tasks could not be loaded.");
+    } finally {
+      setCampaignTasksLoading(false);
     }
   }
 
@@ -451,6 +473,7 @@ export default function Tasks({ initialView = "overview" }: {
     void Promise.resolve().then(() => {
       void loadTasks();
       void loadCampaigns();
+      void loadCampaignTasks();
       void loadProjects();
       void loadTaskOptions();
     });
@@ -820,6 +843,33 @@ export default function Tasks({ initialView = "overview" }: {
     return priority;
   }
 
+  function isCampaignTask(task: Pick<Task, "task_type" | "project_id" | "campaign_day_id">) {
+    return task.task_type === "daily" && (
+      projects.some(project => project.id === task.project_id && project.name.trim().toLowerCase() === "demo marketing") ||
+      campaigns.some(day => day.id === task.campaign_day_id && day.campaign_name === "October 2026 Demo Website Campaign")
+    );
+  }
+
+  async function toggleCampaignComplete(id: number, complete: boolean) {
+    const task = campaignTasks.find(task => task.id === id);
+    if (!task || !isCampaignTask(task) || completionSaving !== null || (!isAdmin && task.assigned_to !== currentStaff?.id)) return;
+    setCompletionSaving(id);
+    setError("");
+    try {
+      const response = await fetch(`${API_URL}/daily-tasks/${id}/progress`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: complete ? "completed" : "todo" }),
+      });
+      if (!response.ok) throw new Error("Completion could not be saved. Please try again.");
+      const saved = await response.json();
+      setCampaignTasks(current => current.map(item => item.id === id ? { ...item, status: saved.status, completed_at: saved.completed_at } : item));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Completion could not be saved. Please try again.");
+    } finally {
+      setCompletionSaving(null);
+    }
+  }
+
   function refreshTasks() {
     void loadProjects();
     void loadTasks();
@@ -830,7 +880,6 @@ export default function Tasks({ initialView = "overview" }: {
 
   const assignedTasks = tasks.filter(
     (task) => {
-      if (campaignFilter && task.campaign_day_id !== campaignFilter.id) return false;
       if (!assigneeFilter) {
         return true;
       }
@@ -851,14 +900,13 @@ export default function Tasks({ initialView = "overview" }: {
   // Completion determines archive membership; task records remain unchanged.
   const archivedCount = assignedTasks.filter((task) => task.status === "completed").length;
   const activeCount = assignedTasks.length - archivedCount;
-  const visibleTasks = assignedTasks.filter((task) =>
-    taskView === "archive" ? task.status === "completed" : task.status !== "completed"
-  );
+  const visibleTasks = assignedTasks.filter(task => overviewFilter === "all"
+    ? taskView === "archive" ? task.status === "completed" : task.status !== "completed"
+    : taskMatchesFilter(task, overviewFilter, today));
 
-  const completedCount = tasks.filter(task => task.status === "completed").length;
-  const overdueCount = tasks.filter(task => task.status !== "completed" && task.due_date && task.due_date < today).length;
+  const completedCount = tasks.filter(task => taskMatchesFilter(task, "completed", today)).length;
+  const overdueCount = tasks.filter(task => taskMatchesFilter(task, "overdue", today)).length;
   const todayTasks = tasks.filter(task => task.due_date === today);
-  const focus = campaigns.find(day => day.focus_date === today);
 
   return (
     <div className="tasks-workspace">
@@ -876,28 +924,27 @@ export default function Tasks({ initialView = "overview" }: {
 
       {activeSection === "overview" && <section aria-label="Daily Overview">
         <p className="dashboard-subtitle">{displayDate(today)} · Africa/Johannesburg</p>
-        {focus && <p className="dashboard-form-hint">Today’s campaign: {focus.industry}</p>}
         {error && <p className="dashboard-form-error" role="alert">{error}</p>}
         {loading ? <p role="status">Loading tasks…</p> : <>
           <div className="dashboard-stats tasks-overview-stats">
-            <div className="dashboard-card"><p>Completed</p><h2>{completedCount}</h2></div>
-            <div className="dashboard-card"><p>Outstanding</p><h2>{tasks.length - completedCount}</h2></div>
-            <div className="dashboard-card"><p>Overdue</p><h2>{overdueCount}</h2></div>
-            <div className="dashboard-card"><p>Blocked</p><h2>{tasks.filter(task => task.status === "blocked").length}</h2></div>
+            <Link className="dashboard-card tasks-summary-link" href="/dashboard/tasks?view=management&filter=completed" aria-label="View completed tasks"><p>Completed</p><h2>{completedCount}</h2></Link>
+            <Link className="dashboard-card tasks-summary-link" href="/dashboard/tasks?view=management&filter=outstanding" aria-label="View outstanding tasks"><p>Outstanding</p><h2>{tasks.length - completedCount}</h2></Link>
+            <Link className="dashboard-card tasks-summary-link" href="/dashboard/tasks?view=management&filter=overdue" aria-label="View overdue tasks"><p>Overdue</p><h2>{overdueCount}</h2></Link>
+            <Link className="dashboard-card tasks-summary-link" href="/dashboard/tasks?view=management&filter=blocked" aria-label="View blocked tasks"><p>Blocked</p><h2>{tasks.filter(task => taskMatchesFilter(task, "blocked", today)).length}</h2></Link>
           </div>
           <div className="dashboard-panel">
             <div className="dashboard-panel-header"><div><p className="dashboard-panel-label">TODAY</p><h3>Tasks due today</h3></div></div>
             {todayTasks.length === 0 ? <p className="dashboard-empty">No tasks due today.</p> : <ul className="tasks-today-list">{todayTasks.map(task => <li key={task.id}>
-              <span>{task.name}</span><span className={getStatusClass(task.status)}>{formatStatus(task.status)}</span>
+              <span>{task.name}</span><span className={getStatusClass(task.status)}>{isCampaignTask(task) ? task.status === "completed" ? "Complete" : "Not complete" : formatStatus(task.status)}</span>
             </li>)}</ul>}
           </div>
         </>}
       </section>}
 
       {activeSection === "schedule" && <CampaignSchedule
-        campaigns={campaigns} tasks={tasks} isAdmin={isAdmin} loading={campaignsLoading || loading}
-        error={campaignsError || error} today={today} apiUrl={API_URL} onRefresh={loadCampaigns}
-        onViewTasks={campaign => { setCampaignFilter(campaign); setTaskView("active"); setSection("management"); }}
+        campaigns={campaigns} tasks={campaignTasks} isAdmin={isAdmin} loading={campaignsLoading || campaignTasksLoading}
+        error={campaignsError || campaignTasksError || error} today={today} apiUrl={API_URL} onRefresh={async () => { await Promise.all([loadCampaigns(), loadCampaignTasks()]); }}
+        onComplete={toggleCampaignComplete} completionSaving={completionSaving}
       />}
 
       {activeSection === "management" && <>
@@ -1140,7 +1187,10 @@ export default function Tasks({ initialView = "overview" }: {
                 )}
               </select></label>}
 
-              <label className="dashboard-task-form-row"><span>Status</span><select
+              {isCampaignTask(editingTask ?? { task_type: form.task_type, project_id: Number(form.project_id) || null, campaign_day_id: Number(form.campaign_day_id) || null }) ? <label className="tasks-completion-check">
+                <input type="checkbox" checked={form.status === "completed"} onChange={event => setForm(current => ({ ...current, status: event.target.checked ? "completed" : "todo" }))} />
+                <span>Complete</span>
+              </label> : <label className="dashboard-task-form-row"><span>Status</span><select
                 name="status"
                 value={form.status}
                 onChange={handleChange}
@@ -1156,7 +1206,7 @@ export default function Tasks({ initialView = "overview" }: {
                     </option>
                   )
                 )}
-              </select></label>
+              </select></label> }
 
               {form.task_type !== "daily" && <label className="dashboard-task-form-row"><span>Priority</span><select
                 name="priority"
@@ -1237,7 +1287,7 @@ export default function Tasks({ initialView = "overview" }: {
       )}
 
       {recordPage.showList && <>
-      {campaignFilter && <p className="tasks-campaign-filter">Campaign: {campaignFilter.industry} · {displayDate(campaignFilter.focus_date)} <button type="button" className="dashboard-button dashboard-button-secondary" onClick={() => setCampaignFilter(null)}>Clear campaign filter</button></p>}
+      {overviewFilter !== "all" && <p className="dashboard-form-hint">Showing {overviewFilter} tasks{!loading && ` (${visibleTasks.length})`}. <Link className="dashboard-link" href="/dashboard/tasks?view=management">Clear task filter</Link></p>}
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <div>
@@ -1245,7 +1295,7 @@ export default function Tasks({ initialView = "overview" }: {
               TASK MANAGEMENT
             </p>
 
-            <h3>{taskView === "archive" ? "Archived tasks" : "Active tasks"}</h3>
+            <h3>{overviewFilter !== "all" ? `${overviewFilter.charAt(0).toUpperCase()}${overviewFilter.slice(1)} tasks` : taskView === "archive" ? "Archived tasks" : "Active tasks"}</h3>
           </div>
 
           <div className="dashboard-panel-actions">
@@ -1291,10 +1341,10 @@ export default function Tasks({ initialView = "overview" }: {
         </div>
 
         <div className="dashboard-task-views" role="group" aria-label="Task view">
-          <button type="button" aria-pressed={taskView === "active"} onClick={() => setTaskView("active")}>
+          <button type="button" aria-pressed={taskView === "active"} onClick={() => { setOverviewFilter("all"); setTaskView("active"); }}>
             Active{!loading && ` (${activeCount})`}
           </button>
-          <button type="button" aria-pressed={taskView === "archive"} onClick={() => setTaskView("archive")}>
+          <button type="button" aria-pressed={taskView === "archive"} onClick={() => { setOverviewFilter("all"); setTaskView("archive"); }}>
             Archive{!loading && ` (${archivedCount})`}
           </button>
         </div>
@@ -1365,6 +1415,12 @@ export default function Tasks({ initialView = "overview" }: {
                       </p>
 
                       <div className="dashboard-task-meta">
+                        {isCampaignTask(task) ? <label className="tasks-completion-check">
+                          <input type="checkbox" aria-label={`Complete ${task.name}`} checked={task.status === "completed"}
+                            disabled={completionSaving !== null || (!isAdmin && task.assigned_to !== currentStaff?.id)}
+                            onChange={event => void toggleCampaignComplete(task.id, event.target.checked)} />
+                          <span>Complete</span>{completionSaving === task.id && <small role="status">Saving…</small>}
+                        </label> : <>
                         <span className="dashboard-meta-label">
                           Status
                         </span>
@@ -1378,6 +1434,8 @@ export default function Tasks({ initialView = "overview" }: {
                             task.status
                           )}
                         </span>
+
+                        </>}
 
                         <span className="dashboard-meta-label">
                           Priority
@@ -1425,7 +1483,7 @@ export default function Tasks({ initialView = "overview" }: {
                       )}
                     </div>
 
-                    <div className="dashboard-list-actions">
+                    {!isCampaignTask(task) && <div className="dashboard-list-actions">
                       <button
                         type="button"
                         className="dashboard-button dashboard-button-edit"
@@ -1449,7 +1507,7 @@ export default function Tasks({ initialView = "overview" }: {
                       >
                         Delete
                       </button>}
-                    </div>
+                    </div>}
                   </div>
                 )
               )}

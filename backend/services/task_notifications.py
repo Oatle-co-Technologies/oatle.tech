@@ -5,12 +5,13 @@ import os
 from sqlalchemy import text
 from backend.database.connection import SessionLocal
 from backend.models.task import Task
+from backend.services.campaign_tasks import campaign_task_filter
 
 logger = logging.getLogger(__name__)
 
 
 def todo_count(db, staff_id):
-    return db.query(Task).filter(Task.assigned_to == staff_id, Task.status == "todo").count()
+    return db.query(Task).filter(Task.assigned_to == staff_id, Task.status == "todo", ~campaign_task_filter()).count()
 
 
 def notify_task_counts(staff_ids):

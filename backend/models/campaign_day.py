@@ -10,5 +10,6 @@ class CampaignDay(Base):
     industry = Column(String(200), nullable=False)
     campaign_name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
+    resource_url = Column(String(2048), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

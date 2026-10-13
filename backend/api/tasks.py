@@ -10,6 +10,7 @@ from backend.models.product_service import ProductService
 from backend.models.pricing import Service
 from backend.models.staff import Staff
 from backend.models.task import Task
+from backend.services.campaign_tasks import campaign_task_filter
 from backend.schemas.task import TaskCreate, TaskResponse
 from backend.services.task_notifications import notify_task_counts
 from backend.services.email_service import (
@@ -208,10 +209,12 @@ def create_task(
     response_model=list[TaskResponse],
 )
 def get_tasks(
+    campaign_only: bool = False,
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff),
 ):
-    query = db.query(Task)
+    campaign = campaign_task_filter()
+    query = db.query(Task).filter(campaign if campaign_only else ~campaign)
 
     if current_staff.access_level != "admin":
         query = query.filter(Task.assigned_to == current_staff.id)

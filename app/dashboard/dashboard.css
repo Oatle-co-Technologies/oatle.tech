@@ -154,3 +154,12 @@
   .tasks-today-list li { align-items:flex-start; }
   .tasks-today-list .dashboard-status { flex-shrink:0; }
 }
+
+.tasks-completion-check { display:inline-flex; align-items:center; gap:0.65rem; min-height:44px; cursor:pointer; }
+.tasks-completion-check input[type="checkbox"] { width:22px; height:22px; flex-shrink:0; accent-color:#96751a; cursor:pointer; }
+.tasks-completion-check:has(input:checked) > span { text-decoration:line-through; opacity:0.7; }
+.tasks-completion-check:has(input:disabled) { cursor:wait; }
+
+.tasks-summary-link { display:block; color:inherit; text-decoration:none; transition:border-color .15s,background .15s; }
+.tasks-summary-link:hover { border-color:#96751a; background:#fffaf0; }
+.tasks-summary-link:focus-visible { outline:2px solid #96751a; outline-offset:3px; }

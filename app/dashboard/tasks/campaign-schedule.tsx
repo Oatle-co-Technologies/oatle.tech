@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { displayDate, weekStart } from "@/lib/campaign-dates";
+import { displayDate } from "@/lib/campaign-dates";
 
 type CampaignDay = {
   id: number;
@@ -9,19 +9,23 @@ type CampaignDay = {
   industry: string;
   campaign_name: string;
   description: string | null;
+  resource_url?: string | null;
 };
 type CampaignTask = {
   id: number;
   name: string;
   status: string;
   campaign_day_id?: number | null;
+  task_type?: string;
+  due_date?: string | null;
 };
-type CampaignForm = Omit<CampaignDay, "id" | "description"> & {
+type CampaignForm = Omit<CampaignDay, "id" | "description" | "resource_url"> & {
   id?: number;
   description: string;
+  resource_url: string;
 };
 
-export default function CampaignSchedule({ campaigns, tasks, isAdmin, loading, error, today, apiUrl, onRefresh, onViewTasks }: {
+export default function CampaignSchedule({ campaigns, tasks, isAdmin, loading, error, today, apiUrl, onRefresh, onComplete, completionSaving }: {
   campaigns: CampaignDay[];
   tasks: CampaignTask[];
   isAdmin: boolean;
@@ -30,13 +34,17 @@ export default function CampaignSchedule({ campaigns, tasks, isAdmin, loading, e
   today: string;
   apiUrl: string;
   onRefresh: () => Promise<void>;
-  onViewTasks: (campaign: CampaignDay) => void;
+  onComplete: (id: number, complete: boolean) => Promise<void>;
+  completionSaving: number | null;
 }) {
   const [form, setForm] = useState<CampaignForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [success, setSuccess] = useState("");
-  const weeks = [...new Set(campaigns.map(day => weekStart(day.focus_date)))];
+  const visibleCampaigns = campaigns.filter(day => day.focus_date === today || (
+    day.focus_date < today && tasks.some(task => task.campaign_day_id === day.id && task.status !== "completed")
+  )).sort((a, b) => a.focus_date === today ? -1 : b.focus_date === today ? 1 : a.focus_date.localeCompare(b.focus_date));
+  const preparation = tasks.filter(task => !task.campaign_day_id && task.due_date && task.due_date <= today && (task.due_date === today || task.status !== "completed"));
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,43 +75,53 @@ export default function CampaignSchedule({ campaigns, tasks, isAdmin, loading, e
 
   return <section aria-label="Campaign Schedule" className="tasks-campaign-schedule">
     <div className="dashboard-panel-header">
-      <div><p className="dashboard-panel-label">CAMPAIGN SCHEDULE</p><h3>Weekly industry focus</h3></div>
+      <div><p className="dashboard-panel-label">CAMPAIGN SCHEDULE</p><h3>Today’s campaign work</h3></div>
       {isAdmin && <button type="button" className="dashboard-button dashboard-button-primary" onClick={() => {
         setSaveError("");
-        setForm({ focus_date: today, industry: "", campaign_name: "October 2026 Demo Website Campaign", description: "" });
+        setForm({ focus_date: today, industry: "", campaign_name: "October 2026 Demo Website Campaign", description: "", resource_url: "" });
       }}>Create campaign day</button>}
     </div>
     {error && <p role="alert" className="dashboard-form-error">{error} <button type="button" className="dashboard-button dashboard-button-secondary" onClick={() => void onRefresh()}>Retry</button></p>}
     {loading ? <p role="status">Loading campaign schedule…</p> : <>
-      {weeks.length === 0 && !error && <p className="dashboard-empty">No campaign days scheduled.</p>}
-      {weeks.map(week => <section className="tasks-campaign-week" key={week}>
-        <h3>Week of {displayDate(week)}</h3>
-        <div className="tasks-week-grid">{campaigns.filter(day => weekStart(day.focus_date) === week).map(day => {
-          const related = tasks.filter(task => task.campaign_day_id === day.id);
+      <p className="dashboard-subtitle">{displayDate(today)} · Africa/Johannesburg</p>
+      {!campaigns.some(day => day.focus_date === today) && !error && <p className="dashboard-empty">No campaign scheduled today.</p>}
+      <div className="tasks-week-grid">{visibleCampaigns.map(day => {
+          const overdue = day.focus_date < today;
+          const related = tasks.filter(task => task.campaign_day_id === day.id && (!overdue || task.status !== "completed"));
           const completed = related.filter(task => task.status === "completed").length;
           return <article className="dashboard-panel" key={day.id}>
             <p className="dashboard-panel-label">{displayDate(day.focus_date)}</p>
+            {overdue && <p className="dashboard-form-error" role="alert">Overdue — not completed on {displayDate(day.focus_date)}. Finish this campaign work.</p>}
             <h3>{day.industry}</h3>
             <p className="dashboard-form-hint">{day.campaign_name}</p>
+            {day.resource_url && /^https?:\/\//i.test(day.resource_url) && <p><a className="dashboard-link" href={day.resource_url} target="_blank" rel="noopener noreferrer">Open day link ↗</a></p>}
             {day.description && <p className="tasks-campaign-description">{day.description}</p>}
-            <p className="tasks-campaign-progress">{completed} / {related.length} {isAdmin ? "team" : "your"} activities completed</p>
-            {related.length > 0 && <details>
+            <p className="tasks-campaign-progress">{overdue ? `${related.length} unfinished activities carried forward` : `${completed} / ${related.length} ${isAdmin ? "team" : "your"} activities completed`}</p>
+            {related.length > 0 && <details open>
               <summary>Assigned activities ({related.length})</summary>
               <ul className="tasks-campaign-activities">{related.map(task => <li key={task.id}>
-                <span>{task.name}</span><small>{task.status.replaceAll("_", " ")}</small>
+                {day.campaign_name === "October 2026 Demo Website Campaign" && task.task_type === "daily" ? <label className="tasks-completion-check">
+                  <input type="checkbox" aria-label={`Complete ${task.name}`} checked={task.status === "completed"} disabled={completionSaving !== null} onChange={event => void onComplete(task.id, event.target.checked)} />
+                  <span>{task.name}</span>{completionSaving === task.id && <small role="status">Saving…</small>}
+                </label> : <><span>{task.name}</span><small>{task.status.replaceAll("_", " ")}</small></>}
               </li>)}</ul>
             </details>}
             <div className="dashboard-panel-actions tasks-campaign-actions">
-              <button type="button" className="dashboard-button dashboard-button-secondary" onClick={() => onViewTasks(day)}>View tasks</button>
               {isAdmin && <button type="button" className="dashboard-button dashboard-button-edit" onClick={() => {
                 setSaveError("");
-                setForm({ id: day.id, focus_date: day.focus_date, industry: day.industry, campaign_name: day.campaign_name, description: day.description || "" });
+                setForm({ id: day.id, focus_date: day.focus_date, industry: day.industry, campaign_name: day.campaign_name, description: day.description || "", resource_url: day.resource_url || "" });
               }}>Edit day</button>}
             </div>
           </article>;
         })}</div>
-      </section>)}
     </>}
+    {!loading && preparation.length > 0 && <div className="dashboard-panel">
+      <h3>Campaign preparation</h3>
+      <ul className="tasks-campaign-activities">{preparation.map(task => <li key={task.id}>
+        {task.due_date && task.due_date < today && <small className="dashboard-form-error">Overdue — not completed on {displayDate(task.due_date)}.</small>}
+        <label className="tasks-completion-check"><input type="checkbox" aria-label={`Complete ${task.name}`} checked={task.status === "completed"} disabled={completionSaving !== null} onChange={event => void onComplete(task.id, event.target.checked)} /><span>{task.name}</span></label>
+      </li>)}</ul>
+    </div>}
     <p role="status" className="dashboard-form-hint">{saving ? "Saving…" : success}</p>
     {saveError && <p className="dashboard-form-error" role="alert">{saveError}</p>}
     {isAdmin && form && <div className="dashboard-panel dashboard-form-panel" aria-label="Campaign day editor">
@@ -114,6 +132,7 @@ export default function CampaignSchedule({ campaigns, tasks, isAdmin, loading, e
           <label className="dashboard-task-form-row"><span>Industry focus</span><input required maxLength={200} value={form.industry} onChange={event => setForm({ ...form, industry: event.target.value })} /></label>
           <label className="dashboard-task-form-row"><span>Campaign name</span><input required maxLength={200} value={form.campaign_name} onChange={event => setForm({ ...form, campaign_name: event.target.value })} /></label>
         </div>
+        <label className="dashboard-task-form-row"><span>Day link (optional)</span><input type="url" maxLength={2048} placeholder="https://…" value={form.resource_url} onChange={event => setForm({ ...form, resource_url: event.target.value })} /><small className="dashboard-form-hint">A demo, flyer or resource for this campaign day. Visible to everyone who can view the schedule.</small></label>
         <label className="dashboard-task-form-row"><span>Description</span><textarea maxLength={10000} rows={4} className="dashboard-form-textarea" value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} /></label>
         <div className="dashboard-form-actions">
           <button type="submit" className="dashboard-button dashboard-button-primary" disabled={saving}>Save campaign day</button>

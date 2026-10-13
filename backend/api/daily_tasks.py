@@ -1,6 +1,7 @@
 """Campaign coordination reuses staff identities and the existing tasks table."""
 from datetime import date, datetime
 from typing import Literal
+from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
@@ -70,6 +71,19 @@ class CampaignInput(StrictInput):
     industry: str = Field(min_length=1, max_length=200)
     campaign_name: str = Field(min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=10000)
+
+    resource_url: str | None = Field(default=None, max_length=2048)
+
+    @field_validator("resource_url")
+    @classmethod
+    def valid_resource_url(cls, value):
+        if value is None or not value.strip():
+            return None
+        value = value.strip()
+        parsed = urlsplit(value)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password or any(character.isspace() for character in value):
+            raise ValueError("Use a valid http or https link without credentials")
+        return value
 
     @field_validator("industry", "campaign_name")
     @classmethod

@@ -21,6 +21,15 @@ export default function DashboardLayout({
   const isUnauthorizedPage =
     pathname === "/dashboard/unauthorized";
 
+  const shouldOpenTasks =
+    pathname === "/dashboard" && staff?.access_level === "member";
+
+  useEffect(() => {
+    if (!loading && shouldOpenTasks) {
+      router.replace("/dashboard/tasks?view=overview");
+    }
+  }, [loading, router, shouldOpenTasks]);
+
   useEffect(() => {
     if (
       loading ||
@@ -32,6 +41,10 @@ export default function DashboardLayout({
 
     router.replace(userEmail ? "/dashboard/unauthorized" : "/login");
   }, [isUnauthorizedPage, loading, router, staff, userEmail]);
+
+  if (shouldOpenTasks) {
+    return null;
+  }
 
   if (
     isUnauthorizedPage ||
