@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Tasks from "./tasks/tasks";
+import MemberOverview from "./member-overview";
 import "./dashboard.css";
 import TaskNotifications from "@/components/dashboard/TaskNotifications";
 import { usePathname, useRouter } from "next/navigation";
@@ -56,7 +56,7 @@ export default function DashboardLayout({
               <Link href="/" className="dashboard-logo" aria-label="Oatle Technologies home"><Image src="/oatle-technologies-transparent-logo.png" alt="Oatle Technologies" width={164} height={112} /></Link>
               <nav id="member-dashboard-menu" className="dashboard-nav" aria-label="Dashboard menu">
                 {[
-                  { href: "/dashboard", label: "My dashboard" },
+                  { href: "/dashboard", label: "Overview" },
                   { href: "/dashboard/clients", label: "Clients" },
                   { href: "/dashboard/leads", label: "Leads" },
                   { href: "/dashboard/tasks", label: "Tasks" },
@@ -70,7 +70,7 @@ export default function DashboardLayout({
                 })}
               </nav>
             </aside>
-            <div className="member-dashboard-content">{pathname === "/dashboard" ? <Tasks /> : children}</div>
+            <div className="member-dashboard-content">{pathname === "/dashboard" ? <MemberOverview /> : children}</div>
           </div>
         ) : pathname === "/dashboard" ? children : (
           <div className="dashboard-content-centered">{children}</div>
