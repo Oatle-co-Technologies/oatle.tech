@@ -65,7 +65,6 @@ function PersonalOverview({ name, staffId }: { name: string; staffId: number }) 
         <p className="dashboard-subtitle"><time dateTime={now.toISOString()} suppressHydrationWarning>{now.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: timezone })} · {now.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit", timeZone: timezone })}</time> · South Africa</p>
       </div><button className="dashboard-button" type="button" disabled={loading || workLoading} onClick={refresh}>Refresh</button>
     </header>
-    <Link className="dashboard-link home-inbox-link" href="/dashboard/inbox">Open my inbox</Link>
     <section aria-label="Your task overview">
       <div className="dashboard-panel-header"><div><p className="dashboard-panel-label">YOUR WORK</p><h2>Today&apos;s task overview</h2></div><Link className="dashboard-link" href="/dashboard/tasks">View all tasks</Link></div>
       {loading ? <p role="status">Loading your tasks…</p> : error ? <p role="alert">{error}</p> : <>
