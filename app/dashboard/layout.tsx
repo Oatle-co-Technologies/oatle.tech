@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Mail } from "lucide-react";
 import MemberOverview from "./member-overview";
 import "./dashboard.css";
 import TaskNotifications from "@/components/dashboard/TaskNotifications";
@@ -51,7 +52,10 @@ export default function DashboardLayout({
         )}
         {!isUnauthorizedPage && staff?.access_level === "member" ? (
           <div className="member-dashboard">
-            <button type="button" className="member-menu-toggle" aria-expanded={menuOpen} aria-controls="member-dashboard-menu" onClick={() => setMenuOpen(open => !open)}>{menuOpen ? "Close menu" : "Menu"}</button>
+            <div className="member-mobile-actions">
+              <button type="button" className="member-menu-toggle" aria-expanded={menuOpen} aria-controls="member-dashboard-menu" onClick={() => setMenuOpen(open => !open)}>{menuOpen ? "Close menu" : "Menu"}</button>
+              <Link href="/dashboard/inbox" className="member-mail-shortcut" aria-label="Open your inbox" onClick={() => setMenuOpen(false)}><Mail size={22} aria-hidden="true" /></Link>
+            </div>
             <aside className={`member-dashboard-sidebar ${menuOpen ? "member-menu-open" : ""}`}>
               <Link href="/" className="dashboard-logo" aria-label="Oatle Technologies home"><Image src="/oatle-technologies-transparent-logo.png" alt="Oatle Technologies" width={164} height={112} /></Link>
               <nav id="member-dashboard-menu" className="dashboard-nav" aria-label="Dashboard menu">

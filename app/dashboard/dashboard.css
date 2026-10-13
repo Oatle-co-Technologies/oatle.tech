@@ -187,3 +187,11 @@
 .member-work-counts span { display:block; text-transform:capitalize; font-size:12px; color:#77776e; }
 .member-work-counts strong { display:block; font-size:24px; margin-top:8px; }
 @media(max-width:700px) { .member-work-counts { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+.member-mobile-actions { display:none; }
+@media(max-width:700px) {
+  .member-mobile-actions { display:flex; align-items:center; gap:10px; padding:16px 20px 0; }
+  .member-mobile-actions .member-menu-toggle { margin:0; }
+  .member-mail-shortcut { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; border:1px solid #e9e2d4; border-radius:8px; background:#fff; color:#8b6d13; }
+  .member-mail-shortcut:focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
+}

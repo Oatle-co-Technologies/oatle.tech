@@ -74,12 +74,10 @@ function PersonalOverview({ name, staffId }: { name: string; staffId: number }) 
         </section>
       </>}
     </section>
-    {(staffId === 7 || staffId === 9) && <section className="dashboard-panel member-work-overview" aria-label={staffId === 7 ? "Leads overview" : "Projects overview"}>
-      <div className="dashboard-panel-header"><div><p className="dashboard-panel-label">{staffId === 7 ? "COMMUNICATIONS" : "DEVELOPMENT"}</p><h3>{staffId === 7 ? "Leads overview" : "Projects overview"}</h3></div><Link className="dashboard-link" href={staffId === 7 ? "/dashboard/leads" : "/dashboard/projects"}>{staffId === 7 ? "View all leads" : "View all projects"}</Link></div>
+    {(staffId === 7 || staffId === 9) && <section className="dashboard-panel member-work-overview" aria-label={staffId === 7 ? "Sales lead pipeline" : "Projects overview"}>
+      <div className="dashboard-panel-header"><div><p className="dashboard-panel-label">{staffId === 7 ? "COMMUNICATIONS" : "DEVELOPMENT"}</p><h3>{staffId === 7 ? "Sales lead pipeline" : "Projects overview"}</h3></div><Link className="dashboard-link" href={staffId === 7 ? "/dashboard/leads" : "/dashboard/projects"}>{staffId === 7 ? "View all leads" : "View all projects"}</Link></div>
       {workLoading ? <p role="status">Loading overview…</p> : workError ? <p role="alert">{workError}</p> : staffId === 7 ? <>
-        <div className="member-work-counts">{["new", "contacted", "proposal", "won"].map(stage => <div key={stage}><span>{label(stage)}</span><strong>{leads.filter(lead => lead.stage === stage).length}</strong></div>)}</div>
-        <ul className="tasks-today-list">{leads.filter(lead => ["new", "contacted", "proposal"].includes(lead.stage)).slice(0,5).map(lead => <li key={lead.id}><Link className="dashboard-link" href={`/dashboard/leads/${lead.id}`}>{lead.name}{lead.company ? ` · ${lead.company}` : ""}</Link><span className="dashboard-subtitle">{label(lead.stage)}</span></li>)}</ul>
-        {!leads.filter(lead => ["new", "contacted", "proposal"].includes(lead.stage)).length && <p className="dashboard-empty">No open leads.</p>}
+        <div className="lead-pipeline">{["new", "contacted", "proposal", "won"].map(stage => <div key={stage}><span>{stage.charAt(0).toUpperCase() + stage.slice(1)}</span><strong>{leads.filter(lead => lead.stage === stage).length}</strong></div>)}</div>
       </> : <>
         <p className="dashboard-subtitle">{activeProjects.length} projects in progress</p>
         {!activeProjects.length ? <p className="dashboard-empty">No projects in progress.</p> : <ul className="tasks-today-list">{activeProjects.slice(0,5).map(project => <li key={project.id}><div><Link className="dashboard-link" href={`/dashboard/projects/${project.id}`}>{project.name}</Link>{project.target_date && <p className="dashboard-subtitle">Target: {project.target_date}</p>}</div><span className="dashboard-subtitle">{label(project.status)}</span></li>)}</ul>}
