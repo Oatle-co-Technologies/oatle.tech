@@ -14,6 +14,7 @@ import smtplib
 import time
 
 from fastapi import HTTPException
+from backend.services.email_service import render_branded_email
 
 
 def mailbox_for(staff):
@@ -156,6 +157,7 @@ def send_message(box, recipient, subject, body):
     message["Date"] = formatdate(localtime=False)
     message["Message-ID"] = make_msgid(domain=box["address"].split("@")[-1])
     message.set_content(body)
+    message.add_alternative(render_branded_email("there", subject, body, reply_email=box["address"]), subtype="html")
     try:
         with smtplib.SMTP_SSL("smtp.purelymail.com", 465,
                               context=ssl.create_default_context(), timeout=15) as client:

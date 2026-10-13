@@ -96,7 +96,7 @@ function InboxContent() {
       <button type="button" className="dashboard-button dashboard-button-primary" disabled={sending} onClick={() => compose()}>Compose email</button>
     </>}
     {composing && <form className="dashboard-panel mail-compose" onSubmit={send}>
-      <h2>New email</h2><p className="dashboard-subtitle">From: {inbox?.address}</p>
+      <h2>New email</h2><p className="dashboard-subtitle">Emails use your Oatle branded template.</p><p className="dashboard-subtitle">From: {inbox?.address}</p>
       <label>To<input type="email" required autoComplete="email" value={draft.recipient} disabled={sending} onChange={e => setDraft({ ...draft, recipient: e.target.value })}/></label>
       <label>Subject<input required maxLength={200} value={draft.subject} disabled={sending} onChange={e => setDraft({ ...draft, subject: e.target.value })}/></label>
       <label>Message<textarea required maxLength={100000} rows={8} value={draft.body} disabled={sending} onChange={e => setDraft({ ...draft, body: e.target.value })}/></label>

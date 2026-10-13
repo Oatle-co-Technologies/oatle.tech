@@ -321,52 +321,7 @@ def send_task_assignment_email(
 # LEAD FOLLOW-UP EMAIL
 # ============================================================
 
-def send_lead_follow_up_email(
-    recipient_email: str,
-    recipient_name: str,
-    subject: str,
-    message: str,
-    attachments: list[dict[str, str | bytes]] | None = None,
-):
-    """
-    Send a follow-up email to a lead or client from the
-    Oatle Technologies communications address.
-
-    Replies are directed to:
-    info@oatle-technologies.co.za
-    """
-
-    if not BREVO_API_KEY:
-        logger.error(
-            "BREVO_API_KEY is not configured."
-        )
-        return False
-
-    if not recipient_email:
-        logger.error(
-            "Lead email address is missing."
-        )
-        return False
-
-    if not recipient_name:
-        recipient_name = "there"
-
-    if not subject.strip():
-        logger.error(
-            "Lead follow-up email subject is empty."
-        )
-        return False
-
-    if not message.strip():
-        logger.error(
-            "Lead follow-up email message is empty."
-        )
-        return False
-
-    # --------------------------------------------------------
-    # Escape user-provided content before placing it into HTML.
-    # --------------------------------------------------------
-
+def render_branded_email(recipient_name: str, subject: str, message: str, reply_email: str = OATLE_REPLY_EMAIL):
     safe_name = html.escape(recipient_name)
     safe_subject = html.escape(subject)
 
@@ -789,7 +744,7 @@ def send_lead_follow_up_email(
                     >
 
                         <a
-                            href="mailto:{OATLE_REPLY_EMAIL}"
+                            href="mailto:{html.escape(reply_email)}"
                             style="
                                 font-size:12px;
                                 line-height:1.5;
@@ -797,7 +752,7 @@ def send_lead_follow_up_email(
                                 text-decoration:none;
                             "
                         >
-                            {OATLE_REPLY_EMAIL}
+                            {html.escape(reply_email)}
                         </a>
 
                     </td>
@@ -843,6 +798,56 @@ def send_lead_follow_up_email(
 </body>
 </html>
 """
+    return html_content
+
+
+def send_lead_follow_up_email(
+    recipient_email: str,
+    recipient_name: str,
+    subject: str,
+    message: str,
+    attachments: list[dict[str, str | bytes]] | None = None,
+):
+    """
+    Send a follow-up email to a lead or client from the
+    Oatle Technologies communications address.
+
+    Replies are directed to:
+    info@oatle-technologies.co.za
+    """
+
+    if not BREVO_API_KEY:
+        logger.error(
+            "BREVO_API_KEY is not configured."
+        )
+        return False
+
+    if not recipient_email:
+        logger.error(
+            "Lead email address is missing."
+        )
+        return False
+
+    if not recipient_name:
+        recipient_name = "there"
+
+    if not subject.strip():
+        logger.error(
+            "Lead follow-up email subject is empty."
+        )
+        return False
+
+    if not message.strip():
+        logger.error(
+            "Lead follow-up email message is empty."
+        )
+        return False
+
+    # --------------------------------------------------------
+    # Escape user-provided content before placing it into HTML.
+    # --------------------------------------------------------
+
+    html_content = render_branded_email(recipient_name, subject, message)
 
     # ========================================================
     # BREVO TRANSACTIONAL EMAIL PAYLOAD

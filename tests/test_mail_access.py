@@ -115,3 +115,18 @@ def test_successful_delivery_is_not_retried_on_sent_folder_failure():
     assert result == {'sent': True, 'sent_copy_saved': False}
     smtp.send_message.assert_called_once()
     assert smtp.send_message.call_args.kwargs['from_addr'] == 'kat@example.com'
+
+
+def test_inbox_email_uses_branded_template_and_safe_content():
+    smtp = MagicMock()
+    smtp.__enter__.return_value = smtp
+    from fastapi import HTTPException
+    with patch.object(mail.smtplib, 'SMTP_SSL', return_value=smtp), patch.object(mail, 'connect', side_effect=HTTPException(502, 'Archive unavailable')):
+        mail.send_message({'address': 'dev@example.com', 'password': 'test'}, 'recipient@example.com', 'Subject <unsafe>', '<script>bad()</script>\nSecond line')
+    message = smtp.send_message.call_args.args[0]
+    html = message.get_body(preferencelist=('html',)).get_content()
+    assert 'Oatle Technologies' in html
+    assert '#d4af37' in html and 'oatle-technologies-transparent-logo.png' in html
+    assert '&lt;script&gt;' in html and '<script>bad()</script>' not in html
+    assert 'dev@example.com' in html
+    assert message.get_body(preferencelist=('plain',)).get_content().strip() == '<script>bad()</script>\nSecond line'
