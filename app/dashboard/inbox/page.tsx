@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import "./inbox.css";
 
-type MailSummary = { uid: number; subject: string; sender: string; date: string; unread: boolean };
+type MailSummary = { uid: number; subject: string; sender: string; to: string; date: string; unread: boolean };
 type Inbox = { address: string; total: number; unread: number; uid_validity: number; messages: MailSummary[]; next_before: number | null };
 type Message = MailSummary & { to: string; reply_to: string; body: string; truncated: boolean; attachments: string[] };
 
@@ -22,6 +22,7 @@ export default function InboxPage() {
 }
 
 function InboxContent() {
+  const [view, setView] = useState<"inbox" | "unread" | "sent">("inbox");
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -39,20 +40,20 @@ function InboxContent() {
 
   useEffect(() => {
     const controller = new AbortController();
-    read<Inbox>(`/api/backend/mail/inbox${before ? `?before=${before}` : ""}`, controller.signal)
+    read<Inbox>(`/api/backend/mail/inbox?view=${view}${before ? `&before=${before}` : ""}`, controller.signal)
       .then(setInbox).catch(err => { if (!controller.signal.aborted) { setInbox(null); setError(err.message); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [before, revision]);
+  }, [before, revision, view]);
 
   useEffect(() => {
     if (selected === null || !inbox) return;
     const controller = new AbortController();
-    read<Message>(`/api/backend/mail/inbox/${selected}?uid_validity=${inbox.uid_validity}`, controller.signal)
+    read<Message>(`/api/backend/mail/inbox/${selected}?uid_validity=${inbox.uid_validity}&view=${view}`, controller.signal)
       .then(setMessage).catch(err => { if (!controller.signal.aborted) setMessageError(err.message); })
       .finally(() => { if (!controller.signal.aborted) setMessageLoading(false); });
     return () => controller.abort();
-  }, [selected, inbox]);
+  }, [selected, inbox, view]);
 
   function loadPage(nextBefore: number | null) {
     setLoading(true); setError(""); setMessage(null); setSelected(null); setMessageError("");
@@ -90,9 +91,10 @@ function InboxContent() {
     <header className="dashboard-header"><div><p className="dashboard-eyebrow">OATLE TECHNOLOGIES</p><h1>Inbox</h1><p className="dashboard-subtitle">{inbox?.address || "Your email inbox"}</p></div>
       <button className="dashboard-button" type="button" disabled={loading} onClick={() => loadPage(null)}>Refresh</button></header>
     {error && <p className="dashboard-form-error" role="alert">{error}</p>}
+    <nav className="mail-views" aria-label="Email views">{(["inbox", "unread", "sent"] as const).map(option => <button key={option} type="button" aria-pressed={view === option} onClick={() => { if (view !== option) { loadPage(null); setView(option); } }}>{option === "inbox" ? "Inbox" : option === "unread" ? "Unread" : "Sent"}</button>)}</nav>
     {sentNotice && <p role="status">{sentNotice}</p>}
     {inbox && !loading && <>
-      <div className="dashboard-stats mail-stats"><div className="dashboard-card"><p>Inbox messages</p><h2>{inbox.total}</h2></div><div className="dashboard-card"><p>Unread</p><h2>{inbox.unread}</h2></div></div>
+      <p className="dashboard-subtitle">{view === "sent" ? `${inbox.total} sent messages` : `${inbox.total} inbox messages · ${inbox.unread} unread`}</p>
       <button type="button" className="dashboard-button dashboard-button-primary" disabled={sending} onClick={() => compose()}>Compose email</button>
     </>}
     {composing && <form className="dashboard-panel mail-compose" onSubmit={send}>
@@ -106,16 +108,16 @@ function InboxContent() {
     </form>}
     {loading ? <p role="status">Loading your inbox…</p> : inbox && <div className="mail-columns">
       <section className="dashboard-panel mail-list" aria-label="Inbox messages">
-        {!inbox.messages.length && <p className="dashboard-empty">No messages in your inbox.</p>}
+        {!inbox.messages.length && <p className="dashboard-empty">{view === "sent" ? "No sent messages." : view === "unread" ? "No unread messages." : "No messages in your inbox."}</p>}
         {inbox.messages.map(item => <button type="button" className="mail-row" key={item.uid} aria-pressed={selected === item.uid} onClick={() => openMessage(item.uid)}>
-          <span className="mail-sender">{item.sender}</span><span className="mail-subject">{item.unread && <span aria-label="Unread">● </span>}{item.subject}</span><span className="mail-date">{item.date}</span>
+          <span className="mail-sender">{view === "sent" ? `To: ${item.to}` : item.sender}</span><span className="mail-subject">{item.unread && <span aria-label="Unread">● </span>}{item.subject}</span><span className="mail-date">{item.date}</span>
         </button>)}
         <div className="mail-pagination">{before && <button type="button" className="dashboard-button" onClick={() => loadPage(null)}>Newest messages</button>}{inbox.next_before && <button type="button" className="dashboard-button" onClick={() => loadPage(inbox.next_before)}>Older messages</button>}</div>
       </section>
       <section className="dashboard-panel mail-detail" aria-label="Selected email" aria-live="polite">
         {messageLoading ? <p role="status">Opening email…</p> : messageError ? <p role="alert">{messageError}</p> : message ? <>
           <h2>{message.subject}</h2><p className="dashboard-subtitle">From: {message.sender}<br/>To: {message.to}<br/>{message.date}</p>
-          <button type="button" className="dashboard-button" disabled={sending} onClick={() => compose(message)}>Reply</button>
+          {view !== "sent" && <button type="button" className="dashboard-button" disabled={sending} onClick={() => compose(message)}>Reply</button>}
           <div className="mail-body">{message.body || "This message has no readable text."}</div>
           {message.truncated && <p className="dashboard-subtitle">This large message is partially displayed.</p>}
           {!!message.attachments.length && <p className="dashboard-subtitle">Attachments: {message.attachments.join(", ")} (view in Purelymail)</p>}

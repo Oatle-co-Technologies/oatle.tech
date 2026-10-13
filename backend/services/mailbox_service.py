@@ -33,12 +33,12 @@ def mailbox_for(staff):
 
 
 @contextmanager
-def connect(box):
+def connect(box, folder="INBOX"):
     client = None
     try:
         client = imaplib.IMAP4_SSL("imap.purelymail.com", 993, ssl_context=ssl.create_default_context(), timeout=10)
         client.login(box["address"], box["password"])
-        result, _ = client.select("INBOX", readonly=True)
+        result, _ = client.select(folder, readonly=True)
         if result != "OK":
             raise imaplib.IMAP4.error("Cannot open inbox")
         yield client
@@ -76,10 +76,11 @@ def headers(message):
             "date": str(message.get("Date", ""))}
 
 
-def inbox(box, before=None):
-    with connect(box) as client:
+def inbox(box, before=None, view="inbox"):
+    folder = "Sent" if view == "sent" else "INBOX"
+    with connect(box, folder) as client:
         uid_validity = validity(client)
-        count_status, count_data = client.status("INBOX", "(MESSAGES UNSEEN)")
+        count_status, count_data = client.status(folder, "(MESSAGES UNSEEN)")
         if count_status != "OK" or not count_data or not count_data[0]:
             raise HTTPException(502, "Your inbox counts could not be loaded.")
         total_match = re.search(rb"MESSAGES (\d+)", count_data[0])
@@ -89,7 +90,9 @@ def inbox(box, before=None):
         counts = {"total": int(total_match[1]), "unread": int(unread_match[1])}
         if before == 1:
             return {"address": box["address"], "uid_validity": uid_validity, "messages": [], "next_before": None, **counts}
-        criteria = "ALL" if before is None else f"UID 1:{before - 1}"
+        criteria = "UNSEEN" if view == "unread" else "ALL"
+        if before is not None:
+            criteria = f"{criteria} UID 1:{before - 1}"
         status, values = client.uid("search", None, criteria)
         if status != "OK":
             raise HTTPException(502, "Your inbox could not be loaded.")
@@ -129,8 +132,8 @@ class PlainHTML(HTMLParser):
             self.text.append(data)
 
 
-def read_message(box, uid, uid_validity):
-    with connect(box) as client:
+def read_message(box, uid, uid_validity, view="inbox"):
+    with connect(box, "Sent" if view == "sent" else "INBOX") as client:
         if validity(client) != uid_validity:
             raise HTTPException(409, "Your inbox changed. Refresh it before opening this message.")
         _, raw = raw_message(client, uid, "(BODY.PEEK[]<0.2097152>)")

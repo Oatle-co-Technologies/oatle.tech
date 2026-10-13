@@ -130,3 +130,33 @@ def test_inbox_email_uses_branded_template_and_safe_content():
     assert '&lt;script&gt;' in html and '<script>bad()</script>' not in html
     assert 'dev@example.com' in html
     assert message.get_body(preferencelist=('plain',)).get_content().strip() == '<script>bad()</script>\nSecond line'
+
+
+@pytest.mark.parametrize('view,folder,criteria', [('inbox','INBOX','ALL UID 1:49'), ('unread','INBOX','UNSEEN UID 1:49'), ('sent','Sent','ALL UID 1:49')])
+def test_views_select_correct_folder_and_filter_entire_mailbox(view, folder, criteria):
+    client = MagicMock()
+    client.select.return_value = ('OK', [b'100'])
+    client.response.return_value = ('UIDVALIDITY', [b'7'])
+    client.status.return_value = ('OK', [b'INBOX (MESSAGES 100 UNSEEN 35)'])
+    client.uid.return_value = ('OK', [b''])
+    with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
+        result = mail.inbox({'address': 'kat@example.com', 'password': 'test'}, 50, view=view)
+    client.select.assert_called_once_with(folder, readonly=True)
+    client.uid.assert_called_once_with('search', None, criteria)
+    assert result['messages'] == []
+
+
+def test_sent_message_reads_sent_folder():
+    client = MagicMock()
+    client.select.return_value = ('OK', [b'1'])
+    client.response.return_value = ('UIDVALIDITY', [b'8'])
+    client.uid.return_value = ('OK', [(b'1', b'Subject: Sent\r\n\r\nBody')])
+    with patch.object(mail.imaplib, 'IMAP4_SSL', return_value=client):
+        result = mail.read_message({'address': 'kat@example.com', 'password': 'test'}, 1, 8, view='sent')
+    client.select.assert_called_once_with('Sent', readonly=True)
+    assert result['subject'] == 'Sent'
+
+
+def test_arbitrary_folder_cannot_be_selected(environment):
+    _, client = environment
+    assert client.get('/mail/inbox?view=other-user').status_code == 422
