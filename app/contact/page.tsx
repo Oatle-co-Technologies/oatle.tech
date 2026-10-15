@@ -228,7 +228,7 @@ export default function ContactPage() {
 
           <div className="contact-info">
             <div className="contact-card">
-              <h3>🤝 Tailored Strategy</h3>
+              <h3>Tailored Strategy</h3>
               <p>
                 Every business is different, so every solution is designed
                 around your goals.
@@ -236,7 +236,7 @@ export default function ContactPage() {
             </div>
 
             <div className="contact-card">
-              <h3>🚀 No Pressure</h3>
+              <h3>No Pressure</h3>
               <p>
                 This is simply the first conversation.
                 <br />
@@ -245,7 +245,7 @@ export default function ContactPage() {
             </div>
 
             <div className="contact-card">
-              <h3>💬 Friendly Advice</h3>
+              <h3>Friendly Advice</h3>
               <p>We speak business, not technical jargon.</p>
             </div>
           </div>
