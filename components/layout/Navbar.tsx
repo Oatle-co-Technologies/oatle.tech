@@ -62,8 +62,8 @@ export default function Navbar() {
             </li>
 
             <li>
-              <Link href="/#process">
-                Process
+              <Link href="/#demos">
+                Demos
               </Link>
             </li>
 
@@ -141,10 +141,10 @@ export default function Navbar() {
 
             <li>
               <Link
-                href="/#process"
+                href="/#demos"
                 onClick={() => setMenuOpen(false)}
               >
-                Process
+                Demos
               </Link>
             </li>
 

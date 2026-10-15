@@ -4,7 +4,7 @@ import ChatWidget from "@/components/chat/ChatWidget";
 import Navbar from "@/components/layout/Navbar";
 
 import Hero from "@/components/sections/Hero/Hero";
-import Problem from "@/components/sections/Problem/Problem";
+import DemoShowcase from "@/components/sections/DemoShowcase/DemoShowcase";
 import WhyOatle from "@/components/sections/WhyOatle/WhyOatle";
 import FeaturedClient from "@/components/sections/FeaturedClient/FeaturedClient";
 import GraphicDesign from "@/components/sections/GraphicDesign/GraphicDesign";
@@ -57,10 +57,10 @@ export default function Home() {
 
       <main>
         <Hero />
-        <Problem />
+        <DemoShowcase />
+        <FeaturedClient />
         <WhyOatle />
         <GraphicDesign />
-        <FeaturedClient />
         <Process />
         <Pricing />
         <FAQ />

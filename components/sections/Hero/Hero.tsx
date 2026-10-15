@@ -24,22 +24,21 @@ export default function Hero() {
           </span>
 
           <h1>
-  Websites for growing businesses.
-  Designs for memorable moments.
+  Websites with purpose.
+  Designs with personality.
 </h1>
 
           <p>
-  We design and build websites that help businesses get discovered, trusted,
-  and chosen. We also create custom invitations, flyers, posters, and social
-  media graphics for businesses and special occasions.
+  Custom websites for growing businesses. Invitations, flyers, and
+  graphics for the moments and messages that matter.
 </p>
           <div className="hero-buttons">
             <button onClick={() => router.push("/contact")}>
               Start Your Project
             </button>
 
-            <button onClick={() => router.push("/#work")}>
-              View Our Work
+            <button onClick={() => router.push("/#demos")}>
+              Explore Live Demos
             </button>
           </div>
         </motion.div>
