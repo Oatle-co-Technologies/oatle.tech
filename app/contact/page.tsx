@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import emailjs from "@emailjs/browser";
 
 const API_URL =
@@ -26,6 +26,14 @@ export default function ContactPage() {
     message: "",
   });
 
+  const isGraphicDesign = formData.service === "Graphic Design";
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("service") === "graphic-design") {
+      setFormData((current) => ({ ...current, service: "Graphic Design" }));
+    }
+  }, []);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -43,17 +51,22 @@ export default function ContactPage() {
     // Required fields
     if (
       !name ||
-      !business ||
+      (!isGraphicDesign && !business) ||
       !email ||
       !phone ||
-      !preferredDate ||
-      !preferredTime ||
+      (!isGraphicDesign && !preferredDate) ||
+      (!isGraphicDesign && !preferredTime) ||
       !message
     ) {
       setStatus({
         type: "error",
         message: "Please complete all required fields.",
       });
+      return;
+    }
+
+    if (Boolean(preferredDate) !== Boolean(preferredTime)) {
+      setStatus({ type: "error", message: "Please provide both a date and time for a discovery call, or leave both blank for a graphic design enquiry." });
       return;
     }
 
@@ -127,56 +140,59 @@ export default function ContactPage() {
     setLoading(true);
 
     try {
-      const start = new Date(
-        `${preferredDate}T${preferredTime}:00${SOUTH_AFRICA_OFFSET}`
-      );
-      const end = new Date(
-        start.getTime() + 45 * 60 * 1000
-      );
-
-      const appointmentResponse = await fetch(
-        `${API_URL}/appointments/discovery`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            participant_name: name,
-            participant_email: email,
-            title: `Discovery call - ${business}`,
-            appointment_type: "discovery_call",
-            start_time: start.toISOString(),
-            end_time: end.toISOString(),
-            location: "Online discovery call",
-            notes: `${service}\n\n${message}\n\nPhone: ${phone}`,
-          }),
-        }
-      );
-
-      if (!appointmentResponse.ok) {
-        const data = await appointmentResponse
-          .json()
-          .catch(() => null);
-
-        throw new Error(
-          data?.detail ||
-            "We could not reserve that discovery-call time."
+      if (preferredDate && preferredTime) {
+        const start = new Date(
+          `${preferredDate}T${preferredTime}:00${SOUTH_AFRICA_OFFSET}`
         );
+        const end = new Date(
+          start.getTime() + 45 * 60 * 1000
+        );
+
+        const appointmentResponse = await fetch(
+          `${API_URL}/appointments/discovery`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              participant_name: name,
+              participant_email: email,
+              title: `Discovery call - ${business || name}`,
+              appointment_type: "discovery_call",
+              start_time: start.toISOString(),
+              end_time: end.toISOString(),
+              location: "Online discovery call",
+              notes: `${service}\n\n${message}\n\nPhone: ${phone}`,
+            }),
+          }
+        );
+
+        if (!appointmentResponse.ok) {
+          const data = await appointmentResponse
+            .json()
+            .catch(() => null);
+
+          throw new Error(
+            data?.detail ||
+              "We could not reserve that discovery-call time."
+          );
+        }
+
       }
 
       await emailjs.send(
         "service_4mg8nys",
         "template_rs3cuww",
         {
-          title: business,
+          title: business || `${service} enquiry - ${name}`,
           name,
           business,
           email,
           phone,
           service,
-            preferred_date: preferredDate,
-            preferred_time: preferredTime,
+          preferred_date: preferredDate,
+          preferred_time: preferredTime,
           message,
         },
         "G21rP3jrxQohCHe1l"
@@ -214,13 +230,13 @@ export default function ContactPage() {
   return (
     <section className="contact-page">
       <div className="container">
-        <span className="section-tag">BOOK A DISCOVERY CALL</span>
+        <span className="section-tag">START YOUR PROJECT</span>
 
-        <h1>Let&apos;s Talk About Your Business</h1>
+        <h1>Let&apos;s Talk About Your Project</h1>
 
         <p className="section-description">
-          Tell us a little about your business and we&apos;ll recommend the
-          best solution for your goals.
+          Tell us about your website, design, or special occasion and we&apos;ll
+          help you find the right next step.
         </p>
 
         <div className="contact-content">
@@ -230,15 +246,15 @@ export default function ContactPage() {
             <div className="contact-card">
               <h3>Tailored Strategy</h3>
               <p>
-                Every business is different, so every solution is designed
-                around your goals.
+                Every project is different, so we start with your ideas,
+                needs, and goals.
               </p>
             </div>
 
             <div className="contact-card">
               <h3>No Pressure</h3>
               <p>
-                This is simply the first conversation.
+                Share your brief or book a conversation.
                 <br />
                 No obligation.
               </p>
@@ -273,13 +289,13 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label htmlFor="business">Business Name</label>
+              <label htmlFor="business">Business Name{isGraphicDesign ? " (optional)" : ""}</label>
 
               <input
                 id="business"
                 name="business"
                 type="text"
-                required
+                required={!isGraphicDesign}
                 autoComplete="organization"
                 value={formData.business}
                 onChange={(e) =>
@@ -343,6 +359,7 @@ export default function ContactPage() {
                   })
                 }
               >
+                <option>Graphic Design</option>
                 <option>New Website</option>
                 <option>Website Redesign</option>
                 <option>Custom Technology Solution</option>
@@ -351,17 +368,23 @@ export default function ContactPage() {
               </select>
             </div>
 
+            {isGraphicDesign && (
+              <p>For a design quote, include the design type, wording, preferred
+                style, deadline, and whether it is for digital sharing or print
+                in your message. You can leave the call date and time blank.</p>
+            )}
+
             <div className="contact-form-row">
               <div>
                 <label htmlFor="preferred_date">
-                  Preferred Date
+                  Preferred Call Date{isGraphicDesign ? " (optional)" : ""}
                 </label>
 
                 <input
                   id="preferred_date"
                   name="preferred_date"
                   type="date"
-                  required
+                  required={!isGraphicDesign}
                   value={formData.preferred_date}
                   onChange={(e) =>
                     setFormData({
@@ -374,14 +397,14 @@ export default function ContactPage() {
 
               <div>
                 <label htmlFor="preferred_time">
-                  Preferred Time
+                  Preferred Call Time{isGraphicDesign ? " (optional)" : ""}
                 </label>
 
                 <input
                   id="preferred_time"
                   name="preferred_time"
                   type="time"
-                  required
+                  required={!isGraphicDesign}
                   value={formData.preferred_time}
                   onChange={(e) =>
                     setFormData({
@@ -395,7 +418,7 @@ export default function ContactPage() {
 
             <div>
               <label htmlFor="message">
-                Tell us about your business or project
+                Tell us about your project
               </label>
 
               <textarea

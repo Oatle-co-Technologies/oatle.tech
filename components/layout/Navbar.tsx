@@ -53,6 +53,9 @@ export default function Navbar() {
 
           <ul className="nav-links">
             <li>
+              <Link href="/#graphic-design">Graphic Design</Link>
+            </li>
+            <li>
               <Link href="/#work">
                 Work
               </Link>
@@ -94,7 +97,7 @@ export default function Navbar() {
           href="/contact"
           className="primary-button desktop-cta"
         >
-          Book Discovery Call
+          Start Your Project
         </Link>
       </div>
 
@@ -121,6 +124,11 @@ export default function Navbar() {
           </button>
 
           <ul className="mobile-nav-links">
+            <li>
+              <Link href="/#graphic-design" onClick={() => setMenuOpen(false)}>
+                Graphic Design
+              </Link>
+            </li>
 
             <li>
               <Link

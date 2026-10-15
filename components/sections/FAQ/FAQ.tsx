@@ -5,6 +5,16 @@ import FadeIn from "@/components/ui/FadeIn";
 
 const faqs = [
   {
+    question: "Can I order graphic design without a website?",
+    answer:
+      "Yes. You can enquire about a custom invitation, flyer, poster, or social media graphic on its own. Choose Graphic Design on our contact form and share your wording, deadline, and whether the design is for digital sharing or printing. A business name and discovery call are optional for graphic design enquiries.",
+  },
+  {
+    question: "How much does graphic design cost?",
+    answer:
+      "Graphic design is quoted separately from our website packages. The quote depends on the design, formats, animation, and deadline. We agree on the deliverables, revision allowance, and turnaround before work begins. Printing is not included unless it is explicitly quoted.",
+  },
+  {
     question: "How long does a website take to build?",
     answer:
       "The timeline depends on the size and complexity of your website, the number of pages, the functionality required, and how quickly content and feedback are provided. During the discovery and planning stages, we will give you a clearer timeline based on your specific project.",
@@ -53,13 +63,12 @@ export default function FAQ() {
           </span>
 
           <h2>
-            Frequently Asked Questions About Our Web Design Services
+            Frequently Asked Questions
           </h2>
 
           <p className="section-description">
-            Have questions about website design, pricing, timelines, or ongoing
-            support? Here are some of the most common questions business owners
-            ask before getting started with Oatle Technologies.
+            Have questions about websites, graphic design, pricing, or timelines?
+            Here are some answers to help you get started.
           </p>
 
           <div className="faq-container">

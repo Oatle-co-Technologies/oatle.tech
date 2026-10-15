@@ -35,7 +35,7 @@ export default function OurApproach() {
         <div className="container">
 
           <span className="section-tag">
-            OUR APPROACH
+            OUR WEBSITE PROCESS
           </span>
 
           <h2>
@@ -45,7 +45,7 @@ export default function OurApproach() {
           </h2>
 
           <p className="section-description">
-            We guide every client through a simple four-step process—from the
+            We guide website clients through a simple four-step process—from the
             first conversation to launching a website that helps their business
             grow.
           </p>

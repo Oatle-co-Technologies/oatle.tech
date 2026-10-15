@@ -47,9 +47,9 @@ export default function Footer() {
                             </h2>
 
                             <p>
-                                Helping businesses build professional websites
-                                and digital solutions that attract customers,
-                                build trust, and grow online.
+                                Professional websites and digital solutions for growing
+                                businesses, with custom graphic design for business
+                                promotions and special occasions.
                             </p>
                         </div>
 
@@ -64,12 +64,12 @@ export default function Footer() {
                                 Web Development
                             </Link>
 
-                            <Link href="/#pricing">
-                                UI / UX Design
+                            <Link href="/#graphic-design">
+                                Graphic Design
                             </Link>
 
                             <Link href="/#pricing">
-                                WordPress
+                                Custom Technology Solutions
                             </Link>
                         </div>
 

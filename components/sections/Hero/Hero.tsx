@@ -20,17 +20,18 @@ export default function Hero() {
           }}
         >
           <span className="eyebrow">
-            Helping Small Businesses Grow
+            Web Development &amp; Graphic Design
           </span>
 
           <h1>
-  Websites that help small businesses get discovered,
-  trusted, and chosen.
+  Websites for growing businesses.
+  Designs for memorable moments.
 </h1>
 
           <p>
-  We design and develop beautiful, modern websites for
-  service-based businesses that turn visitors into customers.
+  We design and build websites that help businesses get discovered, trusted,
+  and chosen. We also create custom invitations, flyers, posters, and social
+  media graphics for businesses and special occasions.
 </p>
           <div className="hero-buttons">
             <button onClick={() => router.push("/contact")}>

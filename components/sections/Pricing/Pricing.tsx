@@ -6,7 +6,7 @@ export default function Pricing() {
   return (
     <section id="pricing" className="pricing">
       <div className="container">
-          <span className="section-tag">PRICING</span>
+          <span className="section-tag">WEBSITE PACKAGES</span>
 
           <h2>Start small. Grow when you&apos;re ready.</h2>
 
@@ -283,7 +283,7 @@ export default function Pricing() {
               </p>
 
               <p className="pricing-growth-question">
-                Want to see all available services and add-on pricing?
+                Want to explore website services and add-on pricing?
               </p>
 
               <a
@@ -291,7 +291,7 @@ export default function Pricing() {
                 className="primary-button pricing-growth-button"
                 download
               >
-                Download Full Pricing Guide
+                Download Website Pricing Guide
               </a>
             </article>
           </div>

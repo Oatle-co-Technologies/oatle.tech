@@ -12,22 +12,20 @@ export default function CTA() {
                     </span>
 
                     <h2>
-                        Ready To Grow
-                        Your Business Online?
+                        Have a Project in Mind?
                     </h2>
 
                     <p className="section-description">
-                        Whether you're starting from scratch, redesigning an
-                        existing website, or looking for a custom digital solution,
-                        we'd love to learn about your business and find the right
-                        way to help you grow online.
+                        Whether you need a website, a business flyer, or an invitation
+                        for a special occasion, tell us what you have in mind
+                        and we&apos;ll help you take the next step.
                     </p>
 
                     <Link
                         href="/contact"
                         className="cta-button"
                     >
-                        Book A Discovery Call
+                        Enquire About Your Project
                     </Link>
 
                 </div>
