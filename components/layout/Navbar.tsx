@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
@@ -23,12 +24,16 @@ export default function Navbar() {
           className="logo"
           aria-label="Oatle Technologies home"
         >
-          <span className="logo-primary">
-            Oatle Technologies
-          </span>
-
-          <span className="logo-tagline">
-            Grow. Multiply. Succeed.
+          <span className="header-logo-frame">
+            <Image
+              src="/oatle-company-logo.png"
+              alt="Oatle Technologies"
+              width={1774}
+              height={887}
+              sizes="370px"
+              priority
+              className="header-logo-image"
+            />
           </span>
         </Link>
 

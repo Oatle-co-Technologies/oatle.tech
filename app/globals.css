@@ -3738,3 +3738,23 @@ MOBILE
   .demo-preview img { transition: none; }
   .demo-preview:hover img { transform: none; }
 }
+
+/* Frame the supplied logo without its surrounding transparent canvas. */
+.header-logo-frame {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    width: 170px;
+    aspect-ratio: 827 / 370;
+}
+.header-logo-image {
+    position: absolute;
+    width: 214.51%;
+    max-width: none;
+    height: auto;
+    left: -52.96%;
+    top: -64.86%;
+}
+@media (max-width: 480px) {
+    .header-logo-frame { width: 140px; }
+}
