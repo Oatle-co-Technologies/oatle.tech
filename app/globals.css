@@ -488,6 +488,10 @@ ul {
     background: #FFF9EB;
 }
 
+#graphic-design {
+    background: #F0F3F7;
+}
+
 .why-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
