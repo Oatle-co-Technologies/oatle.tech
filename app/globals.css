@@ -1029,7 +1029,7 @@ ul {
 
 .approach-card p {
     line-height: 1.8;
-    color: var(--color-muted);
+    color: var(--color-text-light);
 }
 
 /* ===========================
