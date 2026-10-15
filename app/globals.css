@@ -492,6 +492,15 @@ ul {
     background: #F0F3F7;
 }
 
+#graphic-design .approach-card .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.5rem;
+    max-width: 100%;
+    text-align: center;
+}
+
 .why-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
