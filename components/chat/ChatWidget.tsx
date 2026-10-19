@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import styles from "./ChatWidget.module.css";
 import OatleRobot from "./OatleRobot";
 
@@ -34,6 +34,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const desktop = window.matchMedia("(min-width: 769px)");
     let hideTimer: ReturnType<typeof setTimeout> | undefined;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
     const visible = new Set<Element>();
@@ -45,7 +46,15 @@ export default function ChatWidget() {
     const isUsingForm = () => document.activeElement instanceof Element &&
       !!document.activeElement.closest("form, input, textarea, select, [contenteditable='true']");
     const introduce = () => {
-      if (open || motion.matches || document.hidden || isUsingForm()) return;
+      if (open || document.hidden || isUsingForm()) { hide(); return; }
+      if ([...visible].some((element) => element.id === "contact")) { hide(); return; }
+      // Desktop keeps the full identity; smaller screens only introduce it briefly.
+      if (desktop.matches) {
+        clearTimeout(hideTimer);
+        setIntroduced(true);
+        return;
+      }
+      if (motion.matches) { hide(); return; }
       const section = [...visible].find((element) => {
         const bounds = element.getBoundingClientRect();
         return bounds.top < innerHeight * .55 && bounds.bottom > innerHeight * .2;
@@ -72,20 +81,25 @@ export default function ChatWidget() {
       schedule();
     }, { rootMargin: "-20% 0px -45% 0px", threshold: 0 });
     document.querySelectorAll("main section").forEach((section) => observer.observe(section));
-    const onFocus = () => { if (isUsingForm()) hide(); };
-    const onVisibility = () => { if (document.hidden) hide(); };
+    const onFocus = () => { if (isUsingForm()) hide(); else schedule(); };
+    const onVisibility = () => { if (document.hidden) hide(); else schedule(); };
+    const onPreferenceChange = () => { hide(); schedule(); };
     document.addEventListener("focusin", onFocus);
+    document.addEventListener("focusout", schedule);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("scroll", schedule, { passive: true });
-    motion.addEventListener("change", hide);
+    motion.addEventListener("change", onPreferenceChange);
+    desktop.addEventListener("change", onPreferenceChange);
     return () => {
       clearTimeout(hideTimer);
       clearTimeout(settleTimer);
       observer.disconnect();
       document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("focusout", schedule);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("scroll", schedule);
-      motion.removeEventListener("change", hide);
+      motion.removeEventListener("change", onPreferenceChange);
+      desktop.removeEventListener("change", onPreferenceChange);
     };
   }, [open]);
 
@@ -193,7 +207,7 @@ export default function ChatWidget() {
           <OatleRobot className={styles.launcherRobot} />
         </span>
         <span className={styles.compactIcon} aria-hidden="true">
-          {open ? <X size={21} /> : <MessageCircle size={21} />}
+          {open ? <X size={21} /> : "O AI"}
         </span>
       </button>
     </div>
