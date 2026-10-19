@@ -33,3 +33,34 @@
   .launcherRobot { width: 48px; height: 48px; }
   .panel { height: min(520px, calc(100dvh - 124px)); }
 }
+
+/* Freestanding assistant and a quiet speech label, sharing one accessible button. */
+.launcher { width: fit-content; min-height: 106px; padding: 0; gap: 12px; border: 0; border-radius: 12px; background: transparent; box-shadow: none; }
+.launcherRobot { width: 96px; height: 106px; overflow: visible; filter: drop-shadow(0 3px 3px #29251b12); }
+.launcherText { position: relative; padding: 13px 16px; border: 1px solid #d8c58a; border-radius: 14px; background: #fffdf7; color: #29251b; font-size: 14px; line-height: 1.2; white-space: nowrap; box-shadow: 0 5px 18px #29251b12; }
+.launcherText::after { content: ""; position: absolute; right: -5px; top: calc(50% - 4px); width: 8px; height: 8px; background: #fffdf7; border-top: 1px solid #d8c58a; border-right: 1px solid #d8c58a; transform: rotate(45deg); }
+.panel { height: min(520px, calc(100dvh - 166px)); }
+@media (max-width: 480px) {
+  .launcher { min-height: 84px; padding: 0; gap: 10px; }
+  .launcherRobot { width: 76px; height: 84px; }
+  .launcherText { font-size: 13px; padding: 11px 13px; }
+  .panel { height: min(520px, calc(100dvh - 136px)); }
+}
+
+/* Keep chat reachable without keeping the full mascot over the page. */
+.launcher { position: relative; width: 48px; height: 48px; min-height: 48px; border-radius: 50%; }
+.introduction { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease, visibility 180ms; pointer-events: none; }
+.compactIcon { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid #d8c58a; border-radius: 50%; background: #fffdf7; color: #494334; box-shadow: 0 3px 12px #29251b12; }
+.compact { width: 48px; height: 48px; }
+.introduced { width: 240px; height: 106px; }
+.introduced .introduction { opacity: 1; visibility: visible; transform: none; }
+.introduced .compactIcon { visibility: hidden; }
+.panel { height: min(520px, calc(100dvh - 112px)); }
+@media (max-width: 480px) {
+  .introduced { width: 210px; height: 84px; }
+  .introduction { gap: 10px; }
+  .panel { height: min(520px, calc(100dvh - 104px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .introduction { transition: none; transform: none; }
+}

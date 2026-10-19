@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Send, X } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
 import styles from "./ChatWidget.module.css";
 import OatleRobot from "./OatleRobot";
 
@@ -9,6 +10,9 @@ type Message = { role: "user" | "assistant"; text: string };
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [introduced, setIntroduced] = useState(false);
+  const visitedSections = useRef(new Set<Element>());
+  const lastIntroduction = useRef(0);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
@@ -29,12 +33,71 @@ export default function ChatWidget() {
   }, [open]);
 
   useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const visible = new Set<Element>();
+    const hide = () => {
+      clearTimeout(hideTimer);
+      clearTimeout(settleTimer);
+      setIntroduced(false);
+    };
+    const isUsingForm = () => document.activeElement instanceof Element &&
+      !!document.activeElement.closest("form, input, textarea, select, [contenteditable='true']");
+    const introduce = () => {
+      if (open || motion.matches || document.hidden || isUsingForm()) return;
+      const section = [...visible].find((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.top < innerHeight * .55 && bounds.bottom > innerHeight * .2;
+      });
+      // Keep the booking area quiet, even before its first field receives focus.
+      if (!section || section.id === "contact" || visitedSections.current.has(section)) return;
+      if (Date.now() - lastIntroduction.current < 8000) return;
+      visitedSections.current.add(section);
+      lastIntroduction.current = Date.now();
+      setIntroduced(true);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => setIntroduced(false), 4000);
+    };
+    const schedule = () => {
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(introduce, 450);
+    };
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) visible.add(entry.target);
+        else visible.delete(entry.target);
+      }
+      if ([...visible].some((element) => element.id === "contact")) hide();
+      schedule();
+    }, { rootMargin: "-20% 0px -45% 0px", threshold: 0 });
+    document.querySelectorAll("main section").forEach((section) => observer.observe(section));
+    const onFocus = () => { if (isUsingForm()) hide(); };
+    const onVisibility = () => { if (document.hidden) hide(); };
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("scroll", schedule, { passive: true });
+    motion.addEventListener("change", hide);
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(settleTimer);
+      observer.disconnect();
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("scroll", schedule);
+      motion.removeEventListener("change", hide);
+    };
+  }, [open]);
+
+
+  useEffect(() => {
     if (conversation.current) {
       conversation.current.scrollTop = conversation.current.scrollHeight;
     }
   }, [messages, sending, open]);
 
   function close() {
+    setIntroduced(false);
     setOpen(false);
     launcher.current?.focus();
   }
@@ -97,7 +160,7 @@ export default function ChatWidget() {
             aria-label="Oatle AI conversation" aria-live="polite" tabIndex={0}>
             <div className={styles.assistant}>
               Hi! Ask me about software development and design. To book an appointment,
-              <a href="/#contact" onClick={close}> fill in our booking form</a>.
+              <Link href="/#contact" onClick={close}> fill in our booking form</Link>.
             </div>
             {messages.map((message, index) => (
               <div key={index} className={message.role === "user" ? styles.user : styles.assistant}>
@@ -120,12 +183,18 @@ export default function ChatWidget() {
           <p className={styles.note}>AI can make mistakes. Each question is answered independently.</p>
         </section>
       )}
-      <button ref={launcher} type="button" className={styles.launcher}
+      <button ref={launcher} type="button" className={`${styles.launcher} ${introduced && !open ? styles.introduced : styles.compact}`}
         aria-expanded={open} aria-controls="oatle-chat"
         aria-label={open ? "Close Oatle AI" : "Ask Oatle AI"}
         title={open ? "Close Oatle AI" : "Ask Oatle AI"}
         onClick={() => { if (open) close(); else setOpen(true); }}>
-        <OatleRobot className={styles.launcherRobot} /> {open ? "Close Oatle AI" : "Ask Oatle AI"}
+        <span className={styles.introduction} aria-hidden="true">
+          <span className={styles.launcherText}>Ask Oatle AI</span>
+          <OatleRobot className={styles.launcherRobot} />
+        </span>
+        <span className={styles.compactIcon} aria-hidden="true">
+          {open ? <X size={21} /> : <MessageCircle size={21} />}
+        </span>
       </button>
     </div>
   );
