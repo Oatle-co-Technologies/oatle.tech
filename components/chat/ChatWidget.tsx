@@ -18,6 +18,12 @@ export default function ChatWidget() {
   const inFlight = useRef(false);
 
   useEffect(() => {
+    const openChat = () => setOpen(true);
+    window.addEventListener("oatle:open-chat", openChat);
+    return () => window.removeEventListener("oatle:open-chat", openChat);
+  }, []);
+
+  useEffect(() => {
     if (open) input.current?.focus();
   }, [open]);
 
@@ -89,8 +95,8 @@ export default function ChatWidget() {
           <div ref={conversation} className={styles.messages} role="log"
             aria-label="Chat messages" aria-live="polite" tabIndex={0}>
             <div className={styles.assistant}>
-              Hi! Ask me about websites or digital solutions. For a quote or a booking,
-              <a href="/contact"> contact our team</a>.
+              Hi! Ask me about software development and design. To book an appointment,
+              <a href="/#contact" onClick={close}> fill in our booking form</a>.
             </div>
             {messages.map((message, index) => (
               <div key={index} className={message.role === "user" ? styles.user : styles.assistant}>

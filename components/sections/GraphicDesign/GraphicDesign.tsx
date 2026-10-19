@@ -35,7 +35,7 @@ export default function GraphicDesign() {
               We agree on the price, formats, revisions, and turnaround before
               designing. After your feedback and approval, we deliver the agreed
               digital files. Printing is quoted separately if arranged.</p>
-            <Link href="/contact?service=design" className="primary-button">
+            <Link href="/?service=design#contact" className="primary-button">
               Request a Design Quote
             </Link>
           </div>

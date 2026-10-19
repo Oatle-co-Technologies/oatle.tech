@@ -33,7 +33,7 @@ export default function Hero() {
   invitations, and visual designs for the moments and messages that matter.
 </p>
           <div className="hero-buttons">
-            <button onClick={() => router.push("/contact")}>
+            <button onClick={() => router.push("/#contact")}>
               Start Your Project
             </button>
 

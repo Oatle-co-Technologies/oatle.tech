@@ -63,7 +63,7 @@ export default function Pricing() {
 
               <button
   className="primary-button pricing-card-button"
-  onClick={() => router.push("/contact")}
+  onClick={() => router.push("/#contact")}
 >
   Get Started
 </button>
@@ -112,7 +112,7 @@ export default function Pricing() {
 
               <button
   className="primary-button pricing-card-button"
-  onClick={() => router.push("/contact")}
+  onClick={() => router.push("/#contact")}
 >
   Redesign My Website
 </button>
@@ -165,7 +165,7 @@ export default function Pricing() {
 
               <button
   className="primary-button pricing-card-button"
-  onClick={() => router.push("/contact")}
+  onClick={() => router.push("/#contact")}
 >
   Build My Website
 </button>
@@ -218,7 +218,7 @@ export default function Pricing() {
 
              <button
   className="primary-button pricing-card-button"
-  onClick={() => router.push("/contact")}
+  onClick={() => router.push("/#contact")}
 >
   Build My Website
 </button>
@@ -265,7 +265,7 @@ export default function Pricing() {
 
               <button
   className="primary-button pricing-card-button"
-  onClick={() => router.push("/contact")}
+  onClick={() => router.push("/#contact")}
 >
   Let&apos;s Talk
 </button>

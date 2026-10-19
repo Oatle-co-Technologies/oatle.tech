@@ -3758,3 +3758,35 @@ MOBILE
 @media (max-width: 480px) {
     .header-logo-frame { width: 140px; }
 }
+
+/* Inline homepage contact and existing booking form. */
+.homepage-contact { padding: 6rem 0; background: #fff9eb; scroll-margin-top: 110px; }
+.homepage-contact .contact-content { gap: 3rem; grid-template-columns: minmax(0, .85fr) minmax(0, 1.2fr); }
+.contact-intro h2 { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.15; margin-bottom: 1.5rem; }
+.contact-options { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; }
+.contact-options a { width: fit-content; max-width: 100%; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 4px; }
+.homepage-contact .contact-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; padding: 2rem; }
+.homepage-contact .contact-form > .booking-wide,
+.homepage-contact .contact-form > .contact-form-row,
+.homepage-contact .contact-form > button,
+.homepage-contact .contact-form > .form-message { grid-column: 1 / -1; }
+.homepage-contact .contact-form > button { margin-top: .25rem; }
+.homepage-contact .contact-form > div { min-width: 0; }
+.homepage-contact .contact-form input,
+.homepage-contact .contact-form select { min-width: 0; }
+@media (max-width: 900px) {
+  .homepage-contact .contact-content { grid-template-columns: 1fr; }
+  .homepage-contact { padding: 4rem 0; }
+}
+@media (max-width: 480px) {
+  .homepage-contact .contact-form { grid-template-columns: 1fr; padding: 1.25rem; }
+}
+
+.homepage-contact .contact-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+@media (max-width: 480px) {
+  .homepage-contact .contact-form-row { grid-template-columns: 1fr; }
+}
+
+.contact-ai-help { margin-top: 1.5rem; }
+.contact-ai-help button { padding: 0; border: 0; background: transparent; color: var(--color-text); text-decoration: underline; text-underline-offset: 4px; font: inherit; }
+.contact-ai-help button:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 4px; }

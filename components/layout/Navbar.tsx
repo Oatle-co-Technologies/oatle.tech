@@ -85,7 +85,7 @@ export default function Navbar() {
             </li>
 
             <li>
-              <Link href="/contact">
+              <Link href="/#contact">
                 Contact
               </Link>
             </li>
@@ -99,7 +99,7 @@ export default function Navbar() {
         </nav>
 
         <Link
-          href="/contact"
+          href="/#contact"
           className="primary-button desktop-cta"
         >
           Start Your Project
@@ -173,7 +173,7 @@ export default function Navbar() {
 
             <li>
               <Link
-                href="/contact"
+                href="/#contact"
                 onClick={() => setMenuOpen(false)}
               >
                 Contact

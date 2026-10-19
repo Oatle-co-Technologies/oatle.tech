@@ -45,7 +45,7 @@ export default function DemoShowcase() {
             <p>{demo.description}</p>
             <ul>{demo.details.map(detail => <li key={detail}>{detail}</li>)}</ul>
             <a className="primary-button demo-live" href={demo.url} target="_blank" rel="noopener noreferrer">View Live Demo <span aria-hidden="true">↗</span></a>
-            <Link href="/contact" className="demo-enquire">Let&apos;s create yours</Link>
+            <Link href="/#contact" className="demo-enquire">Let&apos;s create yours</Link>
           </div>
         </div>
         <p className="demo-caption">Concept projects by Oatle Technologies. Demo businesses, content, and prices are illustrative.</p>

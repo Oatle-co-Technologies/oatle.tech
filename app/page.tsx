@@ -11,7 +11,7 @@ import GraphicDesign from "@/components/sections/GraphicDesign/GraphicDesign";
 import Pricing from "@/components/sections/Pricing/Pricing";
 import Process from "@/components/sections/Process/Process";
 import FAQ from "@/components/sections/FAQ/FAQ";
-import CTA from "@/components/sections/CTA/CTA";
+import Contact from "@/components/sections/Contact/Contact";
 import Footer from "@/components/sections/Footer/Footer";
 
 export default function Home() {
@@ -64,7 +64,7 @@ export default function Home() {
         <Process />
         <Pricing />
         <FAQ />
-        <CTA />
+        <Contact />
       </main>
 
       <Footer />
