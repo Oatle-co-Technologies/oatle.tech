@@ -6,27 +6,27 @@ export default function GraphicDesign() {
     <FadeIn>
       <section id="graphic-design" className="why-oatle">
         <div className="container">
-          <span className="section-tag">GRAPHIC DESIGN</span>
-          <h2>Designs for your business and special occasions.</h2>
+          <span className="section-tag">DESIGN</span>
+          <h2>Designs for digital experiences and special occasions.</h2>
           <p className="section-description">
-            From birthday invitations to your next business promotion, we create
-            custom designs around your message, style, and occasion.
+            From intuitive interfaces to cards, invitations, and promotional visuals,
+            we create custom designs around your users, message, and style.
           </p>
           <div className="why-grid">
             <article className="why-card">
-              <h3>Invitations</h3>
-              <p>Custom invitations for birthdays, baby showers, weddings, and
-                celebrations. Ask about animated digital invitations, too.</p>
+              <h3>Interface Design</h3>
+              <p>Layouts, user flows, and interactive prototypes for websites and
+                applications, with a focus on clarity and ease of use.</p>
             </article>
             <article className="why-card">
-              <h3>Flyers &amp; Posters</h3>
-              <p>Designs for business promotions, events, and announcements,
-                prepared for digital sharing or print as agreed in your brief.</p>
+              <h3>Cards &amp; Invitations</h3>
+              <p>Custom cards and invitations for birthdays, weddings, and other
+                celebrations, including animated digital invitations.</p>
             </article>
             <article className="why-card">
-              <h3>Social Media Graphics</h3>
-              <p>Custom promotional posts and announcements designed for the
-                social platforms and formats you need.</p>
+              <h3>Posters &amp; Promotional Design</h3>
+              <p>Flyers, posters, social media visuals, and announcements prepared
+                for digital sharing or print as agreed in your brief.</p>
             </article>
           </div>
           <div className="approach-card">
@@ -35,7 +35,7 @@ export default function GraphicDesign() {
               We agree on the price, formats, revisions, and turnaround before
               designing. After your feedback and approval, we deliver the agreed
               digital files. Printing is quoted separately if arranged.</p>
-            <Link href="/contact?service=graphic-design" className="primary-button">
+            <Link href="/contact?service=design" className="primary-button">
               Request a Design Quote
             </Link>
           </div>

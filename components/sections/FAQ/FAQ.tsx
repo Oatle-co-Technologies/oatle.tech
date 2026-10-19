@@ -5,14 +5,14 @@ import FadeIn from "@/components/ui/FadeIn";
 
 const faqs = [
   {
-    question: "Can I order graphic design without a website?",
+    question: "Can I order design without a website?",
     answer:
-      "Yes. You can enquire about a custom invitation, flyer, poster, or social media graphic on its own. Choose Graphic Design on our contact form and share your wording, deadline, and whether the design is for digital sharing or printing. A business name and discovery call are optional for graphic design enquiries.",
+      "Yes. You can enquire about interface design, a card, an invitation, a poster, or promotional visuals on their own. Choose Design on our contact form and share your goals, content, deadline, and the formats you need. A business name and discovery call are optional for design enquiries.",
   },
   {
-    question: "How much does graphic design cost?",
+    question: "How much does design cost?",
     answer:
-      "Graphic design is quoted separately from our website packages. The quote depends on the design, formats, animation, and deadline. We agree on the deliverables, revision allowance, and turnaround before work begins. Printing is not included unless it is explicitly quoted.",
+      "Design is quoted separately from our website packages. The quote depends on the design, formats, animation, and deadline. We agree on the deliverables, revision allowance, and turnaround before work begins. Printing is not included unless it is explicitly quoted.",
   },
   {
     question: "How long does a website take to build?",
@@ -67,7 +67,7 @@ export default function FAQ() {
           </h2>
 
           <p className="section-description">
-            Have questions about websites, graphic design, pricing, or timelines?
+            Have questions about websites, design, pricing, or timelines?
             Here are some answers to help you get started.
           </p>
 

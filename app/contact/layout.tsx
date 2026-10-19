@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact Oatle Technologies | Start Your Project",
   description:
-    "Talk to Oatle Technologies about websites, custom technology solutions, invitations, flyers, posters, and social media graphics.",
+    "Talk to Oatle Technologies about software development and design, including websites, applications, interfaces, invitations, cards, posters, and promotional visuals.",
 };
 
 export default function ContactLayout({

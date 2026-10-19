@@ -26,11 +26,11 @@ export default function ContactPage() {
     message: "",
   });
 
-  const isGraphicDesign = formData.service === "Graphic Design";
+  const isDesign = formData.service === "Design";
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("service") === "graphic-design") {
-      setFormData((current) => ({ ...current, service: "Graphic Design" }));
+    if (["design", "graphic-design"].includes(new URLSearchParams(window.location.search).get("service") || "")) {
+      setFormData((current) => ({ ...current, service: "Design" }));
     }
   }, []);
 
@@ -51,11 +51,11 @@ export default function ContactPage() {
     // Required fields
     if (
       !name ||
-      (!isGraphicDesign && !business) ||
+      (!isDesign && !business) ||
       !email ||
       !phone ||
-      (!isGraphicDesign && !preferredDate) ||
-      (!isGraphicDesign && !preferredTime) ||
+      (!isDesign && !preferredDate) ||
+      (!isDesign && !preferredTime) ||
       !message
     ) {
       setStatus({
@@ -66,7 +66,7 @@ export default function ContactPage() {
     }
 
     if (Boolean(preferredDate) !== Boolean(preferredTime)) {
-      setStatus({ type: "error", message: "Please provide both a date and time for a discovery call, or leave both blank for a graphic design enquiry." });
+      setStatus({ type: "error", message: "Please provide both a date and time for a discovery call, or leave both blank for a design enquiry." });
       return;
     }
 
@@ -235,7 +235,7 @@ export default function ContactPage() {
         <h1>Let&apos;s Talk About Your Project</h1>
 
         <p className="section-description">
-          Tell us about your website, design, or special occasion and we&apos;ll
+          Tell us about your software, website, design, or special occasion and we&apos;ll
           help you find the right next step.
         </p>
 
@@ -289,13 +289,13 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label htmlFor="business">Business Name{isGraphicDesign ? " (optional)" : ""}</label>
+              <label htmlFor="business">Business Name{isDesign ? " (optional)" : ""}</label>
 
               <input
                 id="business"
                 name="business"
                 type="text"
-                required={!isGraphicDesign}
+                required={!isDesign}
                 autoComplete="organization"
                 value={formData.business}
                 onChange={(e) =>
@@ -359,7 +359,7 @@ export default function ContactPage() {
                   })
                 }
               >
-                <option>Graphic Design</option>
+                <option>Design</option>
                 <option>New Website</option>
                 <option>Website Redesign</option>
                 <option>Custom Technology Solution</option>
@@ -368,7 +368,7 @@ export default function ContactPage() {
               </select>
             </div>
 
-            {isGraphicDesign && (
+            {isDesign && (
               <p>For a design quote, include the design type, wording, preferred
                 style, deadline, and whether it is for digital sharing or print
                 in your message. You can leave the call date and time blank.</p>
@@ -377,14 +377,14 @@ export default function ContactPage() {
             <div className="contact-form-row">
               <div>
                 <label htmlFor="preferred_date">
-                  Preferred Call Date{isGraphicDesign ? " (optional)" : ""}
+                  Preferred Call Date{isDesign ? " (optional)" : ""}
                 </label>
 
                 <input
                   id="preferred_date"
                   name="preferred_date"
                   type="date"
-                  required={!isGraphicDesign}
+                  required={!isDesign}
                   value={formData.preferred_date}
                   onChange={(e) =>
                     setFormData({
@@ -397,14 +397,14 @@ export default function ContactPage() {
 
               <div>
                 <label htmlFor="preferred_time">
-                  Preferred Call Time{isGraphicDesign ? " (optional)" : ""}
+                  Preferred Call Time{isDesign ? " (optional)" : ""}
                 </label>
 
                 <input
                   id="preferred_time"
                   name="preferred_time"
                   type="time"
-                  required={!isGraphicDesign}
+                  required={!isDesign}
                   value={formData.preferred_time}
                   onChange={(e) =>
                     setFormData({

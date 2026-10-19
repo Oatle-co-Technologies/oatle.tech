@@ -20,17 +20,17 @@ export default function Hero() {
           }}
         >
           <span className="eyebrow">
-            Web Development &amp; Graphic Design
+            Software Development &amp; Design
           </span>
 
           <h1>
-  Websites with purpose.
+  Software with purpose.
   Designs with personality.
 </h1>
 
           <p>
-  Custom websites for growing businesses. Invitations, flyers, and
-  graphics for the moments and messages that matter.
+  Custom websites and software for growing businesses. Interfaces, cards,
+  invitations, and visual designs for the moments and messages that matter.
 </p>
           <div className="hero-buttons">
             <button onClick={() => router.push("/contact")}>

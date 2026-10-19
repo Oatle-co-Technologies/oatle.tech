@@ -24,7 +24,7 @@ export default function Home() {
         name: "Oatle Technologies",
         url: "https://oatle-technologies.co.za/",
         description:
-          "Oatle Technologies offers website design and development, custom digital solutions, and graphic design for businesses and special occasions in South Africa and beyond.",
+          "Oatle Technologies offers software development and design, from websites and custom applications to interfaces, invitations, cards, and promotional designs for businesses and special occasions in South Africa and beyond.",
         email: "oatle.technologies@gmail.com",
         sameAs: [
           "https://www.linkedin.com/in/ntombizodwa-moekwa-20b25a243",

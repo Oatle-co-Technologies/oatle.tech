@@ -58,7 +58,7 @@ export default function Navbar() {
 
           <ul className="nav-links">
             <li>
-              <Link href="/#graphic-design">Graphic Design</Link>
+              <Link href="/#graphic-design">Design</Link>
             </li>
             <li>
               <Link href="/#work">
@@ -131,7 +131,7 @@ export default function Navbar() {
           <ul className="mobile-nav-links">
             <li>
               <Link href="/#graphic-design" onClick={() => setMenuOpen(false)}>
-                Graphic Design
+                Design
               </Link>
             </li>
 

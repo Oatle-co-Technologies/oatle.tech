@@ -20,12 +20,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://oatle-technologies.co.za"),
 
   title: {
-    default: "Oatle Technologies | Web Development & Graphic Design",
+    default: "Oatle Technologies | Software Development & Design",
     template: "%s | Oatle Technologies",
   },
 
   description:
-    "Oatle Technologies offers website design and development, custom digital solutions, and graphic design for businesses and special occasions in South Africa and beyond.",
+    "Oatle Technologies offers software development and design, from websites and custom applications to interfaces, invitations, cards, and promotional designs for businesses and special occasions in South Africa and beyond.",
 
   alternates: {
     canonical: "/",
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Oatle Technologies | Web Development & Graphic Design",
+    title: "Oatle Technologies | Software Development & Design",
     description:
-      "Professional websites, custom digital solutions, invitations, flyers, posters, and social media graphics for businesses and special occasions.",
+      "Software development and design: websites, custom applications, interfaces, invitations, cards, posters, and promotional visuals.",
     url: "https://oatle-technologies.co.za",
     siteName: "Oatle Technologies",
     type: "website",
@@ -48,9 +48,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Oatle Technologies | Web Development & Graphic Design",
+    title: "Oatle Technologies | Software Development & Design",
     description:
-      "Professional websites, custom digital solutions, invitations, flyers, posters, and social media graphics for businesses and special occasions.",
+      "Software development and design: websites, custom applications, interfaces, invitations, cards, posters, and promotional visuals.",
   },
 };
 
