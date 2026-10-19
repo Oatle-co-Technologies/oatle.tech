@@ -1,9 +1,11 @@
 "use client";
 
+import FadeIn from "@/components/ui/FadeIn";
 import { useRouter } from "next/navigation";
 export default function Pricing() {
   const router = useRouter();
   return (
+    <FadeIn>
     <section id="pricing" className="pricing">
       <div className="container">
           <span className="section-tag">WEBSITE PACKAGES</span>
@@ -297,6 +299,7 @@ export default function Pricing() {
           </div>
         </div>
       </section>
+    </FadeIn>
     
    ) ;
 }

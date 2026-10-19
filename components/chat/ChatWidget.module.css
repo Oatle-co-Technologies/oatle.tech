@@ -20,3 +20,16 @@
 .widget button:focus-visible, .widget input:focus-visible, .messages:focus-visible, .widget a:focus-visible { outline: 3px solid #977413; outline-offset: 3px; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @media (max-width: 480px) { .widget { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); } .launcher { min-height: 48px; padding: 12px 18px; } }
+
+.launcher { padding: 5px 20px 5px 5px; gap: 10px; }
+.launcherRobot { width: 56px; height: 56px; flex-shrink: 0; }
+.identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.headerRobot { width: 46px; height: 46px; flex-shrink: 0; }
+.header { padding: 14px; gap: 6px; }
+.header h2 { font-size: 19px; }
+.header p { font-size: 11px; }
+@media (max-width: 480px) {
+  .launcher { padding: 4px 16px 4px 4px; }
+  .launcherRobot { width: 48px; height: 48px; }
+  .panel { height: min(520px, calc(100dvh - 124px)); }
+}

@@ -1,38 +1,36 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 
 type FadeInProps = {
   children: ReactNode;
   delay?: number;
 };
 
-export default function FadeIn({
-  children,
-  delay = 0,
-}: FadeInProps) {
+export default function FadeIn({ children, delay = 0 }: FadeInProps) {
+  const element = useRef<HTMLDivElement>(null);
+  const [entered, setEntered] = useState(false);
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (preference.matches || !element.current || !("IntersectionObserver" in window)) return;
+
+    // Trigger on any visible part, including sections taller than the viewport.
+    // Content is visible before hydration and when observation is unavailable.
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setEntered(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0, rootMargin: "0px 0px -40px 0px" });
+    observer.observe(element.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <motion.div
-      initial={{
-        opacity: 0,
-        y: 40,
-      }}
-      whileInView={{
-        opacity: 1,
-        y: 0,
-      }}
-      viewport={{
-        once: true,
-        amount: 0.2,
-      }}
-      transition={{
-        duration: 0.8,
-        delay,
-        ease: "easeOut",
-      }}
-    >
+    <div ref={element} className={entered ? "section-reveal" : undefined}
+      style={{ "--section-reveal-delay": `${delay}s` } as CSSProperties}>
       {children}
-    </motion.div>
+    </div>
   );
 }

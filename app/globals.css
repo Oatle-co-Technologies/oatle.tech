@@ -3790,3 +3790,14 @@ MOBILE
 .contact-ai-help { margin-top: 1.5rem; }
 .contact-ai-help button { padding: 0; border: 0; background: transparent; color: var(--color-text); text-decoration: underline; text-underline-offset: 4px; font: inherit; }
 .contact-ai-help button:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 4px; }
+
+/* Progressive enhancement: sections remain visible without JS or animation. */
+.section-reveal { animation: oatle-section-enter .75s ease-out var(--section-reveal-delay, 0s) both; }
+@keyframes oatle-section-enter {
+  from { opacity: .65; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .section-reveal { animation: none; }
+}

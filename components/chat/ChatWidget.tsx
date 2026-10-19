@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import styles from "./ChatWidget.module.css";
+import OatleRobot from "./OatleRobot";
 
 type Message = { role: "user" | "assistant"; text: string };
 
@@ -87,13 +88,13 @@ export default function ChatWidget() {
           aria-labelledby="oatle-chat-title"
           onKeyDown={(event) => { if (event.key === "Escape") close(); }}>
           <header className={styles.header}>
-            <div><h2 id="oatle-chat-title">Chat with Oatle</h2><p>AI website assistant</p></div>
-            <button type="button" onClick={close} aria-label="Close chat" className={styles.close}>
+            <div className={styles.identity}><OatleRobot className={styles.headerRobot} /><div><h2 id="oatle-chat-title">Ask Oatle AI</h2><p>Your AI website assistant</p></div></div>
+            <button type="button" onClick={close} aria-label="Close Oatle AI" className={styles.close}>
               <X size={20} aria-hidden="true" />
             </button>
           </header>
           <div ref={conversation} className={styles.messages} role="log"
-            aria-label="Chat messages" aria-live="polite" tabIndex={0}>
+            aria-label="Oatle AI conversation" aria-live="polite" tabIndex={0}>
             <div className={styles.assistant}>
               Hi! Ask me about software development and design. To book an appointment,
               <a href="/#contact" onClick={close}> fill in our booking form</a>.
@@ -108,11 +109,11 @@ export default function ChatWidget() {
           </div>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <form onSubmit={send} className={styles.form} aria-busy={sending}>
-            <label htmlFor="oatle-chat-message" className={styles.srOnly}>Your message</label>
+            <label htmlFor="oatle-chat-message" className={styles.srOnly}>Your question for Oatle AI</label>
             <input ref={input} id="oatle-chat-message" value={draft}
               onChange={(event) => setDraft(event.target.value)} maxLength={4000}
-              placeholder="Ask a question…" readOnly={sending} autoComplete="off" />
-            <button type="submit" disabled={sending || !draft.trim()} aria-label="Send message">
+              placeholder="Ask Oatle AI…" readOnly={sending} autoComplete="off" />
+            <button type="submit" disabled={sending || !draft.trim()} aria-label="Send question to Oatle AI">
               <Send size={19} aria-hidden="true" />
             </button>
           </form>
@@ -121,8 +122,10 @@ export default function ChatWidget() {
       )}
       <button ref={launcher} type="button" className={styles.launcher}
         aria-expanded={open} aria-controls="oatle-chat"
+        aria-label={open ? "Close Oatle AI" : "Ask Oatle AI"}
+        title={open ? "Close Oatle AI" : "Ask Oatle AI"}
         onClick={() => { if (open) close(); else setOpen(true); }}>
-        <MessageCircle size={22} aria-hidden="true" /> {open ? "Close chat" : "Chat with us"}
+        <OatleRobot className={styles.launcherRobot} /> {open ? "Close Oatle AI" : "Ask Oatle AI"}
       </button>
     </div>
   );

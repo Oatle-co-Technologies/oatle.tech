@@ -1,5 +1,6 @@
 "use client";
 
+import FadeIn from "@/components/ui/FadeIn";
 import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +18,7 @@ export default function DemoShowcase() {
   const demo = demos[selected];
 
   return (
+    <FadeIn>
     <section id="demos" className="demo-showcase" aria-labelledby="demo-heading">
       <div className="container">
         <div className="demo-intro">
@@ -56,5 +58,6 @@ export default function DemoShowcase() {
         <a href={demo.url} target="_blank" rel="noopener noreferrer">Explore the live demo ↗</a>
       </dialog>
     </section>
+    </FadeIn>
   );
 }

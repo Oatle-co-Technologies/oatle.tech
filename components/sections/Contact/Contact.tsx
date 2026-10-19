@@ -1,9 +1,11 @@
+import FadeIn from "@/components/ui/FadeIn";
 import { Suspense } from "react";
 import BookingForm from "./BookingForm";
 import AskAI from "./AskAI";
 
 export default function Contact() {
   return (
+    <FadeIn>
     <section id="contact" className="homepage-contact" aria-labelledby="contact-heading">
       <div className="container contact-content">
         <div className="contact-intro">
@@ -22,5 +24,6 @@ export default function Contact() {
         </Suspense>
       </div>
     </section>
+    </FadeIn>
   );
 }
