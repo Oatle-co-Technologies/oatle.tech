@@ -50,7 +50,7 @@
 /* Keep chat reachable without keeping the full mascot over the page. */
 .launcher { position: relative; width: 48px; height: 48px; min-height: 48px; border-radius: 50%; }
 .introduction { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease, visibility 180ms; pointer-events: none; }
-.compactIcon { font-size: 13px; font-weight: 700; letter-spacing: .02em; display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid #d8c58a; border-radius: 50%; background: #fffdf7; color: #494334; box-shadow: 0 3px 12px #29251b12; }
+.compactIcon { font-size: 13px; font-weight: 700; letter-spacing: .02em; display: flex; align-items: center; justify-content: center; gap: 3px; width: 48px; height: 48px; border: 1px solid #d8c58a; border-radius: 50%; background: #fffdf7; color: #494334; box-shadow: 0 3px 12px #29251b12; }
 .compact { width: 48px; height: 48px; }
 .introduced { width: 240px; height: 106px; }
 .introduced .introduction { opacity: 1; visibility: visible; transform: none; }
@@ -64,3 +64,8 @@
 @media (prefers-reduced-motion: reduce) {
   .introduction { transition: none; transform: none; }
 }
+
+/* The O is extracted from the company logo, preserving its silhouette. */
+.brandO { width: 19px; height: 19px; flex: 0 0 19px; background: url("/oatle-brand-o.png") center / contain no-repeat; }
+
+.compactAi { font-size: 10px; line-height: 1; letter-spacing: .01em; }

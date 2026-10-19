@@ -207,7 +207,7 @@ export default function ChatWidget() {
           <OatleRobot className={styles.launcherRobot} />
         </span>
         <span className={styles.compactIcon} aria-hidden="true">
-          {open ? <X size={21} /> : "O AI"}
+          {open ? <X size={21} /> : <><span className={styles.brandO} /><span className={styles.compactAi}>AI</span></>}
         </span>
       </button>
     </div>
