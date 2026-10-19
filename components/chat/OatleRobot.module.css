@@ -1,0 +1,21 @@
+/* A single short greeting when the full launcher appears. */
+.wavingArm { transform-origin: 64px 39px; }
+.body { transform-origin: 40px 78px; }
+.greeting .wavingArm { animation: hello 1900ms ease-in-out 1; }
+.greeting .body { animation: friendlySway 1900ms ease-in-out 1; }
+@keyframes hello {
+  0%, 100% { transform: rotate(0deg); }
+  22% { transform: rotate(-120deg); }
+  34% { transform: rotate(-100deg); }
+  46% { transform: rotate(-132deg); }
+  58% { transform: rotate(-100deg); }
+  70%, 80% { transform: rotate(-120deg); }
+}
+@keyframes friendlySway {
+  0%, 100% { transform: rotate(0deg); }
+  25%, 65% { transform: rotate(-1.5deg); }
+  45% { transform: rotate(1deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .greeting .wavingArm, .greeting .body { animation: none; }
+}

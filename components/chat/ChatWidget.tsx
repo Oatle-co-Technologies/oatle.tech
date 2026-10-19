@@ -204,7 +204,7 @@ export default function ChatWidget() {
         onClick={() => { if (open) close(); else setOpen(true); }}>
         <span className={styles.introduction} aria-hidden="true">
           <span className={styles.launcherText}>Ask Oatle AI</span>
-          <OatleRobot className={styles.launcherRobot} />
+          <OatleRobot className={styles.launcherRobot} greet={introduced && !open} />
         </span>
         <span className={styles.compactIcon} aria-hidden="true">
           {open ? <X size={21} /> : <><span className={styles.brandO} /><span className={styles.compactAi}>AI</span></>}
