@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -8,7 +9,8 @@ from backend.dependencies import get_admin_staff
 from backend.database.connection import get_db
 from backend.models.invoice import Invoice, InvoicePayment
 from backend.models.project import Project
-from backend.models.pricing import AddOn, Product
+from backend.models.pricing import AddOn, Product, Service
+from backend.models.client import Client
 from backend.models.project_addon import ProjectAddOn
 from backend.schemas.invoice import (
     InvoiceCreate,
@@ -23,6 +25,45 @@ router = APIRouter(
 )
 
 
+def validate_discount(discount_percent: float) -> None:
+    if not math.isfinite(discount_percent) or not 0 <= discount_percent <= 100:
+        raise HTTPException(status_code=400, detail="Discount must be between 0 and 100 percent")
+
+
+def catalogue_price(item, quoted_amount: float | None) -> float:
+    if quoted_amount is not None and (not math.isfinite(quoted_amount) or quoted_amount < 0):
+        raise HTTPException(status_code=400, detail="Quoted amount must be a finite non-negative amount")
+    if item.pricing_type == "quoted":
+        if quoted_amount is None:
+            raise HTTPException(status_code=400, detail="A quoted amount is required for this item")
+        return float(quoted_amount)
+    if item.base_price is None or not math.isfinite(item.base_price) or item.base_price < 0:
+        raise HTTPException(status_code=400, detail="A valid catalogue price is required for this item")
+    if item.pricing_type == "starting" and quoted_amount is not None:
+        if quoted_amount < item.base_price:
+            raise HTTPException(status_code=400, detail="Agreed price cannot be below the catalogue starting price; use a discount instead")
+        return float(quoted_amount)
+    return float(item.base_price)
+
+
+def invoice_target(project_id, service_id, client_id, db, *, require_active_service=True):
+    if (project_id is None) == (service_id is None):
+        raise HTTPException(status_code=400, detail="Select either a project or a standalone service")
+    if not db.query(Client).filter(Client.id == client_id).first():
+        raise HTTPException(status_code=404, detail="Client not found")
+    if service_id is not None:
+        service = db.query(Service).filter(Service.id == service_id).first()
+        if not service or (require_active_service and not service.active):
+            raise HTTPException(status_code=404, detail="Service not found")
+        return None, service
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if project.client_id != client_id:
+        raise HTTPException(status_code=400, detail="The selected project belongs to a different client")
+    return project, None
+
+
 def calculate_project_amount(
     project: Project,
     quoted_amount: float | None,
@@ -31,15 +72,11 @@ def calculate_project_amount(
 ) -> float:
     """
     Calculate the invoice amount from the project's
-    selected product plus all active add-ons assigned
+    selected product plus the agreed prices of add-ons assigned
     to the project, then apply the invoice discount.
     """
 
-    if discount_percent < 0 or discount_percent > 100:
-        raise HTTPException(
-            status_code=400,
-            detail="Discount must be between 0 and 100 percent",
-        )
+    validate_discount(discount_percent)
 
     if project.product_id is None:
         raise HTTPException(
@@ -59,49 +96,23 @@ def calculate_project_amount(
             detail="Product not found",
         )
 
-    # Quoted products use the amount entered on the invoice.
-    # Fixed products continue using their catalogue base price.
-
-    if product.pricing_type == "quoted":
-        if quoted_amount is None:
-            raise HTTPException(
-                status_code=400,
-                detail="A quoted amount is required for this product",
-            )
-
-        if quoted_amount < 0:
-            raise HTTPException(
-                status_code=400,
-                detail="Quoted amount cannot be negative",
-            )
-
-        subtotal = float(quoted_amount)
-
-    elif product.base_price is not None:
-        subtotal = float(product.base_price)
-
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="A base price is required for this product",
-        )
+    subtotal = catalogue_price(product, quoted_amount)
 
     project_addons = (
-        db.query(AddOn)
+        db.query(AddOn, ProjectAddOn.price_at_selection)
         .join(
             ProjectAddOn,
             ProjectAddOn.addon_id == AddOn.id,
         )
         .filter(
             ProjectAddOn.project_id == project.id,
-            AddOn.active == True,
         )
         .all()
     )
 
     subtotal += sum(
-        float(addon.price)
-        for addon in project_addons
+        float(selected_price)
+        for addon, selected_price in project_addons
     )
 
     discount_amount = subtotal * (
@@ -135,32 +146,17 @@ def create_invoice(
     db: Session = Depends(get_db),
     _admin=Depends(get_admin_staff),
 ):
-    if invoice.project_id is None:
-        raise HTTPException(
-            status_code=400,
-            detail="A project is required to create an invoice",
+    project, service = invoice_target(invoice.project_id, invoice.service_id, invoice.client_id, db)
+    validate_discount(invoice.discount_percent)
+    amount = (
+        round(catalogue_price(service, invoice.quoted_amount) * (1 - invoice.discount_percent / 100), 2)
+        if service is not None else calculate_project_amount(
+            project=project, quoted_amount=invoice.quoted_amount,
+            discount_percent=invoice.discount_percent, db=db,
         )
-
-    project = (
-        db.query(Project)
-        .filter(Project.id == invoice.project_id)
-        .first()
     )
 
-    if not project:
-        raise HTTPException(
-            status_code=404,
-            detail="Project not found",
-        )
-
-    amount = calculate_project_amount(
-        project=project,
-        quoted_amount=invoice.quoted_amount,
-        discount_percent=invoice.discount_percent,
-        db=db,
-    )
-
-    if invoice.payment_amount < 0 or invoice.payment_amount > amount:
+    if not math.isfinite(invoice.payment_amount) or invoice.payment_amount < 0 or invoice.payment_amount > amount:
         raise HTTPException(
             status_code=400,
             detail="Amount paid must be between zero and the invoice total",
@@ -175,6 +171,7 @@ def create_invoice(
     new_invoice = Invoice(
         client_id=invoice.client_id,
         project_id=invoice.project_id,
+        service_id=invoice.service_id,
         discount_percent=invoice.discount_percent,
         amount=amount,
         status=status,
@@ -251,30 +248,19 @@ def update_invoice(
             detail="Invoice not found",
         )
 
-    if invoice_data.project_id is None:
-        raise HTTPException(
-            status_code=400,
-            detail="A project is required for an invoice",
-        )
-
-    project = (
-        db.query(Project)
-        .filter(Project.id == invoice_data.project_id)
-        .first()
-    )
-
-    if not project:
-        raise HTTPException(
-            status_code=404,
-            detail="Project not found",
-        )
+    invoice_target(invoice_data.project_id, invoice_data.service_id, invoice_data.client_id, db,
+                   require_active_service=False)
+    validate_discount(invoice_data.discount_percent)
+    if invoice_data.service_id != invoice.service_id:
+        raise HTTPException(status_code=400, detail="Create a new invoice to change the billed service")
 
     # The invoice total is a historical value fixed when the invoice is
     # created. Project pricing changes must not rewrite it later.
     amount = float(invoice.amount)
 
     if (
-        invoice_data.payment_amount < 0
+        not math.isfinite(invoice_data.payment_amount)
+        or invoice_data.payment_amount < 0
         or invoice.total_paid + invoice_data.payment_amount > amount
     ):
         raise HTTPException(

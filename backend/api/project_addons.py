@@ -32,7 +32,7 @@ def get_project_addons(
         )
 
     addons = (
-        db.query(AddOn)
+        db.query(AddOn, ProjectAddOn.price_at_selection)
         .join(
             ProjectAddOn,
             ProjectAddOn.addon_id == AddOn.id,
@@ -43,7 +43,12 @@ def get_project_addons(
         .all()
     )
 
-    return addons
+    # Keep the agreed selection price when the published catalogue is updated.
+    return [
+        {"id": addon.id, "name": addon.name, "description": addon.description,
+         "active": addon.active, "price": float(selected_price)}
+        for addon, selected_price in addons
+    ]
 
 
 @router.post("/{project_id}/addons/{addon_id}")

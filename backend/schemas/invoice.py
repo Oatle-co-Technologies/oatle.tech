@@ -15,6 +15,7 @@ class InvoicePaymentResponse(BaseModel):
 class InvoiceCreate(BaseModel):
     client_id: int
     project_id: int | None = None
+    service_id: int | None = None
     quoted_amount: float | None = None
     payment_amount: float = 0
     discount_percent: float = 0
@@ -27,6 +28,7 @@ class InvoiceCreate(BaseModel):
 class InvoiceUpdate(BaseModel):
     client_id: int
     project_id: int | None = None
+    service_id: int | None = None
     quoted_amount: float | None = None
     payment_amount: float = 0
     discount_percent: float = 0
@@ -41,6 +43,8 @@ class InvoiceResponse(BaseModel):
     invoice_number: str
     client_id: int
     project_id: int | None
+    service_id: int | None = None
+    service_name: str | None = None
     discount_percent: float
     amount: float
     total_paid: float
