@@ -48,6 +48,8 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
     try { return parseEmailDraft(window.localStorage.getItem(emailDraftKey(staffId))); }
     catch { return emptyEmailDraft(); }
   });
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachmentError, setAttachmentError] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [sentNotice, setSentNotice] = useState("");
@@ -96,6 +98,7 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
 
   function clearDraft() {
     setDraft(emptyEmailDraft());
+    setAttachments([]); setAttachmentError("");
     try { window.localStorage.removeItem(emailDraftKey(staffId)); setDraftSaved(""); }
     catch { setDraftSaved("Unable to remove the saved draft on this device."); }
   }
@@ -113,9 +116,12 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
     if (sending) return;
     setSending(true); setSendError(""); setSentNotice("");
     try {
-      const response = await fetch("/api/backend/mail/send", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft),
-      });
+      const form = new FormData();
+      form.append("payload", JSON.stringify(draft));
+      attachments.forEach(file => form.append("attachments", file));
+      const response = await fetch(attachments.length ? "/api/backend/mail/send-with-attachments" : "/api/backend/mail/send", attachments.length
+        ? { method: "POST", body: form }
+        : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) });
       const result = await response.json();
       if (!response.ok) throw new Error(typeof result.detail === "string" ? result.detail : "Email could not be sent.");
       setSentNotice(result.sent_copy_saved ? "Email sent. A copy is saved in your Sent folder." : "Email sent. A copy could not be saved in your Sent folder.");
@@ -126,11 +132,19 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
 
   function compose(reply?: Message) {
     if (reply) {
-      if ((draft.recipient || draft.subject || draft.body) && !window.confirm("Replace the saved draft with a new reply?")) return;
+      if ((attachments.length || draft.recipient || draft.subject || draft.body) && !window.confirm("Replace the saved draft with a new reply?")) return;
+      setAttachments([]); setAttachmentError("");
       updateDraft({ recipient: reply.reply_to, subject: reply.subject.toLowerCase().startsWith("re:") ? reply.subject : `Re: ${reply.subject}`, body: "", reply: { uid: messageUid!, uid_validity: validity!, view } });
     }
 
     setSendError(""); setSentNotice(""); setComposing(true);
+  }
+
+  function addAttachments(files: FileList | null) {
+    const next = [...attachments, ...Array.from(files || [])];
+    if (next.length > 10) { setAttachmentError("Attach up to 10 files per email."); return; }
+    if (next.reduce((sum, file) => sum + file.size, 0) > 3 * 1024 * 1024) { setAttachmentError("Attachments must total 3 MB or less."); return; }
+    setAttachments(next); setAttachmentError("");
   }
 
   const composeForm = composing && <form className="dashboard-panel mail-compose" onSubmit={send}>
@@ -138,6 +152,13 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
       <label>To<input type="email" required autoComplete="email" value={draft.recipient} disabled={sending} onChange={e => updateDraft({ ...draft, recipient: e.target.value })}/></label>
       <label>Subject<input required maxLength={200} value={draft.subject} disabled={sending} onChange={e => updateDraft({ ...draft, subject: e.target.value })}/></label>
       <label>Message<textarea required maxLength={100000} rows={8} value={draft.body} disabled={sending} onChange={e => updateDraft({ ...draft, body: e.target.value })}/></label>
+      <fieldset className="mail-attachments" disabled={sending}>
+        <legend>Attachments</legend>
+        <label htmlFor="mail-attachment-input">Add files<input id="mail-attachment-input" type="file" multiple onChange={event => { addAttachments(event.target.files); event.target.value = ""; }} /></label>
+        <p className="dashboard-subtitle">Up to 10 files, 3 MB total. Files aren’t saved with drafts; reattach them after leaving or reloading this page.</p>
+        {attachmentError && <p role="alert">{attachmentError}</p>}
+        {!!attachments.length && <ul>{attachments.map((file, index) => <li key={`${file.name}-${file.lastModified}-${index}`}><span>{file.name} · {file.size < 1024 * 1024 ? `${Math.ceil(file.size / 1024)} KB` : `${(file.size / 1024 / 1024).toFixed(1)} MB`}</span><button type="button" className="dashboard-button" aria-label={`Remove attachment ${file.name}`} onClick={() => { setAttachments(current => current.filter((_, position) => position !== index)); setAttachmentError(""); }}>Remove</button></li>)}</ul>}
+      </fieldset>
       <p role="status" className="dashboard-subtitle">{draftSaved || "Drafts are saved automatically on this device as you type."}</p>
       {sendError && <p role="alert">{sendError}</p>}
       <button type="submit" className="dashboard-button dashboard-button-primary" disabled={sending}>{sending ? "Sending…" : "Send email"}</button>{" "}

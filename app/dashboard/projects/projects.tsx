@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ProjectProgress, { ProjectProgressSummary } from "./project-progress";
 import { useAuth } from "@/lib/auth-context";
 import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
@@ -68,6 +69,7 @@ const statuses = [
   "planning",
   "active",
   "on_hold",
+  "waiting_for_client",
   "completed",
   "cancelled",
 ];
@@ -75,7 +77,7 @@ const statuses = [
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
 
-export default function Projects() {
+export default function Projects({ clientId }: { clientId?: number } = {}) {
   const { userEmail } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -289,7 +291,7 @@ export default function Projects() {
 
   function initializeAddForm() {
     setEditingProject(null);
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, client_id: clientId ? String(clientId) : "" });
     setShowForm(true);
     setError("");
   }
@@ -971,6 +973,7 @@ export default function Projects() {
       )}
 
       {recordPage.showList && <>
+      {!recordPage.isDetail && <ProjectProgressSummary />}
       {/* Project list */}
 
       <div className="dashboard-panel">
@@ -1003,7 +1006,7 @@ export default function Projects() {
         )}
 
         {!loading &&
-          projects.length ===
+          projects.filter(item => !clientId || item.client_id === clientId).length ===
             0 && (
             <p className="dashboard-muted">
               No projects yet.
@@ -1011,10 +1014,10 @@ export default function Projects() {
           )}
 
         {!loading &&
-          projects.length >
+          projects.filter(item => !clientId || item.client_id === clientId).length >
             0 && (
             <div>
-              {projects.filter(item => !recordPage.isDetail || item.id === recordPage.id).map(
+              {projects.filter(item => (!recordPage.isDetail || item.id === recordPage.id) && (!clientId || item.client_id === clientId)).map(
                 (project) => {
                   const assignedAddons =
                     projectAddons[
@@ -1049,7 +1052,7 @@ export default function Projects() {
                       key={
                         project.id
                       }
-                      className="dashboard-list-row dashboard-project-row"
+                      className={`dashboard-list-row dashboard-project-row${recordPage.isDetail ? " dashboard-project-detail" : ""}`}
                     >
                       <div className="dashboard-list-content">
                         <h2>
@@ -1155,8 +1158,9 @@ export default function Projects() {
                         </button>
                       </div>
 
-                      {!recordPage.isDetail && <button type="button" className="dashboard-action-primary" onClick={() => recordPage.open("view", project.id)}>Manage project add-ons</button>}
+                      {!recordPage.isDetail && <button type="button" className="dashboard-action-primary" onClick={() => recordPage.open("view", project.id)}>View progress & details</button>}
                       {recordPage.isDetail && <>
+                      <ProjectProgress projectId={project.id} onSaved={status => setProjects(current => current.map(item => item.id === project.id ? { ...item, status } : item))} />
                       {/* Project Add-ons */}
 
                       <div className="dashboard-inline-panel">

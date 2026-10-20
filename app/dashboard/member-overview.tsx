@@ -56,7 +56,7 @@ function PersonalOverview({ name, staffId }: { name: string; staffId: number }) 
   }
   const filters: { name: string; filter: TaskFilter }[] = [{ name: "Completed", filter: "completed" }, { name: "Outstanding", filter: "outstanding" }, { name: "Overdue", filter: "overdue" }, { name: "Blocked", filter: "blocked" }];
   const todayTasks = tasks.filter(task => task.due_date === today);
-  const activeProjects = projects.filter(project => ["planning", "active", "on_hold"].includes(project.status));
+  const activeProjects = projects.filter(project => ["planning", "active", "waiting_for_client"].includes(project.status));
 
   return <div className="member-overview">
     <header className="dashboard-header">

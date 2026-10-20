@@ -164,7 +164,7 @@ def read_message(box, uid, uid_validity, view="inbox"):
                 "attachments": [str(p.get_filename() or "Attachment") for p in message.iter_attachments()]}
 
 
-def send_message(box, recipient, subject, body, reply=None):
+def send_message(box, recipient, subject, body, reply=None, attachments=None):
     message = EmailMessage()
     message["From"] = box["address"]
     message["To"] = recipient
@@ -184,6 +184,9 @@ def send_message(box, recipient, subject, body, reply=None):
                 message["References"] = " ".join(dict.fromkeys((references + ids)[:30]))
     message.set_content(body)
     message.add_alternative(render_branded_email("there", subject, body, reply_email=box["address"]), subtype="html")
+    for attachment in attachments or []:
+        maintype, subtype = attachment["content_type"].split("/", 1)
+        message.add_attachment(attachment["data"], maintype=maintype, subtype=subtype, filename=attachment["filename"])
     try:
         with smtplib.SMTP_SSL("smtp.purelymail.com", 465,
                               context=ssl.create_default_context(), timeout=15) as client:

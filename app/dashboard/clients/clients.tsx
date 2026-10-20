@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
@@ -560,6 +561,7 @@ export default function ClientsPage() {
                   <p>{client.email}</p>
 
                   <p>{client.phone}</p>
+                  <Link className="dashboard-link" href={`/dashboard/projects?client_id=${client.id}`}>View projects & progress</Link>
 
                   <div className="dashboard-list-status">
                     <span

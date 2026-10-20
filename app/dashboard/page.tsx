@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ProjectProgressSummary } from "./projects/project-progress";
 import Image from "next/image";
 import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -469,6 +470,8 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </section>
+
+              <ProjectProgressSummary />
 
               {/* Projects + Lead Pipeline */}
               <section className="dashboard-grid">

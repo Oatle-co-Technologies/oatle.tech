@@ -40,6 +40,8 @@ from backend.api.task_notifications import router as task_notifications_router
 from backend.api.daily_tasks import router as daily_tasks_router
 
 from backend.api.mail import router as mail_router
+from backend.api.project_progress import router as progress_router
+from backend.models.project_progress import ensure_project_progress_schema
 
 app = FastAPI()
 
@@ -53,6 +55,7 @@ app.add_middleware(
 )
 
 
+ensure_project_progress_schema(engine)
 Base.metadata.create_all(bind=engine)
 
 
@@ -71,6 +74,7 @@ app.include_router(product_product_services_router)
 app.include_router(dashboard_router)
 app.include_router(auth_router)
 app.include_router(mail_router)
+app.include_router(progress_router)
 app.include_router(appointments_router)
 app.include_router(google_calendar_router)
 @app.get("/")

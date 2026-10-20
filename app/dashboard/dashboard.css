@@ -200,3 +200,60 @@
 .admin-mail-shortcut { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; border:1px solid #e9e2d4; border-radius:8px; background:#fff; color:#8b6d13; }
 .admin-mail-shortcut:focus-visible { outline:2px solid #8b6d13; outline-offset:3px; }
 
+
+.project-progress-panel { margin-top:22px; width:100%; box-sizing:border-box; }
+.project-progress-status { padding:7px 12px; background:#faf3dc; color:#705810; border-radius:20px; text-transform:capitalize; }
+.project-progress-track { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0; list-style:none; margin:24px 0; }
+.project-progress-track li { border-top:3px solid #e9e2d4; padding-top:12px; font-size:12px; color:#77776e; }
+.project-progress-track li.reached { border-color:#d4af37; color:#705810; }
+.project-progress-track li span { display:block; margin-bottom:6px; }
+.project-progress-facts { margin:20px 0; }
+.project-progress-facts > div { display:grid; grid-template-columns:160px minmax(0,1fr); gap:12px; border-bottom:1px solid #e9e2d4; padding:12px 0; }
+.project-progress-facts dt { font-size:13px; font-weight:600; }
+.project-progress-facts dd { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:14px; }
+.project-progress-form { margin:24px 0; }
+.project-progress-form label { display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.project-progress-form input,.project-progress-form select,.project-progress-form textarea,.project-linked-tasks select { padding:10px; border:1px solid #e9e2d4; border-radius:8px; color:#282822; background:#fff; font:inherit; width:100%; box-sizing:border-box; }
+.project-progress-form textarea { min-height:90px; }
+.project-linked-tasks,.project-progress-history { margin-top:28px; }
+.project-linked-tasks ul { list-style:none; padding:0; }
+.project-linked-tasks li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #e9e2d4; }
+.project-linked-tasks select { width:auto; min-width:140px; }
+.project-progress-history ol { padding-left:22px; }
+.project-progress-history li { padding:0 0 20px 10px; border-left:2px solid #e9e2d4; }
+.project-progress-history time,.project-progress-history strong { display:block; font-size:12px; margin-bottom:6px; }
+.project-progress-history time { color:#77776e; }
+.project-progress-history p { font-size:13px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.project-progress-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+@media(max-width:700px) { .project-progress-facts > div { grid-template-columns:1fr; gap:6px; } .project-progress-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* Project details contain full sections rather than a compact list row. */
+.dashboard-workspace .dashboard-project-detail {
+  display: block;
+}
+.dashboard-workspace .dashboard-project-detail:hover {
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dashboard-project-detail > .dashboard-list-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.dashboard-project-detail > .dashboard-panel,
+.dashboard-project-detail > .dashboard-inline-panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.project-progress-status { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 700px) {
+  .project-progress-panel .dashboard-panel-header { flex-wrap: wrap; gap: 12px; }
+  .project-progress-track { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 18px; }
+}
+
+.project-progress-options { grid-column: 1 / -1; border: 0; padding: 0; margin: 8px 0; }
+.project-progress-options legend { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.project-progress-form .project-progress-options label { flex-direction: row; align-items: center; margin-bottom: 12px; cursor: pointer; }
+.project-progress-form .project-progress-options input { width: 18px; height: 18px; margin: 0; accent-color: #9a7612; flex-shrink: 0; }

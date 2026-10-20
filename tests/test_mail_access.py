@@ -266,3 +266,57 @@ def test_stdlib_uid_search_includes_charset_keyword():
         mail.inbox({'address':'kat@example.com','password':'test'}, search='customer')
     client._simple_command.assert_called_once_with('UID','SEARCH','CHARSET','UTF-8','ALL TEXT')
     assert client.literal == b'customer'
+
+
+
+def test_attachment_upload_uses_own_mailbox_and_keeps_binary_content(environment):
+    _, client = environment
+    payload = {'recipient': 'recipient@example.com', 'subject': 'Files', 'body': 'Please see attached.'}
+    with patch('backend.api.mail.send_message', return_value={'sent': True, 'sent_copy_saved': True}) as send:
+        response = client.post('/mail/send-with-attachments', data={'payload': json.dumps(payload)}, files=[('attachments', ('quote.pdf', b'%PDF-binary\x00\xff', 'application/pdf')), ('attachments', ('photo.png', b'png-bytes', 'image/png'))])
+    assert response.status_code == 200
+    assert send.call_args.args[0]['address'] == 'kat@example.com'
+    assert [file['filename'] for file in send.call_args.kwargs['attachments']] == ['quote.pdf', 'photo.png']
+    assert send.call_args.kwargs['attachments'][0]['data'] == b'%PDF-binary\x00\xff'
+
+
+def test_attachment_upload_rejects_oversized_files_before_sending(environment):
+    _, client = environment
+    payload = {'recipient': 'recipient@example.com', 'subject': 'File', 'body': 'See attached.'}
+    with patch('backend.api.mail.send_message') as send:
+        response = client.post('/mail/send-with-attachments', data={'payload': json.dumps(payload)}, files={'attachments': ('large.pdf', b'x' * (3 * 1024 * 1024 + 1), 'application/pdf')})
+    assert response.status_code == 413
+    send.assert_not_called()
+
+
+def test_attachment_count_and_sender_spoofing_are_rejected(environment):
+    _, client = environment
+    payload = {'recipient': 'recipient@example.com', 'subject': 'Files', 'body': 'See attached.'}
+    with patch('backend.api.mail.send_message') as send:
+        response = client.post('/mail/send-with-attachments', data={'payload': json.dumps(payload)}, files=[('attachments', (f'{n}.txt', b'x', 'text/plain')) for n in range(11)])
+        assert response.status_code == 413
+        response = client.post('/mail/send-with-attachments', data={'payload': json.dumps({**payload, 'from': 'other@example.com'})}, files={'attachments': ('x.txt', b'x', 'text/plain')})
+        assert response.status_code == 422
+    send.assert_not_called()
+
+
+def test_attachments_are_encoded_in_sent_email_and_archived_copy():
+    from contextlib import contextmanager
+    from email import policy
+    from email.parser import BytesParser
+    smtp = MagicMock()
+    smtp.__enter__.return_value = smtp
+    archive = MagicMock()
+    archive.append.return_value = ('OK', [])
+    @contextmanager
+    def connect(*args, **kwargs): yield archive
+    with patch.object(mail.smtplib, 'SMTP_SSL', return_value=smtp), patch.object(mail, 'connect', connect):
+        result = mail.send_message({'address': 'kat@example.com', 'password': 'test'}, 'recipient@example.com', 'Quote', 'Attached', attachments=[{'filename': 'quote.pdf', 'data': b'%PDF-test\x00\xff', 'content_type':'application/pdf'}])
+    outgoing = smtp.send_message.call_args.args[0]
+    attachment = list(outgoing.iter_attachments())[0]
+    assert attachment.get_filename() == 'quote.pdf'
+    assert attachment.get_payload(decode=True) == b'%PDF-test\x00\xff'
+    assert outgoing.get_body(preferencelist=('html',)) is not None
+    archived = BytesParser(policy=policy.default).parsebytes(archive.append.call_args.args[3])
+    assert list(archived.iter_attachments())[0].get_payload(decode=True) == b'%PDF-test\x00\xff'
+    assert result['sent_copy_saved'] is True

@@ -39,3 +39,10 @@
 .mail-conversation summary { cursor:pointer; min-height:30px; }
 .mail-conversation li { margin-top:12px; overflow-wrap:anywhere; }
 .mail-conversation li span { display:block; font-size:12px; color:#77776e; }
+
+.mail-attachments { min-width:0; border:1px solid #e9e2d4; border-radius:8px; padding:16px; margin:18px 0; }
+.mail-attachments legend { padding:0 6px; font-size:14px; }
+.mail-attachments input[type=file] { max-width:100%; }
+.mail-attachments ul { padding:0; list-style:none; }
+.mail-attachments li { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:8px 0; }
+.mail-attachments li span { min-width:0; overflow-wrap:anywhere; }
