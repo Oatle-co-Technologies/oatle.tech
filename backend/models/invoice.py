@@ -44,6 +44,8 @@ class Invoice(Base):
         nullable=True,
     )
 
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=True, index=True)
+
     discount_percent = Column(
         Float,
         nullable=False,
@@ -99,6 +101,12 @@ class Invoice(Base):
     client = relationship("Client")
 
     project = relationship("Project")
+
+    service = relationship("Service")
+
+    @property
+    def service_name(self) -> str | None:
+        return self.service.name if self.service else None
 
     payments = relationship(
         "InvoicePayment",

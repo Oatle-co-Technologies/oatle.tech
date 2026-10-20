@@ -93,6 +93,10 @@ class Service(Base):
         nullable=True,
     )
 
+    base_price = Column(Float, nullable=True)
+    pricing_type = Column(String(50), nullable=False, default="quoted", server_default="quoted")
+    billing_period = Column(String(20), nullable=True)
+
     active = Column(
         Boolean,
         nullable=False,

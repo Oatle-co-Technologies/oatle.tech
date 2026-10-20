@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from typing import Literal
+from pydantic import BaseModel, Field
 
 
 class ProductCreate(BaseModel):
@@ -33,6 +34,9 @@ class AddOnResponse(AddOnCreate):
 class ServiceCreate(BaseModel):
     name: str
     description: str | None = None
+    base_price: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    pricing_type: Literal["fixed", "starting", "quoted"] = "quoted"
+    billing_period: Literal["month"] | None = None
     active: bool = True
 
 

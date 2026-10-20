@@ -23,10 +23,13 @@ type Product = {
   active: boolean;
 };
 
+type Service = Product & { billing_period: string | null };
+
 type Project = {
   id: number;
   name: string;
   product_id: number;
+  client_id: number;
   website?: string | null;
   plan?: string | null;
   description?: string | null;
@@ -48,6 +51,8 @@ type Invoice = {
   invoice_number: string;
   client_id: number;
   project_id: number | null;
+  service_id: number | null;
+  service_name?: string | null;
   discount_percent: number;
   amount: number;
   total_paid: number;
@@ -66,6 +71,8 @@ type Invoice = {
 };
 
 type InvoiceForm = {
+  billing_type: "project" | "service";
+  service_id: string;
   client_id: string;
   project_id: string;
   quoted_amount: string;
@@ -78,6 +85,8 @@ type InvoiceForm = {
 };
 
 const emptyForm: InvoiceForm = {
+  billing_type: "project",
+  service_id: "",
   client_id: "",
   project_id: "",
   quoted_amount: "",
@@ -112,6 +121,7 @@ export default function Invoices() {
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
 
   const [projectAddOns, setProjectAddOns] =
     useState<AddOn[]>([]);
@@ -255,6 +265,17 @@ export default function Invoices() {
     }
   }
 
+  async function loadServices() {
+    if (!userEmail) return;
+    try {
+      const response = await fetch(`${API_URL}/pricing/services`);
+      if (!response.ok) throw new Error("Failed to load services");
+      setServices(await response.json());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load services");
+    }
+  }
+
   async function loadAddOns() {
     if (!userEmail) {
       return;
@@ -322,6 +343,7 @@ export default function Invoices() {
     loadClients();
     loadProjects();
     loadProducts();
+    loadServices();
     loadAddOns();
   }, [userEmail]);
 
@@ -430,6 +452,9 @@ export default function Invoices() {
     setForm((current) => ({
       ...current,
       [name]: value,
+      ...(name === "billing_type" ? { project_id: "", service_id: "", quoted_amount: "" } : {}),
+      ...(name === "service_id" || name === "project_id" ? { quoted_amount: "" } : {}),
+      ...(name === "client_id" && !editingInvoice ? { project_id: "" } : {}),
     }));
   }
 
@@ -454,6 +479,8 @@ export default function Invoices() {
     setEditingInvoice(invoice);
 
     setForm({
+      billing_type: invoice.service_id ? "service" : "project",
+      service_id: invoice.service_id ? String(invoice.service_id) : "",
       client_id: String(
         invoice.client_id
       ),
@@ -509,9 +536,8 @@ export default function Invoices() {
         client_id:
           Number(form.client_id),
 
-        project_id: form.project_id
-          ? Number(form.project_id)
-          : null,
+        project_id: form.billing_type === "project" && form.project_id ? Number(form.project_id) : null,
+        service_id: form.billing_type === "service" && form.service_id ? Number(form.service_id) : null,
 
         quoted_amount:
           form.quoted_amount.trim() !== ""
@@ -644,9 +670,9 @@ export default function Invoices() {
       return;
     }
 
-    if (!invoice.project_id) {
+    if (!invoice.project_id && !invoice.service_id) {
       setError(
-        "This invoice does not have a project assigned."
+        "This invoice does not have a project or service assigned."
       );
       return;
     }
@@ -667,137 +693,31 @@ export default function Invoices() {
 
       setError("");
 
-      const projectResponse =
-        await fetch(
-          `${API_URL}/projects/${invoice.project_id}`
-        );
-
-      if (!projectResponse.ok) {
-        throw new Error(
-          "Failed to load the project for this invoice."
-        );
+      let project: Project | null = null;
+      let product: Product | null = null;
+      let addons: AddOn[] = [];
+      if (invoice.service_id) {
+        product = services.find(item => item.id === invoice.service_id) ||
+          (invoice.service_name ? { id: invoice.service_id, name: invoice.service_name,
+            base_price: null, pricing_type: "quoted", active: false } : null);
+      } else {
+        const projectResponse = await fetch(`${API_URL}/projects/${invoice.project_id}`);
+        if (!projectResponse.ok) throw new Error("Failed to load the invoice project");
+        project = await projectResponse.json();
+        product = products.find(item => item.id === project?.product_id) || null;
+        const addonsResponse = await fetch(`${API_URL}/projects/${invoice.project_id}/addons`);
+        if (!addonsResponse.ok) throw new Error("Failed to load project add-ons");
+        addons = await addonsResponse.json();
       }
-
-      const project: Project =
-        await projectResponse.json();
-
-      const product =
-        products.find(
-          (item) =>
-            item.id ===
-            project.product_id
-        );
-
-      if (!product) {
-        throw new Error(
-          "The product assigned to this project could not be found."
-        );
-      }
-
-      if (
-        product.pricing_type !==
-          "quoted" &&
-        product.base_price ===
-          null
-      ) {
-        throw new Error(
-          "The selected product does not have a base price."
-        );
-      }
-
-      const addonsResponse =
-        await fetch(
-          `${API_URL}/projects/${invoice.project_id}/addons`
-        );
-
-      if (!addonsResponse.ok) {
-        throw new Error(
-          "Failed to load project add-ons."
-        );
-      }
-
-      const addons: AddOn[] =
-        await addonsResponse.json();
-
-      const addonsTotal =
-        addons.reduce(
-          (
-            total,
-            addon
-          ) =>
-            total +
-            Number(
-              addon.price
-            ),
-          0
-        );
-
-      const discountPercent =
-        Number(
-          invoice.discount_percent ??
-            0
-        );
-
-      let productPrice: number;
-      let subtotal: number;
-      let discountAmount: number;
-
-      /*
-       * FIXED PRODUCT
-       */
-      if (
-        product.pricing_type !==
-        "quoted"
-      ) {
-        productPrice =
-          Number(
-            product.base_price
-          );
-
-        subtotal =
-          productPrice +
-          addonsTotal;
-
-        discountAmount =
-          subtotal *
-          (discountPercent /
-            100);
-      }
-
-      /*
-       * QUOTED PRODUCT
-       */
-      else {
-        if (
-          discountPercent >=
-          100
-        ) {
-          throw new Error(
-            "A 100% discount cannot be used to calculate the quoted amount."
-          );
-        }
-
-        subtotal =
-          discountPercent > 0
-            ? Number(
-                invoice.amount
-              ) /
-              (1 -
-                discountPercent /
-                  100)
-            : Number(
-                invoice.amount
-              );
-
-        productPrice =
-          subtotal -
-          addonsTotal;
-
-        discountAmount =
-          subtotal *
-          (discountPercent /
-            100);
-      }
+      if (!product) throw new Error("The billed service or product could not be found");
+      const addonsTotal = addons.reduce((total, addon) => total + Number(addon.price), 0);
+      const discountPercent = Number(invoice.discount_percent ?? 0);
+      // Always use the saved invoice total; the catalogue may have changed since issue.
+      const subtotal = discountPercent < 100
+        ? Number(invoice.amount) / (1 - discountPercent / 100)
+        : Number(product.base_price || 0) + addonsTotal;
+      const productPrice = Math.max(0, subtotal - addonsTotal);
+      const discountAmount = subtotal - Number(invoice.amount);
 
       const amountDue =
         Number(invoice.amount);
@@ -831,7 +751,7 @@ export default function Invoices() {
           client.name,
 
         project_name:
-          project.name,
+          project?.name || product.name,
 
         product_name:
           product.name,
@@ -872,7 +792,7 @@ export default function Invoices() {
 
         notes:
           invoice.notes ||
-          project.notes ||
+          project?.notes ||
           "Thank you for choosing Oatle Technologies.",
       };
 
@@ -889,6 +809,8 @@ export default function Invoices() {
 
         project_id:
           invoice.project_id,
+
+        service_id: invoice.service_id,
 
         quoted_amount:
           product.pricing_type ===
@@ -1017,6 +939,18 @@ export default function Invoices() {
     );
   }
 
+  const selectedItem = form.billing_type === "service"
+    ? services.find(item => item.id === Number(form.service_id))
+    : getProjectProduct(Number(form.project_id) || null);
+  const selectedPrice = selectedItem?.pricing_type === "quoted"
+    ? Number(form.quoted_amount || 0)
+    : selectedItem?.pricing_type === "starting" && form.quoted_amount.trim() !== ""
+      ? Number(form.quoted_amount) : Number(selectedItem?.base_price || 0);
+  const selectedSubtotal = selectedPrice + (form.billing_type === "project"
+    ? projectAddOns.reduce((total, addon) => total + Number(addon.price), 0) : 0);
+  const selectedDiscount = Number(form.discount_percent || 0);
+  const selectedTotal = selectedSubtotal * (1 - selectedDiscount / 100);
+
   function getStatusClass(
     status: string
   ) {
@@ -1112,6 +1046,24 @@ export default function Invoices() {
                 </select>
               </div>
 
+              <div className="dashboard-form-field">
+                <label htmlFor="billing_type">Invoice for</label>
+                <select id="billing_type" name="billing_type" value={form.billing_type} onChange={handleChange} disabled={Boolean(editingInvoice)}>
+                  <option value="project">Project / development package</option>
+                  <option value="service">Standalone service</option>
+                </select>
+              </div>
+              {form.billing_type === "service" && <div className="dashboard-form-field dashboard-form-field-full">
+                <label htmlFor="service_id">Service</label>
+                <select id="service_id" name="service_id" value={form.service_id} onChange={handleChange} required disabled={Boolean(editingInvoice)}>
+                  <option value="">Select service</option>
+                  {services.map(service => <option key={service.id} value={service.id}>{service.name} — {service.pricing_type === "quoted" ? "Quoted individually" : `${service.pricing_type === "starting" ? "From " : ""}R${Number(service.base_price).toFixed(2)}${service.billing_period === "month" ? "/month" : ""}`}</option>)}
+                  {editingInvoice?.service_id && !services.some(item => item.id === editingInvoice.service_id) && <option value={editingInvoice.service_id}>{editingInvoice.service_name || `Service #${editingInvoice.service_id}`}</option>}
+                </select>
+                {selectedItem?.description && <p className="dashboard-form-help">{selectedItem.description}</p>}
+                {services.find(item => item.id === Number(form.service_id))?.billing_period === "month" && <p className="dashboard-form-help">This invoice covers one month. It does not set up automatic recurring billing.</p>}
+              </div>}
+              {form.billing_type === "project" && <>
               {/* Project */}
 
               <div className="dashboard-form-field">
@@ -1125,12 +1077,13 @@ export default function Invoices() {
                   value={form.project_id}
                   onChange={handleChange}
                   required
+                  disabled={Boolean(editingInvoice)}
                 >
                   <option value="">
                     Select Project
                   </option>
 
-                  {projects.map(
+                  {projects.filter(project => !form.client_id || project.client_id === Number(form.client_id)).map(
                     (project) => (
                       <option
                         key={project.id}
@@ -1143,233 +1096,35 @@ export default function Invoices() {
                 </select>
               </div>
 
-              {/* Quoted Amount */}
+              </>}
 
-              {form.project_id &&
-                (() => {
-                  const project =
-                    projects.find(
-                      (item) =>
-                        item.id ===
-                        Number(
-                          form.project_id
-                        )
-                    );
+              {!editingInvoice && selectedItem && ["quoted", "starting"].includes(selectedItem.pricing_type) && (
+                <div className="dashboard-form-field dashboard-form-field-full">
+                  <label htmlFor="quoted_amount">{selectedItem.pricing_type === "starting" ? "Agreed price" : "Quoted amount"}</label>
+                  <div className="dashboard-input-prefix"><span>R</span>
+                    <input id="quoted_amount" name="quoted_amount" type="number" step="0.01"
+                      min={selectedItem.pricing_type === "starting" ? selectedItem.base_price || 0 : 0}
+                      value={form.quoted_amount} onChange={handleChange}
+                      placeholder={selectedItem.pricing_type === "starting" ? `From R${selectedItem.base_price}` : "Enter quoted amount"}
+                      required={selectedItem.pricing_type === "quoted"} />
+                  </div>
+                  {selectedItem.pricing_type === "starting" && <p className="dashboard-form-help">Leave blank to use the published starting price. Use the discount field for an agreed reduction.</p>}
+                </div>
+              )}
 
-                  const product =
-                    project
-                      ? products.find(
-                          (item) =>
-                            item.id ===
-                            project.product_id
-                        )
-                      : null;
-
-                  if (
-                    product?.pricing_type !==
-                    "quoted"
-                  ) {
-                    return null;
-                  }
-
-                  return (
-                    <div className="dashboard-form-field dashboard-form-field-full">
-                      <label htmlFor="quoted_amount">
-                        Quoted Amount
-                      </label>
-
-                      <div>
-                        <div className="dashboard-input-prefix">
-                          <span>R</span>
-
-                          <input
-                            id="quoted_amount"
-                            name="quoted_amount"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={
-                              form.quoted_amount
-                            }
-                            onChange={
-                              handleChange
-                            }
-                            placeholder="Enter quoted amount"
-                            required
-                          />
-                        </div>
-
-                        <p className="dashboard-form-help">
-                          Enter the final
-                          quoted price for
-                          this product.
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              {/* Invoice Pricing Breakdown */}
-
-              {form.project_id && (
+              {(selectedItem || editingInvoice) && (
                 <div className="dashboard-form-section dashboard-form-field-full">
-                  <p className="dashboard-form-section-title">
-                    Invoice Breakdown
-                  </p>
-
-                  {(() => {
-                    const project =
-                      projects.find(
-                        (item) =>
-                          item.id ===
-                          Number(
-                            form.project_id
-                          )
-                      );
-
-                    const product =
-                      project
-                        ? products.find(
-                            (item) =>
-                              item.id ===
-                              project.product_id
-                          )
-                        : null;
-
-                    const productPrice =
-                      product?.pricing_type ===
-                      "quoted"
-                        ? Number(
-                            form.quoted_amount ||
-                              0
-                          )
-                        : product?.base_price !==
-                              null &&
-                          product?.base_price !==
-                              undefined
-                        ? Number(
-                            product.base_price
-                          )
-                        : 0;
-
-                    const addonsTotal =
-                      projectAddOns.reduce(
-                        (
-                          total,
-                          addon
-                        ) =>
-                          total +
-                          Number(
-                            addon.price
-                          ),
-                        0
-                      );
-
-                    const subtotal =
-                      productPrice +
-                      addonsTotal;
-
-                    const discount =
-                      Number(
-                        form.discount_percent ||
-                          0
-                      );
-
-                    const discountAmount =
-                      subtotal *
-                      (discount /
-                        100);
-
-                    const amountDue =
-                      subtotal -
-                      discountAmount;
-
-                    return (
-                      <div>
-                        <div className="dashboard-breakdown-row">
-                          <span>
-                            {product?.name ||
-                              "Product"}
-                          </span>
-
-                          <span>
-                            R
-                            {productPrice.toFixed(
-                              2
-                            )}
-                          </span>
-                        </div>
-
-                        {projectAddOns.map(
-                          (addon) => (
-                            <div
-                              key={
-                                addon.id
-                              }
-                              className="dashboard-breakdown-row"
-                            >
-                              <span>
-                                {addon.name}
-                              </span>
-
-                              <span>
-                                R
-                                {Number(
-                                  addon.price
-                                ).toFixed(
-                                  2
-                                )}
-                              </span>
-                            </div>
-                          )
-                        )}
-
-                        <div className="dashboard-breakdown-row dashboard-breakdown-subtotal">
-                          <span>
-                            Subtotal
-                          </span>
-
-                          <span>
-                            R
-                            {subtotal.toFixed(
-                              2
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="dashboard-breakdown-row">
-                          <span>
-                            Discount (
-                            {discount}
-                            %)
-                          </span>
-
-                          <span>
-                            - R
-                            {discountAmount.toFixed(
-                              2
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="dashboard-breakdown-total">
-                          <span>
-                            Amount Due
-                          </span>
-
-                          <span>
-                            R
-                            {amountDue.toFixed(
-                              2
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Add-ons */}
-
+                  <p className="dashboard-form-section-title">Invoice breakdown</p>
+                  {editingInvoice ? (
+                    <p>Saved invoice total: R{Number(editingInvoice.amount).toFixed(2)}. Catalogue price changes do not change this invoice.</p>
+                  ) : <>
+                    <div className="dashboard-breakdown-row"><span>{selectedItem?.name}</span><span>R{selectedPrice.toFixed(2)}</span></div>
+                    {form.billing_type === "project" && projectAddOns.map(addon => <div key={addon.id} className="dashboard-breakdown-row"><span>{addon.name}</span><span>R{Number(addon.price).toFixed(2)}</span></div>)}
+                    <div className="dashboard-breakdown-row dashboard-breakdown-subtotal"><span>Subtotal</span><span>R{selectedSubtotal.toFixed(2)}</span></div>
+                    <div className="dashboard-breakdown-row"><span>Discount ({selectedDiscount}%)</span><span>− R{(selectedSubtotal - selectedTotal).toFixed(2)}</span></div>
+                    <div className="dashboard-breakdown-total"><span>Invoice total</span><span>R{selectedTotal.toFixed(2)}</span></div>
+                  </>}
+                  {form.billing_type === "project" && !editingInvoice && <>
                   <div className="dashboard-form-subsection">
                     <p className="dashboard-form-section-title">
                       Project Add-ons
@@ -1533,6 +1288,7 @@ export default function Invoices() {
                       invoice calculation.
                     </p>
                   </div>
+                  </>}
                 </div>
               )}
 
@@ -1546,6 +1302,7 @@ export default function Invoices() {
                 <div className="dashboard-input-prefix">
                   <input
                     id="discount_percent"
+                    disabled={Boolean(editingInvoice)}
                     name="discount_percent"
                     type="number"
                     min="0"
@@ -1792,10 +1549,8 @@ export default function Invoices() {
                   </p>
 
                   <p>
-                    Project:{" "}
-                    {getProjectName(
-                      invoice.project_id
-                    )}
+                    {invoice.service_id ? "Service: " : "Project: "}
+                    {invoice.service_id ? (services.find(item => item.id === invoice.service_id)?.name || invoice.service_name || `Service #${invoice.service_id}`) : getProjectName(invoice.project_id)}
                   </p>
 
                   {product && (

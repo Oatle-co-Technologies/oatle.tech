@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
+from backend.dependencies import get_admin_staff
 from backend.models.pricing import AddOn, Product, Service
 from backend.schemas.pricing import (
     AddOnCreate,
@@ -153,6 +154,7 @@ def get_services(
 def create_service(
     service: ServiceCreate,
     db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
 ):
     existing = (
         db.query(Service)
@@ -169,6 +171,9 @@ def create_service(
     new_service = Service(
         name=service.name,
         description=service.description,
+        base_price=service.base_price,
+        pricing_type=service.pricing_type,
+        billing_period=service.billing_period,
         active=service.active,
     )
 
