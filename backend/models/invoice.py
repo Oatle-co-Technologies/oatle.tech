@@ -7,6 +7,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
 )
@@ -51,6 +52,9 @@ class Invoice(Base):
         nullable=False,
         default=0,
     )
+
+    # Null retains the original percentage discount; zero is a fixed R0 discount.
+    discount_fixed = Column(Numeric(12, 2), nullable=True)
 
     amount = Column(
         Float,
