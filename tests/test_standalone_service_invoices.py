@@ -143,3 +143,60 @@ def test_invoice_endpoints_still_require_admin(system):
     api.app.dependency_overrides.clear()
     assert api.post('/invoices', json=payload(client, service_id=1)).status_code in (401, 403)
     assert api.post('/pricing/services', json={'name': 'Unapproved service', 'base_price': 1}).status_code in (401, 403)
+
+
+def test_fixed_rand_discount_is_exact_and_survives_payment_updates(system):
+    api, db, client = system
+    service = db.query(Service).filter_by(name='Animated Digital Invitation').one()
+    result = api.post('/invoices', json=payload(client, service_id=service.id, discount_fixed=50)).json()
+    assert result['amount'] == 300
+    assert result['discount_fixed'] == 50 and result['discount_percent'] == 0
+    service.base_price = 999
+    db.commit()
+    response = api.put(f"/invoices/{result['id']}", json=payload(client, service_id=service.id, payment_amount=100))
+    assert response.status_code == 200, response.text
+    assert response.json()['amount'] == 300 and response.json()['discount_fixed'] == 50
+    assert response.json()['balance_due'] == 200
+    assert api.put(f"/invoices/{result['id']}", json=payload(client, service_id=service.id, discount_fixed=25)).status_code == 400
+    assert api.put(f"/invoices/{result['id']}", json=payload(client, service_id=service.id, discount_percent=10)).status_code == 400
+
+
+@pytest.mark.parametrize('discount,total', [(0, 350), (50.05, 299.95), (350, 0)])
+def test_fixed_discount_cent_values_and_boundaries(system, discount, total):
+    api, db, client = system
+    service = db.query(Service).filter_by(name='Animated Digital Invitation').one()
+    response = api.post('/invoices', json=payload(client, service_id=service.id, discount_fixed=discount))
+    assert response.status_code == 200, response.text
+    assert response.json()['amount'] == total
+    assert response.json()['discount_fixed'] == discount
+
+
+@pytest.mark.parametrize('extra', [dict(discount_fixed=-1), dict(discount_fixed=350.01), dict(discount_fixed=0.001), dict(discount_fixed=50, discount_percent=10), dict(discount_fixed=50, payment_amount=300.01)])
+def test_invalid_fixed_discounts_and_overpayments_are_rejected(system, extra):
+    api, db, client = system
+    service = db.query(Service).filter_by(name='Animated Digital Invitation').one()
+    assert api.post('/invoices', json=payload(client, service_id=service.id, **extra)).status_code == 400
+    assert db.query(Invoice).count() == 0
+
+
+def test_fixed_discount_on_project_includes_agreed_addons(system):
+    api, db, client = system
+    product = db.query(Product).filter_by(name='Marketing Page').one()
+    project = Project(client_id=client.id, product_id=product.id, name='Fixed discount project', plan=product.name)
+    db.add(project); db.flush()
+    addon = db.query(AddOn).filter_by(name='Google Business Profile Setup').one()
+    db.add(ProjectAddOn(project_id=project.id, addon_id=addon.id, price_at_selection=500)); db.commit()
+    response = api.post('/invoices', json=payload(client, project_id=project.id, discount_fixed=50))
+    assert response.status_code == 200, response.text
+    assert response.json()['amount'] == 3450
+    assert response.json()['discount_fixed'] == 50
+
+
+def test_discount_currency_rounds_half_cents_and_rejects_nonfinite():
+    from fastapi import HTTPException
+    from backend.api.invoices import discounted_total
+    assert discounted_total(0.05, 10) == 0.04
+    assert discounted_total(350, 10) == 315
+    for value in [float('nan'), float('inf')]:
+        with pytest.raises(HTTPException):
+            discounted_total(350, 0, value)

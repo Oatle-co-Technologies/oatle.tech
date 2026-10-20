@@ -19,6 +19,7 @@ class InvoiceCreate(BaseModel):
     quoted_amount: float | None = None
     payment_amount: float = 0
     discount_percent: float = 0
+    discount_fixed: float | None = None
     status: str = "draft"
     issue_date: date
     due_date: date | None = None
@@ -32,6 +33,7 @@ class InvoiceUpdate(BaseModel):
     quoted_amount: float | None = None
     payment_amount: float = 0
     discount_percent: float = 0
+    discount_fixed: float | None = None
     status: str
     issue_date: date
     due_date: date | None = None
@@ -46,6 +48,7 @@ class InvoiceResponse(BaseModel):
     service_id: int | None = None
     service_name: str | None = None
     discount_percent: float
+    discount_fixed: float | None = None
     amount: float
     total_paid: float
     balance_due: float

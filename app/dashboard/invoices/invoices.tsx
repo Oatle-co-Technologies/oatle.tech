@@ -54,6 +54,7 @@ type Invoice = {
   service_id: number | null;
   service_name?: string | null;
   discount_percent: number;
+  discount_fixed: number | null;
   amount: number;
   total_paid: number;
   balance_due: number;
@@ -78,6 +79,8 @@ type InvoiceForm = {
   quoted_amount: string;
   payment_amount: string;
   discount_percent: string;
+  discount_type: "percent" | "fixed";
+  discount_fixed: string;
   status: string;
   issue_date: string;
   due_date: string;
@@ -93,6 +96,8 @@ const emptyForm: InvoiceForm = {
 
   payment_amount: "0",
   discount_percent: "0",
+  discount_type: "percent",
+  discount_fixed: "0",
   status: "draft",
   issue_date: "",
   due_date: "",
@@ -493,6 +498,8 @@ export default function Invoices() {
 
       payment_amount: "0",
 
+      discount_type: invoice.discount_fixed != null ? "fixed" : "percent",
+      discount_fixed: String(invoice.discount_fixed ?? 0),
       discount_percent: String(
         invoice.discount_percent ?? 0
       ),
@@ -548,10 +555,8 @@ export default function Invoices() {
           form.payment_amount || 0
         ),
 
-        discount_percent:
-          Number(
-            form.discount_percent || 0
-          ),
+        discount_percent: form.discount_type === "percent" ? Number(form.discount_percent || 0) : 0,
+        discount_fixed: form.discount_type === "fixed" ? Number(form.discount_fixed || 0) : null,
 
         status: form.status,
 
@@ -711,13 +716,17 @@ export default function Invoices() {
       }
       if (!product) throw new Error("The billed service or product could not be found");
       const addonsTotal = addons.reduce((total, addon) => total + Number(addon.price), 0);
+      const isFixedDiscount = invoice.discount_fixed != null;
+      const savedFixedDiscount = Number(invoice.discount_fixed ?? 0);
       const discountPercent = Number(invoice.discount_percent ?? 0);
       // Always use the saved invoice total; the catalogue may have changed since issue.
-      const subtotal = discountPercent < 100
+      const subtotal = isFixedDiscount ? Number(invoice.amount) + savedFixedDiscount : discountPercent < 100
         ? Number(invoice.amount) / (1 - discountPercent / 100)
         : Number(product.base_price || 0) + addonsTotal;
       const productPrice = Math.max(0, subtotal - addonsTotal);
-      const discountAmount = subtotal - Number(invoice.amount);
+      const discountAmount = isFixedDiscount ? savedFixedDiscount : subtotal - Number(invoice.amount);
+      const emailDiscountPercent = isFixedDiscount
+        ? (subtotal > 0 ? discountAmount / subtotal * 100 : 0) : discountPercent;
 
       const amountDue =
         Number(invoice.amount);
@@ -766,7 +775,9 @@ export default function Invoices() {
           subtotal.toFixed(2),
 
         discount_percent:
-          discountPercent.toFixed(2),
+          emailDiscountPercent.toFixed(2),
+
+        discount_label: isFixedDiscount ? "Discount (fixed amount)" : `Discount (${discountPercent.toFixed(2)}%)`,
 
         discount_amount:
           discountAmount.toFixed(2),
@@ -820,9 +831,8 @@ export default function Invoices() {
 
         payment_amount: 0,
 
-        discount_percent:
-          invoice.discount_percent ??
-          0,
+        discount_percent: invoice.discount_percent ?? 0,
+        discount_fixed: invoice.discount_fixed ?? null,
 
         status: "sent",
 
@@ -949,7 +959,11 @@ export default function Invoices() {
   const selectedSubtotal = selectedPrice + (form.billing_type === "project"
     ? projectAddOns.reduce((total, addon) => total + Number(addon.price), 0) : 0);
   const selectedDiscount = Number(form.discount_percent || 0);
-  const selectedTotal = selectedSubtotal * (1 - selectedDiscount / 100);
+  const subtotalCents = Math.round((selectedSubtotal + Number.EPSILON) * 100);
+  const discountCents = form.discount_type === "fixed"
+    ? Math.round(Number(form.discount_fixed || 0) * 100)
+    : Math.round(subtotalCents * selectedDiscount / 100);
+  const selectedTotal = (subtotalCents - discountCents) / 100;
 
   function getStatusClass(
     status: string
@@ -1121,7 +1135,7 @@ export default function Invoices() {
                     <div className="dashboard-breakdown-row"><span>{selectedItem?.name}</span><span>R{selectedPrice.toFixed(2)}</span></div>
                     {form.billing_type === "project" && projectAddOns.map(addon => <div key={addon.id} className="dashboard-breakdown-row"><span>{addon.name}</span><span>R{Number(addon.price).toFixed(2)}</span></div>)}
                     <div className="dashboard-breakdown-row dashboard-breakdown-subtotal"><span>Subtotal</span><span>R{selectedSubtotal.toFixed(2)}</span></div>
-                    <div className="dashboard-breakdown-row"><span>Discount ({selectedDiscount}%)</span><span>− R{(selectedSubtotal - selectedTotal).toFixed(2)}</span></div>
+                    <div className="dashboard-breakdown-row"><span>{form.discount_type === "fixed" ? "Discount (fixed amount)" : `Discount (${selectedDiscount}%)`}</span><span>− R{(selectedSubtotal - selectedTotal).toFixed(2)}</span></div>
                     <div className="dashboard-breakdown-total"><span>Invoice total</span><span>R{selectedTotal.toFixed(2)}</span></div>
                   </>}
                   {form.billing_type === "project" && !editingInvoice && <>
@@ -1293,31 +1307,31 @@ export default function Invoices() {
               )}
 
               {/* Discount */}
-
               <div className="dashboard-form-field">
-                <label htmlFor="discount_percent">
-                  Discount
+                <label htmlFor="discount_type">Discount type</label>
+                <select id="discount_type" name="discount_type" value={form.discount_type}
+                  onChange={handleChange} disabled={Boolean(editingInvoice)}>
+                  <option value="percent">Percentage (%)</option>
+                  <option value="fixed">Fixed amount (R)</option>
+                </select>
+              </div>
+              <div className="dashboard-form-field">
+                <label htmlFor={form.discount_type === "fixed" ? "discount_fixed" : "discount_percent"}>
+                  {form.discount_type === "fixed" ? "Discount amount" : "Discount percentage"}
                 </label>
-
                 <div className="dashboard-input-prefix">
-                  <input
-                    id="discount_percent"
-                    disabled={Boolean(editingInvoice)}
-                    name="discount_percent"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={
-                      form.discount_percent
-                    }
-                    onChange={
-                      handleChange
-                    }
-                  />
-
-                  <span>%</span>
+                  {form.discount_type === "fixed" && <span>R</span>}
+                  <input id={form.discount_type === "fixed" ? "discount_fixed" : "discount_percent"}
+                    name={form.discount_type === "fixed" ? "discount_fixed" : "discount_percent"}
+                    disabled={Boolean(editingInvoice)} type="number" min="0" step="0.01"
+                    max={form.discount_type === "fixed" ? selectedSubtotal.toFixed(2) : "100"}
+                    value={form.discount_type === "fixed" ? form.discount_fixed : form.discount_percent}
+                    onChange={handleChange} />
+                  {form.discount_type === "percent" && <span>%</span>}
                 </div>
+                {!editingInvoice && form.discount_type === "fixed" && <p className="dashboard-form-help">
+                  Enter the amount to subtract, for example R50.00 off R350.00 gives R300.00.
+                </p>}
               </div>
 
               {/* Status */}
@@ -1595,8 +1609,7 @@ export default function Invoices() {
 
                   <p>
                     Discount:{" "}
-                    {invoice.discount_percent}
-                    %
+                    {invoice.discount_fixed != null ? `R${Number(invoice.discount_fixed).toFixed(2)}` : `${invoice.discount_percent}%`}
                   </p>
 
                   <div className="dashboard-list-status">

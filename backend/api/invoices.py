@@ -1,5 +1,6 @@
 from datetime import datetime
 import math
+from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -28,6 +29,25 @@ router = APIRouter(
 def validate_discount(discount_percent: float) -> None:
     if not math.isfinite(discount_percent) or not 0 <= discount_percent <= 100:
         raise HTTPException(status_code=400, detail="Discount must be between 0 and 100 percent")
+
+
+def discounted_total(subtotal: float, discount_percent: float, discount_fixed: float | None = None) -> float:
+    """Calculate currency in decimal cents; a fixed discount never uses a percentage conversion."""
+    validate_discount(discount_percent)
+    base = Decimal(str(subtotal)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if discount_fixed is not None:
+        if not math.isfinite(discount_fixed) or discount_fixed < 0:
+            raise HTTPException(status_code=400, detail="Fixed discount must be a finite non-negative amount")
+        reduction = Decimal(str(discount_fixed))
+        if reduction != reduction.quantize(Decimal("0.01")):
+            raise HTTPException(status_code=400, detail="Fixed discount must use at most two decimal places")
+        if discount_percent != 0:
+            raise HTTPException(status_code=400, detail="Choose either a fixed discount or a percentage discount")
+        if reduction > base:
+            raise HTTPException(status_code=400, detail="Fixed discount cannot exceed the invoice subtotal")
+    else:
+        reduction = (base * Decimal(str(discount_percent)) / 100).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return float(base - reduction)
 
 
 def catalogue_price(item, quoted_amount: float | None) -> float:
@@ -69,6 +89,7 @@ def calculate_project_amount(
     quoted_amount: float | None,
     discount_percent: float,
     db: Session,
+    discount_fixed: float | None = None,
 ) -> float:
     """
     Calculate the invoice amount from the project's
@@ -115,11 +136,7 @@ def calculate_project_amount(
         for addon, selected_price in project_addons
     )
 
-    discount_amount = subtotal * (
-        discount_percent / 100
-    )
-
-    return subtotal - discount_amount
+    return discounted_total(subtotal, discount_percent, discount_fixed)
 
 
 @router.get(
@@ -149,10 +166,10 @@ def create_invoice(
     project, service = invoice_target(invoice.project_id, invoice.service_id, invoice.client_id, db)
     validate_discount(invoice.discount_percent)
     amount = (
-        round(catalogue_price(service, invoice.quoted_amount) * (1 - invoice.discount_percent / 100), 2)
+        discounted_total(catalogue_price(service, invoice.quoted_amount), invoice.discount_percent, invoice.discount_fixed)
         if service is not None else calculate_project_amount(
             project=project, quoted_amount=invoice.quoted_amount,
-            discount_percent=invoice.discount_percent, db=db,
+            discount_percent=invoice.discount_percent, db=db, discount_fixed=invoice.discount_fixed,
         )
     )
 
@@ -173,6 +190,7 @@ def create_invoice(
         project_id=invoice.project_id,
         service_id=invoice.service_id,
         discount_percent=invoice.discount_percent,
+        discount_fixed=invoice.discount_fixed,
         amount=amount,
         status=status,
         issue_date=invoice.issue_date,
@@ -253,6 +271,13 @@ def update_invoice(
     validate_discount(invoice_data.discount_percent)
     if invoice_data.service_id != invoice.service_id:
         raise HTTPException(status_code=400, detail="Create a new invoice to change the billed service")
+
+    # Keep both the saved discount and total together; payment/status edits cannot reprice history.
+    if invoice_data.discount_percent != invoice.discount_percent or (
+        "discount_fixed" in invoice_data.model_fields_set
+        and invoice_data.discount_fixed != (float(invoice.discount_fixed) if invoice.discount_fixed is not None else None)
+    ):
+        raise HTTPException(status_code=400, detail="Create a new invoice to change its saved discount")
 
     # The invoice total is a historical value fixed when the invoice is
     # created. Project pricing changes must not rewrite it later.
