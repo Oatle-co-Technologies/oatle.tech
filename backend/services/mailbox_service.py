@@ -7,6 +7,7 @@ from email.message import EmailMessage
 from html.parser import HTMLParser
 import imaplib
 import json
+import logging
 import os
 import ssl
 import re
@@ -16,6 +17,9 @@ import time
 from fastapi import HTTPException
 from backend.services.email_service import render_branded_email
 from backend.services.email_html import sanitize_email_html, embed_email_images
+
+
+logger = logging.getLogger(__name__)
 
 
 def mailbox_for(staff):
@@ -187,6 +191,12 @@ def send_message(box, recipient, subject, body, reply=None, attachments=None):
     for attachment in attachments or []:
         maintype, subtype = attachment["content_type"].split("/", 1)
         message.add_attachment(attachment["data"], maintype=maintype, subtype=subtype, filename=attachment["filename"])
+    deliver_via_purelymail(box, message, recipient)
+    saved = archive_sent_copy(box, message)
+    return {"sent": True, "sent_copy_saved": saved}
+
+
+def deliver_via_purelymail(box, message, recipient):
     try:
         with smtplib.SMTP_SSL("smtp.purelymail.com", 465,
                               context=ssl.create_default_context(), timeout=15) as client:
@@ -198,15 +208,24 @@ def send_message(box, recipient, subject, body, reply=None, attachments=None):
         raise HTTPException(422, "Purelymail did not accept the recipient address.") from None
     except (smtplib.SMTPException, OSError):
         raise HTTPException(502, "Delivery could not be confirmed. Check Purelymail before sending again.") from None
-    # Delivery already succeeded. Never report an archive failure as a send failure.
-    saved = False
+
+
+def archive_sent_copy(box, message):
     try:
         with connect(box) as client:
-            status, _ = client.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), message.as_bytes(policy=policy.SMTP))
-            saved = status == "OK"
-    except HTTPException:
+            status, _ = client.append(
+                "Sent",
+                "\\Seen",
+                imaplib.Time2Internaldate(time.time()),
+                message.as_bytes(policy=policy.SMTP),
+            )
+            if status == "OK":
+                return True
+    except (HTTPException, imaplib.IMAP4.error, OSError, EOFError):
         pass
-    return {"sent": True, "sent_copy_saved": saved}
+
+    logger.warning("Purelymail accepted an email, but its Sent-folder copy could not be saved.")
+    return False
 
 
 def mark_message_read(box, uid, uid_validity, view="inbox"):
