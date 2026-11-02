@@ -3,6 +3,7 @@ import math
 from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from sqlalchemy.orm import Session
 
@@ -16,14 +17,22 @@ from backend.models.project_addon import ProjectAddOn
 from backend.schemas.invoice import (
     InvoiceCreate,
     InvoiceResponse,
+    InvoiceSendResponse,
     InvoiceUpdate,
 )
+from backend.services.invoice_email import build_invoice_email, send_invoice_email
 
 
 router = APIRouter(
     prefix="/invoices",
     tags=["Invoices"],
 )
+
+
+class InvoiceSendRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    resend: bool = False
+    expected_sent_at: datetime | None = None
 
 
 def validate_discount(discount_percent: float) -> None:
@@ -242,6 +251,46 @@ def get_invoice(
         )
 
     return invoice
+
+
+@router.post("/{invoice_id}/send", response_model=InvoiceSendResponse)
+def send_invoice(
+    invoice_id: int,
+    request: InvoiceSendRequest,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_admin_staff),
+):
+    invoice = (
+        db.query(Invoice)
+        .filter(Invoice.id == invoice_id)
+        .with_for_update()
+        .first()
+    )
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    already_sent = invoice.invoice_email_sent_at is not None
+    if already_sent and (
+        not request.resend or request.expected_sent_at != invoice.invoice_email_sent_at
+    ):
+        raise HTTPException(status_code=409, detail="This invoice has already been sent. Confirm a resend to send it again.")
+    if not already_sent and (request.resend or request.expected_sent_at is not None):
+        raise HTTPException(status_code=409, detail="Only a previously sent invoice can be resent.")
+
+    try:
+        recipient, values = build_invoice_email(invoice, db)
+        sent_copy_saved = send_invoice_email(recipient, values)
+    except HTTPException:
+        db.rollback()
+        raise
+
+    if invoice.status == "draft":
+        invoice.status = "sent"
+    invoice.invoice_email_sent_at = datetime.utcnow()
+    db.commit()
+    db.refresh(invoice)
+    response = InvoiceResponse.model_validate(invoice).model_dump()
+    response["sent_copy_saved"] = sent_copy_saved
+    return response
 
 
 @router.put(
