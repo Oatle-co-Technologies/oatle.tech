@@ -2,7 +2,7 @@
 from contextlib import contextmanager
 from email import policy
 from email.parser import BytesParser
-from email.utils import parseaddr, formatdate, make_msgid
+from email.utils import parseaddr, formatdate, make_msgid, formataddr
 from email.message import EmailMessage
 from html.parser import HTMLParser
 import imaplib
@@ -166,7 +166,7 @@ def read_message(box, uid, uid_validity, view="inbox"):
 
 def send_message(box, recipient, subject, body, reply=None, attachments=None):
     message = EmailMessage()
-    message["From"] = box["address"]
+    message["From"] = formataddr(("Oatle Technologies", box["address"]))
     message["To"] = recipient
     message["Subject"] = subject
     message["Date"] = formatdate(localtime=False)
