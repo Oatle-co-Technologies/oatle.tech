@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { emptyEmailDraft, parseEmailDraft, emailDraftKey, type EmailDraft } from "@/lib/email-drafts";
+import { formatEmailDate } from "@/lib/mail-date";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import "./inbox.css";
@@ -170,11 +171,11 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
     {sentNotice && <p role="status">{sentNotice}</p>}
     {composeForm}
     {!validity ? <p role="alert">Open this email from your message list.</p> : messageLoading ? <p role="status">Opening email…</p> : messageError ? <p role="alert">{messageError}</p> : message && <article className="dashboard-panel mail-detail" aria-label="Email message">
-      <h1>{message.subject}</h1><p className="dashboard-subtitle">From: {message.sender}<br/>To: {message.to}<br/>{message.date}</p>
+      <h1>{message.subject}</h1><p className="dashboard-subtitle">From: {message.sender}<br/>To: {message.to}<br/>{formatEmailDate(message.date)}</p>
       {view !== "sent" && <button type="button" className="dashboard-button" disabled={sending} onClick={() => compose(message)}>Reply</button>}
       {readStatusError && <p role="alert">{readStatusError}</p>}
       {threadError && <p className="dashboard-subtitle">{threadError}</p>}
-      {thread.length > 1 && <details className="mail-conversation"><summary>Conversation · {thread.length} emails</summary><ol>{thread.map(item => <li key={`${item.view}-${item.uid}`}><Link href={`/dashboard/inbox/${item.uid}?view=${item.view}&uid_validity=${item.uid_validity}`} aria-current={item.uid === messageUid && (item.view === view || (item.view === "inbox" && view === "unread")) ? "page" : undefined}>{item.subject}</Link><span>{item.sender} · {item.date}</span></li>)}</ol></details>}
+      {thread.length > 1 && <details className="mail-conversation"><summary>Conversation · {thread.length} emails</summary><ol>{thread.map(item => <li key={`${item.view}-${item.uid}`}><Link href={`/dashboard/inbox/${item.uid}?view=${item.view}&uid_validity=${item.uid_validity}`} aria-current={item.uid === messageUid && (item.view === view || (item.view === "inbox" && view === "unread")) ? "page" : undefined}>{item.subject}</Link><span>{item.sender} · {formatEmailDate(item.date)}</span></li>)}</ol></details>}
       <EmailBody message={message} />
       {message.truncated && <p className="dashboard-subtitle">This large message is partially displayed.</p>}
       {!!message.attachments.length && <p className="dashboard-subtitle">Attachments: {message.attachments.join(", ")} (view in Purelymail)</p>}
@@ -200,7 +201,7 @@ function InboxContent({ initialView: view, initialBefore: before, initialSearch:
       <section className="dashboard-panel mail-list" aria-label="Inbox messages">
         {!inbox.messages.length && <p className="dashboard-empty">{view === "sent" ? "No sent messages." : view === "unread" ? "No unread messages." : "No messages in your inbox."}</p>}
         {inbox.messages.map(item => <Link className="mail-row" key={item.uid} href={`/dashboard/inbox/${item.uid}?view=${view}&uid_validity=${inbox.uid_validity}${before ? `&before=${before}` : ""}${searchQuery}`} prefetch={false}>
-          <span className="mail-sender">{view === "sent" ? `To: ${item.to}` : item.sender}</span><span className="mail-subject">{item.unread && <span aria-label="Unread">● </span>}{item.subject}</span><span className="mail-date">{item.date}</span>
+          <span className="mail-sender">{view === "sent" ? `To: ${item.to}` : item.sender}</span><span className="mail-subject">{item.unread && <span aria-label="Unread">● </span>}{item.subject}</span><span className="mail-date">{formatEmailDate(item.date)}</span>
         </Link>)}
         <div className="mail-pagination">{before && <button type="button" className="dashboard-button" onClick={() => loadPage(null)}>Newest messages</button>}{inbox.next_before && <button type="button" className="dashboard-button" onClick={() => loadPage(inbox.next_before)}>Older messages</button>}</div>
       </section>
