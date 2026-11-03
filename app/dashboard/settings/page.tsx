@@ -59,6 +59,35 @@ export default function SettingsPage() {
     }
   }
 
+  async function signOutOfAllDevices() {
+    const confirmed = window.confirm(
+      "Sign out of all devices for this account? You will need to sign in again with a new email code."
+    );
+    if (!confirmed) return;
+
+    setSigningOut(true);
+    setError("");
+    try {
+      await disableTaskAlerts();
+      const { error: signOutError } = await createClient().auth.signOut({
+        scope: "global",
+      });
+      if (signOutError) {
+        throw new Error(
+          signOutError.message || "Unable to sign out of all devices. Please try again."
+        );
+      }
+      window.location.assign(new URL("/login", window.location.origin).href);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to sign out of all devices. Please try again."
+      );
+      setSigningOut(false);
+    }
+  }
+
   return (
     <main className="dashboard-main">
       <BackToDashboard />
@@ -103,6 +132,13 @@ export default function SettingsPage() {
         <button type="button" onClick={signOut} disabled={signingOut || saving}>
           {signingOut ? "Signing out..." : "Sign Out"}
         </button>
+        {process.env.NEXT_PUBLIC_AUTH_PROVIDER === "supabase" && (
+          <div className="dashboard-form-actions">
+            <button type="button" onClick={signOutOfAllDevices} disabled={signingOut || saving}>
+              {signingOut ? "Signing out..." : "Sign Out of All Devices"}
+            </button>
+          </div>
+        )}
       </section>
     </main>
   );
