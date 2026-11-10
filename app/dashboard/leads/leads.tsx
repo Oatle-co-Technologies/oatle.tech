@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { toLocalDateTime } from "@/lib/local-datetime";
 import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 import { useAuth } from "@/lib/auth-context";
@@ -119,8 +121,6 @@ export default function LeadsPage() {
     onReset: () => { setShowForm(false); setEmailLead(null); },
   });
   function openAddForm() { recordPage.open("new"); }
-  function openEditForm(lead: Lead) { recordPage.open("edit", lead.id); }
-  function openEmailComposer(lead: Lead) { recordPage.open("email", lead.id); }
 
   async function loadLeads() {
     if (!userEmail) {
@@ -186,22 +186,8 @@ export default function LeadsPage() {
         lead.follow_up_reason ?? "",
       contact_attempts:
         lead.contact_attempts ?? 0,
-      last_contacted_at:
-        lead.last_contacted_at
-          ? new Date(
-              lead.last_contacted_at
-            )
-              .toISOString()
-              .slice(0, 16)
-          : "",
-      next_follow_up_at:
-        lead.next_follow_up_at
-          ? new Date(
-              lead.next_follow_up_at
-            )
-              .toISOString()
-              .slice(0, 16)
-          : "",
+      last_contacted_at: toLocalDateTime(lead.last_contacted_at),
+      next_follow_up_at: toLocalDateTime(lead.next_follow_up_at),
       notes: lead.notes ?? "",
       marketing_email_opt_in:
         lead.marketing_email_opt_in ??
@@ -1062,7 +1048,7 @@ export default function LeadsPage() {
               {leads.filter(item => !recordPage.isDetail || item.id === recordPage.id).map((lead) => (
                 <div
                   key={lead.id}
-                  className="dashboard-list-row dashboard-lead-row"
+                  className={`dashboard-list-row dashboard-lead-row${recordPage.isDetail ? " dashboard-lead-detail" : ""}`}
                 >
                   <div className="dashboard-list-content">
                     <h2>{lead.name}</h2>
@@ -1165,29 +1151,13 @@ export default function LeadsPage() {
                   </div>
 
                   <div className="dashboard-list-actions">
-                    <button
-                      type="button"
-                      className="dashboard-action-edit"
-                      onClick={() =>
-                        openEditForm(
-                          lead
-                        )
-                      }
-                    >
+                    <Link className="dashboard-action-edit" href={recordPage.href("edit", lead.id)}>
                       Edit
-                    </button>
+                    </Link>
 
-                    <button
-                      type="button"
-                      className="dashboard-action-primary"
-                      onClick={() =>
-                        openEmailComposer(
-                          lead
-                        )
-                      }
-                    >
+                    <Link className="dashboard-action-primary" href={recordPage.href("email", lead.id)}>
                       Email Follow-Up
-                    </button>
+                    </Link>
 
                     {lead.stage !==
                       "won" &&

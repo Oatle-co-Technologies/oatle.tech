@@ -20,18 +20,25 @@ export function useRecordPage<T extends { id: number }>({ base, records, loading
   const callbacks = useRef({ onNew, onEdit, onEmail, onReset });
   useEffect(() => { callbacks.current = { onNew, onEdit, onEmail, onReset }; });
   useEffect(() => {
-    if (!isDetail || initialized.current === pathname || !ready) return;
+    if (!isDetail) {
+      initialized.current = "";
+      return;
+    }
+    if (initialized.current === pathname || !ready || loading) return;
     if (action !== "new" && !record) return;
     initialized.current = pathname;
     callbacks.current.onReset?.();
     if (action === "new") callbacks.current.onNew();
     if (action === "edit" && record) callbacks.current.onEdit(record);
     if (action === "email" && record) callbacks.current.onEmail?.(record);
-  }, [action, isDetail, pathname, ready, record]);
-  function open(action: RecordAction, id?: number) {
-    router.push(action === "new" ? `${base}/new` : `${base}/${id}/${action}`);
+  }, [action, isDetail, pathname, ready, loading, record]);
+  function href(action: RecordAction, id?: number) {
+    return action === "new" ? `${base}/new` : `${base}/${id}/${action}`;
   }
-  return { isDetail, action, id, open, back: () => router.push(base),
+  function open(action: RecordAction, id?: number) {
+    router.push(href(action, id));
+  }
+  return { isDetail, action, id, href, open, back: () => router.push(base),
     showList: !isDetail || action === "email" || action === "view",
     header: isDetail ? <div className="dashboard-record-header">
       <Link className="dashboard-link" href={base}>← Back to {base.split("/").at(-1)}</Link>

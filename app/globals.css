@@ -2579,15 +2579,16 @@ MOBILE
   text-decoration: none;
   transition:
     background-color 160ms ease,
-    box-shadow 160ms ease,
-    padding 160ms ease;
+    box-shadow 160ms ease;
 }
 
-.dashboard-list-row:hover {
-  padding-left: 12px;
-  padding-right: 12px;
-  background: #faf8f3;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+/* Touch devices must activate the control on the first tap, without a
+   simulated hover changing its ancestor's layout. Only links are clickable rows. */
+@media (hover: hover) and (pointer: fine) {
+  a.dashboard-list-row:hover {
+    background: #faf8f3;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  }
 }
 
 .dashboard-list-row:focus-visible {

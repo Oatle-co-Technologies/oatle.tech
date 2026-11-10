@@ -20,7 +20,7 @@ function harness(path) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     throw Error(name);
   } });
-  return { calls, render(records = [], loading = false, ready = true) {
+  return { calls, navigate(path) { pathname = path; }, render(records = [], loading = false, ready = true) {
     cursor = 0; effects.length = 0;
     const result = module.exports.useRecordPage({ base: '/dashboard/clients', records, loading, ready,
       onNew: () => calls.push(['new']), onEdit: record => calls.push(['edit', record.id]), onEmail: record => calls.push(['compose', record.id]),
@@ -52,4 +52,17 @@ test('new page hides existing records and missing records do not initialize form
 test('edit waits for related form options before initializing', () => {
   const h=harness('/dashboard/clients/7/edit');h.render([{id:7}],false,false);assert.deepEqual(h.calls,[]);
   h.render([{id:7}],false,true);assert.deepEqual(h.calls,[['edit',7]]);
+});
+
+test('returning to a previously opened form initializes it again', () => {
+  const h = harness('/dashboard/clients/7/edit');
+  const records = [{id:7}]; h.render(records);
+  h.navigate('/dashboard/clients'); h.render(records);
+  h.navigate('/dashboard/clients/7/edit'); h.render(records);
+  assert.deepEqual(h.calls, [['edit',7], ['edit',7]]);
+});
+test('refreshing records does not initialize from stale data while loading', () => {
+  const h = harness('/dashboard/clients/7/edit');
+  h.render([{id:7}], true); assert.deepEqual(h.calls, []);
+  h.render([{id:7}]); assert.deepEqual(h.calls, [['edit',7]]);
 });
