@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import ProjectProgress, { ProjectProgressSummary } from "./project-progress";
 import { useAuth } from "@/lib/auth-context";
 import { useRecordPage } from "@/lib/use-record-page";
@@ -111,7 +112,6 @@ export default function Projects({ clientId }: { clientId?: number } = {}) {
     onReset: () => { setShowForm(false); },
   });
   function openAddForm() { recordPage.open("new"); }
-  function openEditForm(project: Project) { recordPage.open("edit", project.id); }
 
   async function loadProjects() {
     if (!userEmail) {
@@ -1133,17 +1133,9 @@ export default function Projects({ clientId }: { clientId?: number } = {}) {
                       </div>
 
                       <div className="dashboard-list-actions">
-                        <button
-                          type="button"
-                          className="dashboard-action-edit"
-                          onClick={() =>
-                            openEditForm(
-                              project
-                            )
-                          }
-                        >
+                        <Link className="dashboard-action-edit" href={recordPage.href("edit", project.id)}>
                           Edit
-                        </button>
+                        </Link>
 
                         <button
                           type="button"
@@ -1158,7 +1150,7 @@ export default function Projects({ clientId }: { clientId?: number } = {}) {
                         </button>
                       </div>
 
-                      {!recordPage.isDetail && <button type="button" className="dashboard-action-primary" onClick={() => recordPage.open("view", project.id)}>View progress & details</button>}
+                      {!recordPage.isDetail && <Link className="dashboard-action-primary" href={recordPage.href("view", project.id)}>View progress &amp; details</Link>}
                       {recordPage.isDetail && <>
                       <ProjectProgress projectId={project.id} onSaved={status => setProjects(current => current.map(item => item.id === project.id ? { ...item, status } : item))} />
                       {/* Project Add-ons */}
