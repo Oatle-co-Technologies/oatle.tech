@@ -58,7 +58,12 @@ class InvoiceResponse(BaseModel):
     due_date: date | None
     notes: str | None
     paid_at: datetime | None
+    invoice_email_sent_at: datetime | None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class InvoiceSendResponse(InvoiceResponse):
+    sent_copy_saved: bool
