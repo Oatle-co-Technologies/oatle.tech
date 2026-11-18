@@ -126,6 +126,8 @@ export default function Footer() {
                                 ))}
                             </div>
 
+                            <Link href="/brand-assets">Brand Assets</Link>
+
                             <Link href="mailto:info@oatle-technologies.co.za">
                                 info@oatle-technologies.co.za
                             </Link>
