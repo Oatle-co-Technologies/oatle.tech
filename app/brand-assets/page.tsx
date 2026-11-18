@@ -65,6 +65,15 @@ export default function BrandAssetsPage() {
         ))}
       </ul>
 
+      <section className={styles.creator} aria-labelledby="creator-assets">
+        <div>
+          <h2 id="creator-assets">For creators</h2>
+          <p>Working with Oatle Technologies? Save this PNG to your phone and add it over a photo, Story, or video in your editor. The area around the sticker is transparent.</p>
+          <a className={styles.download} href="/oatle-technologies-creator-sticker.png" download>Download creator sticker</a>
+        </div>
+        <Image src="/oatle-technologies-creator-sticker.png" alt="Oatle Technologies creator sticker preview" width={1080} height={520} unoptimized />
+      </section>
+
       <section className={styles.usage} aria-labelledby="brand-usage">
         <h2 id="brand-usage">Using our logo</h2>
         <p>Use the original colours and proportions. For other formats or brand enquiries, email <a href="mailto:info@oatle-technologies.co.za">info@oatle-technologies.co.za</a>.</p>
