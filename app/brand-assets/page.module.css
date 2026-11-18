@@ -1,0 +1,17 @@
+.page { max-width: 72rem; margin: auto; padding: clamp(24px, 5vw, 72px); }
+.back, .usage a { text-decoration: underline; text-underline-offset: 4px; }
+.intro { max-width: 44rem; margin: clamp(32px, 7vw, 84px) 0 32px; }
+.intro h1 { font-size: clamp(2rem, 5vw, 4rem); line-height: 1.12; margin-bottom: 12px; }
+.assets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 16px; padding: 0; list-style: none; }
+.card { display: flex; flex-direction: column; border: 1px solid #e8e4db; border-radius: 16px; overflow: hidden; }
+.preview { display: grid; place-items: center; min-height: 180px; padding: 16px; background: #faf8f3; }
+.preview[data-dark="true"] { background: #000; }
+.preview img { width: 100%; height: 148px; object-fit: contain; }
+.preview img[src="/oatle-brand-o.png"] { height: 100px; }
+.info { display: flex; flex-direction: column; align-items: flex-start; flex: 1; gap: 6px; padding: 20px; }
+.info h2, .usage h2 { font-size: 1.35rem; }
+.dimensions { font-size: .875rem; }
+.download { display: inline-flex; align-items: center; min-height: 44px; margin-top: auto; padding: 8px 14px; border-radius: 8px; color: #fff; background: #25221b; }
+.download:hover { background: #51472f; }
+.page a:focus-visible { outline: 2px solid #89690f; outline-offset: 4px; }
+.usage { margin-top: 40px; padding-top: 24px; border-top: 1px solid #e8e4db; overflow-wrap: anywhere; }
