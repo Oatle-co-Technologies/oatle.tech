@@ -15,3 +15,8 @@
 .download:hover { background: #51472f; }
 .page a:focus-visible { outline: 2px solid #89690f; outline-offset: 4px; }
 .usage { margin-top: 40px; padding-top: 24px; border-top: 1px solid #e8e4db; overflow-wrap: anywhere; }
+
+.creator { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); align-items: center; gap: 16px 24px; margin-top: 40px; padding: clamp(16px, 3vw, 28px); border: 1px solid #e8e4db; border-radius: 16px; background: #faf8f3; }
+.creator h2 { font-size: 1.35rem; }
+.creator p { margin: 5px 0 12px; }
+.creator img { width: 100%; height: auto; }
