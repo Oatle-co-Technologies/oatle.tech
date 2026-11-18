@@ -20,3 +20,4 @@
 .creator h2 { font-size: 1.35rem; }
 .creator p { margin: 5px 0 12px; }
 .creator img { width: 100%; height: auto; }
+.creatorDownloads { display: flex; flex-wrap: wrap; gap: 8px; }

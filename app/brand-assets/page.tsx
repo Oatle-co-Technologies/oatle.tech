@@ -68,8 +68,11 @@ export default function BrandAssetsPage() {
       <section className={styles.creator} aria-labelledby="creator-assets">
         <div>
           <h2 id="creator-assets">For creators</h2>
-          <p>Working with Oatle Technologies? Save this PNG to your phone and add it over a photo, Story, or video in your editor. The area around the sticker is transparent.</p>
-          <a className={styles.download} href="/oatle-technologies-creator-sticker.png" download>Download creator sticker</a>
+          <p>Working with Oatle Technologies? Save either PNG to your phone and add it over a photo, Story, or video in your editor.</p>
+          <div className={styles.creatorDownloads}>
+            <a className={styles.download} href="/oatle-technologies-transparent-logo.png" download="oatle-technologies-logo-sticker.png">Download logo-only sticker</a>
+            <a className={styles.download} href="/oatle-technologies-creator-sticker.png" download>Download sticker with website</a>
+          </div>
         </div>
         <Image src="/oatle-technologies-creator-sticker.png" alt="Oatle Technologies creator sticker preview" width={1080} height={520} unoptimized />
       </section>
