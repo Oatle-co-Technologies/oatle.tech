@@ -356,6 +356,8 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        {staff && !staff.is_owner && <div className="dashboard-page-actions"><Link href="/dashboard/appointments/new" className="dashboard-action-primary">Book appointment with Vinolia</Link></div>}
+
         {/* Error */}
         {error && (
           <div

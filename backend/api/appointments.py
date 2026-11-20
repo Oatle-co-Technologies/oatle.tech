@@ -1,5 +1,6 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -22,6 +23,7 @@ from backend.schemas.appointment import (
     AppointmentCreate,
     AppointmentResponse,
     AppointmentUpdate,
+    StaffAppointmentCreate,
 )
 
 
@@ -62,6 +64,38 @@ def create_discovery_booking(
         ),
         db,
     )
+
+
+@router.post("/with-owner", response_model=AppointmentResponse)
+def book_staff_appointment(
+    appointment: StaffAppointmentCreate,
+    db: Session = Depends(get_db),
+    staff: Staff = Depends(get_current_staff),
+):
+    """Staff book themselves with the owner; identity is never client supplied."""
+    start = appointment_datetime(appointment.start_time)
+    end = appointment_datetime(appointment.end_time)
+    now = appointment_datetime(datetime.now(ZoneInfo("Africa/Johannesburg")))
+    if start <= now or end <= start or end - start > timedelta(hours=2):
+        raise HTTPException(status_code=400, detail="Choose a future appointment lasting up to two hours. Times are South African time.")
+    title = appointment.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Enter an appointment subject")
+    owner_email = os.getenv("DISCOVERY_ORGANIZER_EMAIL", "info@oatle-technologies.co.za").strip().lower()
+    owner = db.query(Staff).filter(Staff.email.ilike(owner_email)).first()
+    if not owner or not owner.active or owner.access_level != "admin":
+        raise HTTPException(status_code=503, detail="The appointment organiser is unavailable. Please contact Oatle Technologies.")
+    return create_appointment(AppointmentCreate(
+        organizer_staff_id=owner.id,
+        participant_staff_id=staff.id,
+        participant_name=staff.name,
+        participant_email=staff.email,
+        title=title,
+        appointment_type="staff_meeting",
+        start_time=start,
+        end_time=end,
+        notes=appointment.notes,
+    ), db, _staff=staff)
 
 
 # ============================================================

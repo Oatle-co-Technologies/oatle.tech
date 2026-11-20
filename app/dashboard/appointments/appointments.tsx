@@ -67,8 +67,8 @@ export default function AppointmentsPage() {
   const [saving, setSaving] = useState(false);
 
   const recordPage = useRecordPage({
-    base: "/dashboard/appointments", records: appointments, loading,
-    onNew: () => { if (isOwner) initializeAddForm(); }, onEdit: record => { if (isOwner) initializeEditForm(record); },
+    base: "/dashboard/appointments", records: appointments, loading, ready: !!staff,
+    onNew: () => { if (staff) initializeAddForm(); }, onEdit: record => { if (isOwner) initializeEditForm(record); },
     onReset: () => { setShowForm(false); },
   });
   function openAddForm() { recordPage.open("new"); }
@@ -113,7 +113,7 @@ export default function AppointmentsPage() {
 
   function initializeAddForm() {
     setEditingAppointment(null);
-    setForm(emptyForm);
+    setForm(isOwner ? emptyForm : { ...emptyForm, participant_name: staff?.name || "", participant_email: staff?.email || "", appointment_type: "staff_meeting" });
     setShowForm(true);
     setError("");
   }
@@ -177,7 +177,7 @@ export default function AppointmentsPage() {
       setSaving(true);
       setError("");
 
-      const payload = {
+      const ownerPayload = {
         organizer_staff_id:
           staff?.id ?? null,
         participant_staff_id: null,
@@ -196,9 +196,11 @@ export default function AppointmentsPage() {
           form.notes || null,
       };
 
+      const payload = isOwner ? ownerPayload : { title: form.title, start_time: form.start_time, end_time: form.end_time, notes: form.notes || null };
+
       const url = editingAppointment
         ? `${API_URL}/appointments/${editingAppointment.id}`
-        : `${API_URL}/appointments`;
+        : isOwner ? `${API_URL}/appointments` : `${API_URL}/appointments/with-owner`;
 
       const method = editingAppointment
         ? "PUT"
@@ -369,20 +371,20 @@ export default function AppointmentsPage() {
     <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
       {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
-      {recordPage.isDetail && !isOwner && (recordPage.action === "new" || recordPage.action === "edit") && <p role="alert">Only Vinolia can manage appointments.</p>}
+      {recordPage.isDetail && !isOwner && recordPage.action === "edit" && <p role="alert">Only Vinolia can manage appointments.</p>}
       {/* Header controls */}
-      {isOwner && <div className="dashboard-page-actions">
+      {staff && <div className="dashboard-page-actions">
         <button
           type="button"
           className="dashboard-link"
           onClick={openAddForm}
         >
-          + New Appointment
+          {isOwner ? "+ New Appointment" : "+ Book appointment with Vinolia"}
         </button>
       </div>}
 
       {/* Appointment form */}
-      {isOwner && showForm && (
+      {showForm && (isOwner || !editingAppointment) && (
         <div
           className="dashboard-panel"
           style={{ marginBottom: "24px" }}
@@ -398,13 +400,15 @@ export default function AppointmentsPage() {
               <h3>
                 {editingAppointment
                   ? "Edit Appointment"
-                  : "Create Appointment"}
+                  : isOwner ? "Create Appointment" : "Book appointment with Vinolia"}
               </h3>
             </div>
           </div>
 
+          {!isOwner && <p>You are booking as {staff?.name} ({staff?.email}) with Vinolia. The time is checked against her Google Calendar before confirmation. All times are SAST.</p>}
           <form onSubmit={handleSubmit}>
             <div className="dashboard-form-grid">
+              {isOwner && <>
               <input
                 name="participant_name"
                 placeholder="Participant name"
@@ -426,6 +430,7 @@ export default function AppointmentsPage() {
                 required
               />
 
+              </>}
               <input
                 name="title"
                 placeholder="Appointment title"
@@ -434,7 +439,7 @@ export default function AppointmentsPage() {
                 required
               />
 
-              <select
+              {isOwner && <select
                 name="appointment_type"
                 value={
                   form.appointment_type
@@ -456,9 +461,10 @@ export default function AppointmentsPage() {
                 <option value="meeting">
                   Meeting
                 </option>
-              </select>
+              </select>}
 
               <input
+                aria-label="Start date and time (SAST)"
                 name="start_time"
                 type="datetime-local"
                 value={form.start_time}
@@ -467,6 +473,7 @@ export default function AppointmentsPage() {
               />
 
               <input
+                aria-label="End date and time (SAST)"
                 name="end_time"
                 type="datetime-local"
                 value={form.end_time}
@@ -474,12 +481,12 @@ export default function AppointmentsPage() {
                 required
               />
 
-              <input
+              {isOwner && <input
                 name="location"
                 placeholder="Location or meeting link"
                 value={form.location}
                 onChange={handleChange}
-              />
+              />}
 
               <textarea
                 name="notes"
@@ -500,7 +507,7 @@ export default function AppointmentsPage() {
                   ? "Saving..."
                   : editingAppointment
                   ? "Update Appointment"
-                  : "Create Appointment"}
+                  : isOwner ? "Create Appointment" : "Book appointment"}
               </button>
 
               <button

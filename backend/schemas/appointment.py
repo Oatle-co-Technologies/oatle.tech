@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 from zoneinfo import ZoneInfo
 
 
@@ -49,3 +49,10 @@ class AppointmentResponse(AppointmentCreate):
         return (value.replace(tzinfo=local_zone) if value.tzinfo is None else value.astimezone(local_zone)).isoformat()
 
     model_config = ConfigDict(from_attributes=True)
+
+class StaffAppointmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: str = Field(min_length=1, max_length=150)
+    start_time: datetime
+    end_time: datetime
+    notes: str | None = Field(default=None, max_length=2000)
