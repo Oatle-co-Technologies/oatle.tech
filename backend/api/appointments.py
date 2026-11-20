@@ -2,11 +2,12 @@ import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from pydantic import HttpUrl, TypeAdapter, ValidationError
 
 from backend.database.connection import get_db
-from backend.dependencies import get_current_staff, get_owner_staff
+from backend.dependencies import get_current_staff, get_owner_staff, is_financial_owner
 from backend.models.appointment import Appointment
 from backend.models.staff import Staff
 from backend.integrations.google_calendar import (
@@ -92,6 +93,7 @@ def book_staff_appointment(
         participant_email=staff.email,
         title=title,
         appointment_type="staff_meeting",
+        location=str(appointment.meeting_link) if appointment.meeting_link else None,
         start_time=start,
         end_time=end,
         notes=appointment.notes,
@@ -115,6 +117,9 @@ def create_appointment(
         "start_time": appointment_datetime(appointment.start_time),
         "end_time": appointment_datetime(appointment.end_time),
     })
+    if appointment.start_time <= appointment_datetime(datetime.now(ZoneInfo("Africa/Johannesburg"))):
+        raise HTTPException(status_code=400, detail="Choose a future appointment start date and time.")
+
     if appointment.end_time <= appointment.start_time:
         raise HTTPException(
             status_code=400,
@@ -323,8 +328,9 @@ def get_appointment(
 def update_appointment(
     appointment_id: int,
     appointment_data: AppointmentUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    _staff: Staff = Depends(get_owner_staff),
+    _staff: Staff = Depends(get_current_staff),
 ):
     appointment = (
         db.query(Appointment)
@@ -338,9 +344,38 @@ def update_appointment(
             detail="Appointment not found",
         )
 
+    owner = _staff.access_level == "admin" and is_financial_owner(request)
+    own_booking = appointment.appointment_type == "staff_meeting" and appointment.participant_staff_id == _staff.id
+    if not owner and not own_booking:
+        raise HTTPException(status_code=403, detail="You can only manage appointments you booked with the owner.")
+
     update_data = appointment_data.model_dump(
         exclude_unset=True
     )
+
+    if not owner:
+        allowed_fields = {"title", "start_time", "end_time", "notes", "location"}
+        if set(update_data) - allowed_fields:
+            raise HTTPException(status_code=403, detail="Staff cannot change appointment participants or status.")
+        if "title" in update_data and (not update_data["title"] or not update_data["title"].strip() or len(update_data["title"]) > 150):
+            raise HTTPException(status_code=400, detail="Enter a subject up to 150 characters.")
+        if len(update_data.get("notes") or "") > 2000:
+            raise HTTPException(status_code=400, detail="Use notes up to 2,000 characters.")
+        if update_data.get("location"):
+            try:
+                update_data["location"] = str(TypeAdapter(HttpUrl).validate_python(update_data["location"]))
+            except ValidationError:
+                raise HTTPException(status_code=400, detail="Enter a valid meeting link.")
+
+    if any(field in update_data and update_data[field] is None for field in ("start_time", "end_time")):
+        raise HTTPException(status_code=400, detail="Start and end times are required.")
+    proposed_start = appointment_datetime(update_data.get("start_time") or appointment.start_time)
+    proposed_end = appointment_datetime(update_data.get("end_time") or appointment.end_time)
+    if proposed_end <= proposed_start or (not owner and proposed_end - proposed_start > timedelta(hours=2)):
+        raise HTTPException(status_code=400, detail="Choose an end time after the start, up to two hours for staff bookings.")
+    rescheduled = proposed_start != appointment_datetime(appointment.start_time) or proposed_end != appointment_datetime(appointment.end_time)
+    if rescheduled and proposed_start <= appointment_datetime(datetime.now(ZoneInfo("Africa/Johannesburg"))):
+        raise HTTPException(status_code=400, detail="Choose a future appointment start date and time.")
 
     for field, value in update_data.items():
         if field in ("start_time", "end_time") and value is not None:
@@ -411,8 +446,9 @@ def update_appointment(
 @router.delete("/{appointment_id}")
 def delete_appointment(
     appointment_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    _staff: Staff = Depends(get_owner_staff),
+    _staff: Staff = Depends(get_current_staff),
 ):
     appointment = (
         db.query(Appointment)
@@ -425,6 +461,11 @@ def delete_appointment(
             status_code=404,
             detail="Appointment not found",
         )
+
+    owner = _staff.access_level == "admin" and is_financial_owner(request)
+    own_booking = appointment.appointment_type == "staff_meeting" and appointment.participant_staff_id == _staff.id
+    if not owner and not own_booking:
+        raise HTTPException(status_code=403, detail="You can only manage appointments you booked with the owner.")
 
     if appointment.google_event_id:
         try:

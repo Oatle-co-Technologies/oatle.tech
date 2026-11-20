@@ -53,6 +53,10 @@ export default function AppointmentsPage() {
   const { staff, userEmail } = useAuth();
   const isOwner = staff?.access_level === "admin" && userEmail?.trim().toLowerCase() === "info@oatle-technologies.co.za";
 
+  function canManage(appointment: Appointment) {
+    return isOwner || (appointment.appointment_type === "staff_meeting" && appointment.participant_staff_id === staff?.id);
+  }
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,7 +72,7 @@ export default function AppointmentsPage() {
 
   const recordPage = useRecordPage({
     base: "/dashboard/appointments", records: appointments, loading, ready: !!staff,
-    onNew: () => { if (staff) initializeAddForm(); }, onEdit: record => { if (isOwner) initializeEditForm(record); },
+    onNew: () => { if (staff) initializeAddForm(); }, onEdit: record => { if (canManage(record)) initializeEditForm(record); },
     onReset: () => { setShowForm(false); },
   });
   function openAddForm() { recordPage.open("new"); }
@@ -177,6 +181,12 @@ export default function AppointmentsPage() {
       setSaving(true);
       setError("");
 
+      const start = new Date(`${form.start_time}:00+02:00`).getTime();
+      const end = new Date(`${form.end_time}:00+02:00`).getTime();
+      const rescheduled = !editingAppointment || form.start_time !== formatForDateTimeInput(editingAppointment.start_time) || form.end_time !== formatForDateTimeInput(editingAppointment.end_time);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) throw new Error("End time must be after start time.");
+      if (rescheduled && start <= Date.now()) throw new Error("Choose a future start date and time (SAST).");
+
       const ownerPayload = {
         organizer_staff_id:
           staff?.id ?? null,
@@ -196,7 +206,7 @@ export default function AppointmentsPage() {
           form.notes || null,
       };
 
-      const payload = isOwner ? ownerPayload : { title: form.title, start_time: form.start_time, end_time: form.end_time, notes: form.notes || null };
+      const payload = isOwner ? ownerPayload : { title: form.title, start_time: form.start_time, end_time: form.end_time, notes: form.notes || null, ...(editingAppointment ? { location: form.location || null } : { meeting_link: form.location || null }) };
 
       const url = editingAppointment
         ? `${API_URL}/appointments/${editingAppointment.id}`
@@ -371,7 +381,7 @@ export default function AppointmentsPage() {
     <div className={`dashboard-page${recordPage.isDetail ? " dashboard-record-detail" : ""}`}>
       {recordPage.isDetail ? recordPage.header : <BackToDashboard />}
 
-      {recordPage.isDetail && !isOwner && recordPage.action === "edit" && <p role="alert">Only Vinolia can manage appointments.</p>}
+      {recordPage.isDetail && !isOwner && recordPage.action === "edit" && !showForm && !loading && <p role="alert">You can only edit appointments you booked with Vinolia.</p>}
       {/* Header controls */}
       {staff && <div className="dashboard-page-actions">
         <button
@@ -384,7 +394,7 @@ export default function AppointmentsPage() {
       </div>}
 
       {/* Appointment form */}
-      {showForm && (isOwner || !editingAppointment) && (
+      {showForm && (isOwner || !editingAppointment || canManage(editingAppointment)) && (
         <div
           className="dashboard-panel"
           style={{ marginBottom: "24px" }}
@@ -463,30 +473,33 @@ export default function AppointmentsPage() {
                 </option>
               </select>}
 
-              <input
+              <label className="dashboard-form-field">Start date and time (SAST)<input
+                min={editingAppointment ? undefined : formatForDateTimeInput(new Date(Date.now() + 60000).toISOString())}
                 aria-label="Start date and time (SAST)"
                 name="start_time"
                 type="datetime-local"
                 value={form.start_time}
                 onChange={handleChange}
                 required
-              />
+              /></label>
 
-              <input
+              <label className="dashboard-form-field">End date and time (SAST)<input
+                min={form.start_time || formatForDateTimeInput(new Date(Date.now() + 60000).toISOString())}
                 aria-label="End date and time (SAST)"
                 name="end_time"
                 type="datetime-local"
                 value={form.end_time}
                 onChange={handleChange}
                 required
-              />
+              /></label>
 
-              {isOwner && <input
+              <label className="dashboard-form-field">{isOwner ? "Location or meeting link" : "Meeting link (optional)"}<input
                 name="location"
-                placeholder="Location or meeting link"
+                type={isOwner ? "text" : "url"}
+                placeholder={isOwner ? "Location or meeting link" : "https://meet.google.com/…"}
                 value={form.location}
                 onChange={handleChange}
-              />}
+              /></label>
 
               <textarea
                 name="notes"
@@ -623,7 +636,7 @@ export default function AppointmentsPage() {
                       </div>
                     </div>
 
-                    {isOwner && <div className="dashboard-list-actions">
+                    {canManage(appointment) && <div className="dashboard-list-actions">
                       <button
                         type="button"
                         className="dashboard-action-edit"
@@ -707,7 +720,7 @@ export default function AppointmentsPage() {
                     {renderLocation(appointment.location)}
                   </div>
 
-                  {isOwner && <div className="dashboard-list-actions">
+                  {canManage(appointment) && <div className="dashboard-list-actions">
                     <button
                       type="button"
                       className="dashboard-action-edit"
@@ -808,7 +821,7 @@ export default function AppointmentsPage() {
                     </div>
                   </div>
 
-                  {isOwner && <div className="dashboard-list-actions">
+                  {canManage(appointment) && <div className="dashboard-list-actions">
                     <button
                       type="button"
                       className="dashboard-action-edit"

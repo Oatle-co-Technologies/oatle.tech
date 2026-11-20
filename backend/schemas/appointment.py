@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer
 from zoneinfo import ZoneInfo
 
 
@@ -53,6 +53,7 @@ class AppointmentResponse(AppointmentCreate):
 class StaffAppointmentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: str = Field(min_length=1, max_length=150)
+    meeting_link: HttpUrl | None = None
     start_time: datetime
     end_time: datetime
     notes: str | None = Field(default=None, max_length=2000)
