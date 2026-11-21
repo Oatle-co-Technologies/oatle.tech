@@ -1,9 +1,11 @@
 """Invoice catalogue integration checks against an isolated in-memory database."""
-from datetime import date
+from datetime import date, timedelta
+from contextlib import nullcontext
+from email.message import EmailMessage
 from types import SimpleNamespace
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -18,13 +20,20 @@ from backend.models.project_addon import ProjectAddOn  # register the relationsh
 from backend.models.pricing import Product, AddOn, Service
 from backend.models.invoice import Invoice
 from backend.api.invoices import router as invoice_router
+from backend.services import invoice_email
+from backend.services import mailbox_service
 from backend.api.pricing import router as pricing_router
 from backend.api.project_addons import router as project_addons_router
 from backend.database.seed_pricing import sync_catalogue
 
 
 @pytest.fixture
-def system():
+def system(monkeypatch):
+    monkeypatch.setenv("INVOICE_BANK_NAME", "Test Bank")
+    monkeypatch.setenv("INVOICE_BANK_ACCOUNT_HOLDER", "Test Account Holder")
+    monkeypatch.setenv("INVOICE_BANK_ACCOUNT_NUMBER", "TEST-ACCOUNT")
+    monkeypatch.setenv("INVOICE_BANK_ACCOUNT_TYPE", "Test Account Type")
+    monkeypatch.setenv("INVOICE_BANK_BRANCH_CODE", "TEST-BRANCH")
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     with Session(engine, expire_on_commit=False) as db:
@@ -142,7 +151,316 @@ def test_invoice_endpoints_still_require_admin(system):
     api, _, client = system
     api.app.dependency_overrides.clear()
     assert api.post('/invoices', json=payload(client, service_id=1)).status_code in (401, 403)
+    assert api.post('/invoices/1/send', json={"resend": False}).status_code in (401, 403)
     assert api.post('/pricing/services', json={'name': 'Unapproved service', 'base_price': 1}).status_code in (401, 403)
+
+
+def test_invoice_email_preserves_template_data_and_escapes_dynamic_html():
+    client = Client(name="<Client>", email="client@example.com")
+    invoice = Invoice(
+        invoice_number="INV-123",
+        amount=900,
+        legacy_amount_paid=100,
+        discount_percent=10,
+        issue_date=date(2026, 11, 2),
+        due_date=date(2026, 11, 30),
+        notes="<script>unsafe</script>",
+    )
+    product = Service(name="Consultation", base_price=1000, pricing_type="fixed")
+    values = invoice_email.invoice_template_values(invoice, client, None, product, [])
+    values.update({
+        "bank_name": "Test Bank",
+        "account_holder": "Test Account Holder",
+        "account_number": "TEST-ACCOUNT",
+        "account_type": "Test Account Type",
+        "branch_code": "TEST-BRANCH",
+    })
+    rendered = invoice_email.render_invoice_html(values)
+
+    assert values["amount"] == "800.00"
+    assert values["subtotal"] == "1000.00"
+    assert values["discount_amount"] == "100.00"
+    assert "INV-123" in rendered
+    assert "R800.00" in rendered
+    assert "&lt;script&gt;unsafe&lt;/script&gt;" in rendered
+    assert "<script>unsafe</script>" not in rendered
+    assert "{{" not in rendered and "}}" not in rendered
+    assert "Test Bank" in rendered
+    assert "TEST-ACCOUNT" in rendered
+    assert "info@oatle-technologies.co.za" in rendered
+    assert "oatle.technologies@gmail.com" not in rendered
+
+    fixed_discount_invoice = Invoice(
+        invoice_number="INV-124",
+        amount=950,
+        discount_percent=0,
+        discount_fixed=50,
+        issue_date=date(2026, 11, 2),
+    )
+    fixed_values = invoice_email.invoice_template_values(
+        fixed_discount_invoice, client, None, product, []
+    )
+    assert fixed_values["subtotal"] == "1000.00"
+    assert fixed_values["discount_percent"] == "5.00"
+    assert fixed_values["discount_amount"] == "50.00"
+
+
+def test_invoice_banking_details_must_be_configured(monkeypatch):
+    for environment_key in invoice_email.BANKING_ENVIRONMENT_KEYS.values():
+        monkeypatch.delenv(environment_key, raising=False)
+
+    with pytest.raises(HTTPException, match="Invoice banking details are not configured"):
+        invoice_email.invoice_banking_details()
+
+
+def test_invoice_email_uses_saved_project_addon_price_and_balance(system):
+    api, db, client = system
+    product = db.query(Product).filter_by(name="Marketing Page").one()
+    project = Project(
+        client_id=client.id,
+        product_id=product.id,
+        name="Invoice test project",
+        plan=product.name,
+        notes="Project notes",
+    )
+    addon = db.query(AddOn).filter_by(name="Google Business Profile Setup").one()
+    db.add(project)
+    db.flush()
+    db.add(ProjectAddOn(project_id=project.id, addon_id=addon.id, price_at_selection=450))
+    db.commit()
+
+    invoice = api.post(
+        "/invoices",
+        json=payload(client, project_id=project.id, discount_percent=10, payment_amount=105),
+    ).json()
+    recipient, values = invoice_email.build_invoice_email(db.get(Invoice, invoice["id"]), db)
+
+    assert recipient == client.email
+    assert values["product_price"] == "3000.00"
+    assert values["addons"] == "Google Business Profile Setup — R450.00"
+    assert values["subtotal"] == "3450.00"
+    assert values["discount_amount"] == "345.00"
+    assert values["amount"] == "3000.00"
+    assert values["notes"] == "Project notes"
+    assert values["bank_name"] == "Test Bank"
+    assert values["account_number"] == "TEST-ACCOUNT"
+
+
+def test_invoice_email_delivery_uses_business_sender_and_server_secret(monkeypatch):
+    sent = []
+    monkeypatch.setenv("PURELYMAIL_INFO_PASSWORD", "server-only-test-secret")
+    monkeypatch.setattr(invoice_email, "deliver_via_purelymail", lambda box, message, recipient: sent.append((box, message, recipient)))
+    invoice_email.send_invoice_email("client@example.com", {
+        "invoice_number": "INV-123",
+        "client_name": "Test Client",
+        "client_email": "client@example.com",
+        "project_name": "Website",
+        "notes": "Description",
+        "issue_date": "2026-11-02",
+        "due_date": "2026-11-30",
+        "product_name": "Website",
+        "product_price": "1000.00",
+        "addons": "No add-ons",
+        "subtotal": "1000.00",
+        "discount_percent": "0.00",
+        "discount_amount": "0.00",
+        "amount": "1000.00",
+        "bank_name": "Test Bank",
+        "account_holder": "Test Account Holder",
+        "account_number": "TEST-ACCOUNT",
+        "account_type": "Test Account Type",
+        "branch_code": "TEST-BRANCH",
+    })
+
+    box, message, recipient = sent[0]
+    assert box == {
+        "address": "info@oatle-technologies.co.za",
+        "password": "server-only-test-secret",
+    }
+    assert str(message["From"]) == "Oatle Technologies <info@oatle-technologies.co.za>"
+    assert message["Reply-To"] == "info@oatle-technologies.co.za"
+    assert recipient == "client@example.com"
+    assert message.get_body(preferencelist=("html",)).get_content().startswith("<div")
+    assert "INV-123" in message.get_body(preferencelist=("plain",)).get_content()
+    assert "Test Account Holder" in message.get_body(preferencelist=("plain",)).get_content()
+    assert "TEST-ACCOUNT" in message.get_body(preferencelist=("html",)).get_content()
+
+    monkeypatch.delenv("PURELYMAIL_INFO_PASSWORD")
+    with pytest.raises(HTTPException, match="Invoice email sending is not configured"):
+        invoice_email.send_invoice_email("client@example.com", {
+            "invoice_number": "INV-123",
+            "client_name": "Test Client",
+            "client_email": "client@example.com",
+            "project_name": "Website",
+            "notes": "Description",
+            "issue_date": "2026-11-02",
+            "due_date": "2026-11-30",
+            "product_name": "Website",
+            "product_price": "1000.00",
+            "addons": "No add-ons",
+            "subtotal": "1000.00",
+            "discount_percent": "0.00",
+            "discount_amount": "0.00",
+            "amount": "1000.00",
+            "bank_name": "Test Bank",
+            "account_holder": "Test Account Holder",
+            "account_number": "TEST-ACCOUNT",
+            "account_type": "Test Account Type",
+            "branch_code": "TEST-BRANCH",
+        })
+        assert len(sent) == 1
+
+
+def test_invoice_send_status_changes_only_after_delivery_and_blocks_duplicate(system):
+    api, db, client = system
+    service = db.query(Service).filter_by(name="Custom Static Invitation").one()
+    invoice = api.post("/invoices", json=payload(client, service_id=service.id)).json()
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr("backend.api.invoices.send_invoice_email", lambda recipient, values: False)
+        response = api.post(f"/invoices/{invoice['id']}/send", json={"resend": False})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["sent_copy_saved"] is False
+    assert response.json()["status"] == "sent"
+    assert response.json()["invoice_email_sent_at"]
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "backend.api.invoices.send_invoice_email",
+            lambda recipient, values: pytest.fail("A duplicate invoice email was sent"),
+        )
+        response = api.post(f"/invoices/{invoice['id']}/send", json={"resend": False})
+    assert response.status_code == 409
+    assert db.get(Invoice, invoice["id"]).status == "sent"
+
+    sent_invoice = db.get(Invoice, invoice["id"])
+    sent_at = sent_invoice.invoice_email_sent_at - timedelta(seconds=1)
+    sent_invoice.invoice_email_sent_at = sent_at
+    sent_invoice.status = "draft"
+    db.commit()
+    assert api.post(f"/invoices/{invoice['id']}/send", json={"resend": False}).status_code == 409
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr("backend.api.invoices.send_invoice_email", lambda recipient, values: True)
+        response = api.post(f"/invoices/{invoice['id']}/send", json={
+            "resend": True,
+            "expected_sent_at": sent_at.isoformat(),
+        })
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "sent"
+    assert response.json()["invoice_email_sent_at"] != sent_at.isoformat()
+    assert api.post(f"/invoices/{invoice['id']}/send", json={
+        "resend": True,
+        "expected_sent_at": sent_at.isoformat(),
+    }).status_code == 409
+
+
+@pytest.mark.parametrize("status", ["paid", "cancelled", "overdue", "sent"])
+def test_invoice_send_and_resend_preserve_non_draft_status(system, status):
+    api, db, client = system
+    service = db.query(Service).filter_by(name="Custom Static Invitation").one()
+    invoice = api.post("/invoices", json=payload(client, service_id=service.id)).json()
+    saved_invoice = db.get(Invoice, invoice["id"])
+    saved_invoice.status = status
+    db.commit()
+
+    sends = []
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "backend.api.invoices.send_invoice_email",
+            lambda recipient, values: sends.append((recipient, values)) or True,
+        )
+        response = api.post(f"/invoices/{invoice['id']}/send", json={"resend": False})
+    assert response.status_code == 200, response.text
+    sent_at = response.json()["invoice_email_sent_at"]
+    assert response.json()["status"] == status
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "backend.api.invoices.send_invoice_email",
+            lambda recipient, values: sends.append((recipient, values)) or True,
+        )
+        response = api.post(f"/invoices/{invoice['id']}/send", json={
+            "resend": True,
+            "expected_sent_at": sent_at,
+        })
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == status
+    assert len(sends) == 2
+
+
+def test_invoice_archive_failure_does_not_retry_delivery(monkeypatch):
+    deliveries = []
+    monkeypatch.setenv("PURELYMAIL_INFO_PASSWORD", "server-only-test-secret")
+    monkeypatch.setattr(
+        invoice_email,
+        "deliver_via_purelymail",
+        lambda box, message, recipient: deliveries.append((box, message, recipient)),
+    )
+    monkeypatch.setattr(invoice_email, "archive_sent_copy", lambda box, message: False)
+    values = {
+        "invoice_number": "INV-123",
+        "client_name": "Test Client",
+        "client_email": "client@example.com",
+        "project_name": "Website",
+        "notes": "Description",
+        "issue_date": "2026-11-02",
+        "due_date": "2026-11-30",
+        "product_name": "Website",
+        "product_price": "1000.00",
+        "addons": "No add-ons",
+        "subtotal": "1000.00",
+        "discount_percent": "0.00",
+        "discount_amount": "0.00",
+        "amount": "1000.00",
+        "bank_name": "Test Bank",
+        "account_holder": "Test Account Holder",
+        "account_number": "TEST-ACCOUNT",
+        "account_type": "Test Account Type",
+        "branch_code": "TEST-BRANCH",
+    }
+
+    assert invoice_email.send_invoice_email("client@example.com", values) is False
+    assert len(deliveries) == 1
+
+
+def test_purelymail_sent_copy_is_appended_to_sent_folder(monkeypatch):
+    append_calls = []
+    imap_client = SimpleNamespace(
+        append=lambda *args: append_calls.append(args) or ("OK", [])
+    )
+    monkeypatch.setattr(mailbox_service, "connect", lambda box: nullcontext(imap_client))
+    message = EmailMessage()
+    message["Subject"] = "Invoice archive test"
+    message.set_content("Test")
+
+    assert mailbox_service.archive_sent_copy(
+        {"address": "info@oatle-technologies.co.za", "password": "test"},
+        message,
+    )
+    assert len(append_calls) == 1
+    assert append_calls[0][0:2] == ("Sent", "\\Seen")
+    assert b"Subject: Invoice archive test" in append_calls[0][3]
+
+
+def test_invoice_send_failure_does_not_change_status(system):
+    api, db, client = system
+    service = db.query(Service).filter_by(name="Custom Static Invitation").one()
+    invoice = api.post("/invoices", json=payload(client, service_id=service.id)).json()
+
+    from fastapi import HTTPException
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "backend.api.invoices.send_invoice_email",
+            lambda recipient, values: (_ for _ in ()).throw(HTTPException(502, "SMTP unavailable")),
+        )
+        response = api.post(f"/invoices/{invoice['id']}/send", json={"resend": False})
+
+    assert response.status_code == 502
+    assert db.get(Invoice, invoice["id"]).status == "draft"
+    assert db.get(Invoice, invoice["id"]).invoice_email_sent_at is None
 
 
 def test_fixed_rand_discount_is_exact_and_survives_payment_updates(system):

@@ -1,0 +1,63 @@
+<div style="margin: 0; padding: 40px 20px; background-color: #f6f6f3; font-family: Arial, Helvetica, sans-serif; color: #171717;">
+  <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e5e0; border-radius: 12px; overflow: hidden;">
+    <div style="padding: 32px 36px; border-bottom: 1px solid #e5e5e0;">
+      <div style="font-size: 24px; font-weight: 700; color: #171717; margin-bottom: 6px;">Oatle Technologies</div>
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #d4af37;">GROW. MULTIPLY. SUCCEED.</div>
+    </div>
+    <div style="padding: 36px;">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #888888; margin-bottom: 10px;">INVOICE</div>
+      <div style="font-size: 28px; font-weight: 700; color: #171717; margin-bottom: 28px;">{{invoice_number}}</div>
+      <div style="padding: 22px; background-color: #f7f7f4; border-radius: 10px; margin-bottom: 24px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #888888; margin-bottom: 8px;">BILLED TO</div>
+        <div style="font-size: 17px; font-weight: 600; color: #171717; margin-bottom: 6px;">{{client_name}}</div>
+        <div style="font-size: 13px; color: #666666;">{{client_email}}</div>
+      </div>
+      <div style="padding: 22px; background-color: #f7f7f4; border-radius: 10px; margin-bottom: 24px;">
+        <div style="font-size: 11px; color: #888888; margin-bottom: 6px;">PROJECT</div>
+        <div style="font-size: 16px; font-weight: 600; color: #171717; margin-bottom: 20px;">{{project_name}}</div>
+        <div style="font-size: 11px; color: #888888; margin-bottom: 6px;">DESCRIPTION</div>
+        <div style="font-size: 14px; line-height: 1.6; color: #555555;">{{notes}}</div>
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #deded8;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr><td style="font-size: 13px; color: #666666; padding-bottom: 8px;">Issue Date</td><td align="right" style="font-size: 13px; color: #171717; padding-bottom: 8px;">{{issue_date}}</td></tr>
+            <tr><td style="font-size: 13px; color: #666666;">Due Date</td><td align="right" style="font-size: 13px; font-weight: 600; color: #171717;">{{due_date}}</td></tr>
+          </table>
+        </div>
+      </div>
+      <div style="padding: 22px; border: 1px solid #e5e5e0; border-radius: 10px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #888888; margin-bottom: 18px;">INVOICE BREAKDOWN</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="font-size: 14px; color: #171717; padding-bottom: 12px;">{{product_name}}</td><td align="right" style="font-size: 14px; color: #171717; padding-bottom: 12px;">R{{product_price}}</td></tr>
+          <tr><td colspan="2" style="font-size: 12px; font-weight: 700; color: #888888; padding-top: 4px; padding-bottom: 8px;">ADD-ONS</td></tr>
+          <tr><td colspan="2" style="font-size: 13px; color: #555555; padding-bottom: 16px; line-height: 1.6;">{{addons}}</td></tr>
+          <tr><td style="border-top: 1px solid #e5e5e0; padding-top: 14px; font-size: 14px; font-weight: 600; color: #171717;">Subtotal</td><td align="right" style="border-top: 1px solid #e5e5e0; padding-top: 14px; font-size: 14px; font-weight: 600; color: #171717;">R{{subtotal}}</td></tr>
+          <tr><td style="padding-top: 12px; font-size: 14px; color: #666666;">Discount ({{discount_percent}}%)</td><td align="right" style="padding-top: 12px; font-size: 14px; color: #666666;">- R{{discount_amount}}</td></tr>
+        </table>
+      </div>
+      <div style="padding: 24px; background-color: #171717; border-radius: 10px; margin-bottom: 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #aaaaaa;">AMOUNT DUE</td><td align="right" style="font-size: 24px; font-weight: 700; color: #d4af37;">R{{amount}}</td></tr>
+        </table>
+      </div>
+      <div style="padding: 22px; background-color: #f7f7f4; border: 1px solid #e5e5e0; border-radius: 10px; margin-bottom: 28px;">
+        <div style="font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #888888; margin-bottom: 18px;">BANKING DETAILS</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td style="font-size: 13px; color: #666666; padding: 0 12px 12px 0; vertical-align: top;">Bank</td><td align="right" style="font-size: 13px; color: #171717; padding-bottom: 12px; vertical-align: top;">{{bank_name}}</td></tr>
+          <tr><td style="font-size: 13px; color: #666666; padding: 0 12px 12px 0; vertical-align: top;">Account Holder</td><td align="right" style="font-size: 13px; color: #171717; padding-bottom: 12px; vertical-align: top;">{{account_holder}}</td></tr>
+          <tr><td style="font-size: 13px; color: #666666; padding: 0 12px 12px 0; vertical-align: top;">Account Number</td><td align="right" style="font-size: 14px; font-weight: 700; color: #171717; padding-bottom: 12px; vertical-align: top;">{{account_number}}</td></tr>
+          <tr><td style="font-size: 13px; color: #666666; padding: 0 12px 12px 0; vertical-align: top;">Account Type</td><td align="right" style="font-size: 13px; color: #171717; padding-bottom: 12px; vertical-align: top;">{{account_type}}</td></tr>
+          <tr><td style="font-size: 13px; color: #666666; padding: 0 12px 16px 0; vertical-align: top;">Branch Code</td><td align="right" style="font-size: 13px; color: #171717; padding-bottom: 16px; vertical-align: top;">{{branch_code}}</td></tr>
+          <tr><td style="border-top: 1px solid #deded8; padding: 16px 12px 0 0; font-size: 13px; font-weight: 700; color: #171717; vertical-align: top;">Payment Reference</td><td align="right" style="border-top: 1px solid #deded8; padding-top: 16px; font-size: 14px; font-weight: 700; color: #171717; vertical-align: top; overflow-wrap: anywhere;">{{invoice_number}}</td></tr>
+        </table>
+        <div style="margin-top: 16px; font-size: 12px; line-height: 1.6; color: #666666;">Please use your invoice number as the payment reference.</div>
+      </div>
+      <div style="font-size: 14px; line-height: 1.7; color: #555555;">Thank you for choosing Oatle Technologies. Please make payment by the due date indicated above.</div>
+      <div style="margin-top: 18px; font-size: 14px; line-height: 1.7; color: #555555;">If you have any questions regarding this invoice, please reply directly to this email.</div>
+    </div>
+    <div style="padding: 24px 36px; background-color: #171717; text-align: center;">
+      <div style="font-size: 14px; font-weight: 700; color: #d4af37; margin-bottom: 6px;">Oatle Technologies</div>
+      <div style="font-size: 11px; letter-spacing: 1px; color: #aaaaaa;">GROW. MULTIPLY. SUCCEED.</div>
+      <div style="margin-top: 12px; font-size: 11px; color: #777777;">info@oatle-technologies.co.za</div>
+    </div>
+  </div>
+</div>

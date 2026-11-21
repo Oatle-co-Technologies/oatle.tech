@@ -97,6 +97,11 @@ class Invoice(Base):
         nullable=True,
     )
 
+    invoice_email_sent_at = Column(
+        DateTime,
+        nullable=True,
+    )
+
     created_at = Column(
         DateTime,
         default=datetime.utcnow,

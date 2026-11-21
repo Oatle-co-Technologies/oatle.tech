@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import emailjs from "@emailjs/browser";
 import { useRecordPage } from "@/lib/use-record-page";
 import BackToDashboard from "@/components/dashboard/BackToDashboard";
 
@@ -64,6 +63,7 @@ type Invoice = {
     paid_at: string;
   }>;
   status: string;
+  invoice_email_sent_at: string | null;
   issue_date: string;
   due_date: string | null;
   notes: string | null;
@@ -111,10 +111,6 @@ const statuses = [
   "overdue",
   "cancelled",
 ];
-
-const EMAILJS_SERVICE_ID = "service_4mg8nys";
-const EMAILJS_INVOICE_TEMPLATE_ID = "template_x1bok19";
-const EMAILJS_PUBLIC_KEY = "G21rP3jrxQohCHe1l";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
@@ -682,10 +678,10 @@ export default function Invoices() {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Send ${invoice.invoice_number} to ${client.email}?`
-      );
+    const isResend = invoice.invoice_email_sent_at != null;
+    const confirmed = window.confirm(
+      `${isResend ? "Resend" : "Send"} ${invoice.invoice_number} to ${client.email}?`
+    );
 
     if (!confirmed) {
       return;
@@ -698,187 +694,27 @@ export default function Invoices() {
 
       setError("");
 
-      let project: Project | null = null;
-      let product: Product | null = null;
-      let addons: AddOn[] = [];
-      if (invoice.service_id) {
-        product = services.find(item => item.id === invoice.service_id) ||
-          (invoice.service_name ? { id: invoice.service_id, name: invoice.service_name,
-            base_price: null, pricing_type: "quoted", active: false } : null);
-      } else {
-        const projectResponse = await fetch(`${API_URL}/projects/${invoice.project_id}`);
-        if (!projectResponse.ok) throw new Error("Failed to load the invoice project");
-        project = await projectResponse.json();
-        product = products.find(item => item.id === project?.product_id) || null;
-        const addonsResponse = await fetch(`${API_URL}/projects/${invoice.project_id}/addons`);
-        if (!addonsResponse.ok) throw new Error("Failed to load project add-ons");
-        addons = await addonsResponse.json();
-      }
-      if (!product) throw new Error("The billed service or product could not be found");
-      const addonsTotal = addons.reduce((total, addon) => total + Number(addon.price), 0);
-      const isFixedDiscount = invoice.discount_fixed != null;
-      const savedFixedDiscount = Number(invoice.discount_fixed ?? 0);
-      const discountPercent = Number(invoice.discount_percent ?? 0);
-      // Always use the saved invoice total; the catalogue may have changed since issue.
-      const subtotal = isFixedDiscount ? Number(invoice.amount) + savedFixedDiscount : discountPercent < 100
-        ? Number(invoice.amount) / (1 - discountPercent / 100)
-        : Number(product.base_price || 0) + addonsTotal;
-      const productPrice = Math.max(0, subtotal - addonsTotal);
-      const discountAmount = isFixedDiscount ? savedFixedDiscount : subtotal - Number(invoice.amount);
-      const emailDiscountPercent = isFixedDiscount
-        ? (subtotal > 0 ? discountAmount / subtotal * 100 : 0) : discountPercent;
+      const response = await fetch(`${API_URL}/invoices/${invoice.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resend: isResend,
+          expected_sent_at: invoice.invoice_email_sent_at,
+        }),
+      });
 
-      const amountDue =
-        Number(invoice.amount);
-
-      const outstandingAmount =
-        Number(invoice.balance_due);
-
-      const addonsText =
-        addons.length > 0
-          ? addons
-              .map(
-                (addon) =>
-                  `${addon.name} — R${Number(
-                    addon.price
-                  ).toFixed(2)}`
-              )
-              .join("\n")
-          : "No add-ons";
-
-      const templateParams = {
-        to_email:
-          client.email,
-
-        client_email:
-          client.email,
-
-        invoice_number:
-          invoice.invoice_number,
-
-        client_name:
-          client.name,
-
-        project_name:
-          project?.name || product.name,
-
-        product_name:
-          product.name,
-
-        product_price:
-          productPrice.toFixed(2),
-
-        addons:
-          addonsText,
-
-        subtotal:
-          subtotal.toFixed(2),
-
-        discount_percent:
-          emailDiscountPercent.toFixed(2),
-
-        discount_label: isFixedDiscount ? "Discount (fixed amount)" : `Discount (${discountPercent.toFixed(2)}%)`,
-
-        discount_amount:
-          discountAmount.toFixed(2),
-
-        amount:
-          outstandingAmount.toFixed(2),
-
-        amount_total:
-          amountDue.toFixed(2),
-
-        amount_paid:
-          Number(invoice.total_paid).toFixed(2),
-
-        amount_due:
-          outstandingAmount.toFixed(2),
-
-        issue_date:
-          invoice.issue_date,
-
-        due_date:
-          invoice.due_date ||
-          "Not specified",
-
-        notes:
-          invoice.notes ||
-          project?.notes ||
-          "Thank you for choosing Oatle Technologies.",
-      };
-
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_INVOICE_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
-
-      const updatePayload = {
-        client_id:
-          invoice.client_id,
-
-        project_id:
-          invoice.project_id,
-
-        service_id: invoice.service_id,
-
-        quoted_amount:
-          product.pricing_type ===
-          "quoted"
-            ? productPrice
-            : null,
-
-        payment_amount: 0,
-
-        discount_percent: invoice.discount_percent ?? 0,
-        discount_fixed: invoice.discount_fixed ?? null,
-
-        status: "sent",
-
-        issue_date:
-          invoice.issue_date,
-
-        due_date:
-          invoice.due_date,
-
-        notes:
-          invoice.notes,
-      };
-
-      const updateResponse =
-        await fetch(
-          `${API_URL}/invoices/${invoice.id}`,
-          {
-            method: "PUT",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify(
-              updatePayload
-            ),
-          }
-        );
-
-      if (!updateResponse.ok) {
-        const data =
-          await updateResponse
-            .json()
-            .catch(() => null);
-
-        throw new Error(
-          data?.detail ||
-            "Invoice was emailed, but the status could not be updated."
-        );
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.detail || "Failed to send invoice.");
       }
 
+      const result: { sent_copy_saved: boolean } = await response.json();
       await loadInvoices();
 
       alert(
-        `Invoice ${invoice.invoice_number} was sent successfully to ${client.email}.`
+        result.sent_copy_saved
+          ? `Invoice ${invoice.invoice_number} was ${isResend ? "resent" : "sent"} successfully to ${client.email}.`
+          : `Invoice ${invoice.invoice_number} was ${isResend ? "resent" : "sent"} to ${client.email}, but its Sent-folder copy could not be saved. Do not send it again; check PurelyMail before taking further action.`
       );
     } catch (err) {
       console.error(err);
@@ -1676,9 +1512,7 @@ export default function Invoices() {
                   <button
                     type="button"
                     className="dashboard-action-primary"
-                    onClick={() =>
-                      recordPage.isDetail ? handleSendInvoice(invoice) : recordPage.open("email", invoice.id)
-                    }
+                    onClick={() => handleSendInvoice(invoice)}
                     disabled={
                       sendingInvoiceId ===
                       invoice.id
@@ -1687,8 +1521,7 @@ export default function Invoices() {
                     {sendingInvoiceId ===
                     invoice.id
                       ? "Sending..."
-                      : invoice.status ===
-                        "sent"
+                      : invoice.invoice_email_sent_at != null
                       ? "Resend Invoice"
                       : "Send Invoice"}
                   </button>
